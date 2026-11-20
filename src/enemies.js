@@ -13,12 +13,12 @@ const pupilMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
 const shardMatA = new THREE.MeshBasicMaterial({ color: 0xff2bd6 });
 const shardMatB = new THREE.MeshBasicMaterial({ color: 0x29e6ff });
 // Floating "GLITCHED" tag above glitched slimes.
-function makeTag() {
+function makeTag(text = 'GLITCHED', color = '#ff2bd6') {
   const c = document.createElement('canvas'); c.width = 256; c.height = 64;
   const g = c.getContext('2d');
   g.font = 'bold 30px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillStyle = 'rgba(20,0,30,0.65)'; g.fillRect(18, 10, 220, 44);
-  g.fillStyle = '#ff2bd6'; g.fillText('GLITCHED', 128, 33);
+  g.fillStyle = 'rgba(20,0,30,0.65)'; g.fillRect(8, 10, 240, 44);
+  g.fillStyle = color; g.fillText(text, 128, 33);
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
   sp.scale.set(1.3, 0.33, 1); sp.position.y = 1.75; sp.renderOrder = 10;
@@ -53,6 +53,7 @@ export class Slime {
       this.ice = new THREE.Mesh(new THREE.IcosahedronGeometry(0.8, 1), iceMat);
       this.ice.position.y = 0.55; this.ice.visible = false; this.group.add(this.ice);
       this.tag = makeTag(); this.group.add(this.tag);
+      this.tagFixed = makeTag('x2 DAMAGE', '#29e6ff'); this.tagFixed.visible = false; this.group.add(this.tagFixed);
     }
     // Stun stars (shown after a parry).
     this.stars = new THREE.Group();
@@ -65,6 +66,7 @@ export class Slime {
   spawn() {
     this.hp = this.maxHp; this.dead = false; this.patched = false; this.frozen = 0; this.stunned = 0; this.patchMult = 2;
     if (this.tag) this.tag.visible = true;
+    if (this.tagFixed) this.tagFixed.visible = false;
     this.pos = this.home.clone(); this.vel = new THREE.Vector3(); this.facing = Math.random() * Math.PI * 2;
     this.hopT = Math.random(); this.attackCd = 0; this.windup = 0; this.hitFlash = 0; this.deathT = 0; this.knock = new THREE.Vector3();
     this.group.visible = true; this.group.scale.setScalar(1);
@@ -90,19 +92,15 @@ export class Slime {
     return dmg;
   }
 
-  // mode 'fix': remove the glitch, freeze 3s, x2 damage. mode 'lag': freeze 1.5s, x1.5 damage.
-  patch(mode = 'fix') {
-    if (this.dead) return false;
-    if (mode === 'lag' || !this.glitchedActive) {
-      this.frozen = 1.5; this.patchMult = 1.5; this.windup = 0;
-      if (this.ice) this.ice.visible = true; else this.#ensureIce(); this.ice.visible = true;
-      return true;
-    }
+  // Fix the glitch: no more resistance, frozen for 3s, double damage while frozen.
+  patch() {
+    if (this.dead || !this.glitchedActive) return false;
     this.patched = true; this.frozen = 3; this.patchMult = 2; this.windup = 0;
     this.mat.color.set(0x5fd35a);
     if (this.shards) this.shards.forEach(s => (s.visible = false));
     if (this.ice) this.ice.visible = true;
     if (this.tag) this.tag.visible = false;
+    if (this.tagFixed) this.tagFixed.visible = true;
     return true;
   }
 
@@ -138,6 +136,7 @@ export class Slime {
     if (this.frozen > 0) {
       this.frozen -= dt;
       if (this.frozen <= 0 && this.ice) this.ice.visible = false;
+      if (this.frozen <= 0 && this.tagFixed) this.tagFixed.visible = false;
     } else if (this.stunned > 0) {
       // Dazed: no movement or attacks.
     } else {

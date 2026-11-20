@@ -153,27 +153,25 @@ export class Player {
     this.action = this.play('Sword_Attack', 0.06, 1.3, 0.12);
   }
 
-  // Patch picks a target by priority: glitched enemy > any enemy nearby > Jasper himself.
-  #startPatch() {
-    if (this.patchCd > 0) return;
-    let best = null, bestD = CFG.patchRange, mode = 'self';
+  // Patch has one job: fix a GLITCHED (purple) enemy. Fixed enemies freeze and take double damage.
+  patchTarget() {
+    let best = null, bestD = CFG.patchRange;
     for (const e of this.ctx.enemies) {
       if (!e.glitchedActive || !e.alive) continue;
       const d = e.pos.distanceTo(this.pos);
-      if (d < bestD) { bestD = d; best = e; mode = 'fix'; }
+      if (d < bestD) { bestD = d; best = e; }
     }
-    if (!best) {
-      bestD = 6;
-      for (const e of this.ctx.enemies) {
-        if (!e.alive || e.frozen > 0) continue;
-        const d = e.pos.distanceTo(this.pos);
-        if (d < bestD) { bestD = d; best = e; mode = 'lag'; }
-      }
-    }
-    if (best) this.facing = Math.atan2(best.pos.x - this.pos.x, best.pos.z - this.pos.z);
+    return best;
+  }
+
+  #startPatch() {
+    if (this.patchCd > 0) return;
+    const best = this.patchTarget();
+    if (!best) { this.ctx.hud.system('No purple enemy nearby to patch'); return; }
+    this.facing = Math.atan2(best.pos.x - this.pos.x, best.pos.z - this.pos.z);
     this.state = 'cast'; this.stateT = 0; this.patchCd = CFG.patchCooldown;
     this.play('Spell_Simple_Shoot', 0.08, 1.5);
-    this.patchTarget = best; this.patchMode = mode; this.patchFired = false;
+    this.patchTarget_ = best; this.patchFired = false;
   }
 
   #locomotion() {
@@ -307,7 +305,7 @@ export class Player {
       const dmg = e.takeHit(base, this.pos, { pierce: m.pierce });
       if (shatter) {
         // SHATTER: break the ice, splash damage around the target.
-        e.frozen = 0; if (e.ice) e.ice.visible = false;
+        e.frozen = 0; if (e.ice) e.ice.visible = false; if (e.tagFixed) e.tagFixed.visible = false;
         this.ctx.effects.shockwave(e.pos.clone(), 3.0);
         this.ctx.effects.burst(e.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 26, [0, 2], 6);
         this.ctx.hud.float(e.pos.clone().add(new THREE.Vector3(0, 2.0, 0)), 'SHATTER!', 'crit');
@@ -365,7 +363,6 @@ export class Player {
       if (sprinting) this.#startMove('slide', input, camYaw);
       else if (this.state !== 'act' || this.stateT > 0.12) this.#startDash(input, camYaw);
     }
-    if (input.consume('throw') && free && this.onGround) this.#startMove('throw', input, camYaw);
     if (input.consume('sheathe') && free) {
       if (this.armed) { this.combatT = 0; this.#disarm(); this.ctx.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 1.5, -0.2)), 6, [0, 2], 1.5); }
       else this.#arm();
@@ -436,22 +433,12 @@ export class Player {
     } else if (this.state === 'cast') {
       if (!this.patchFired && this.stateT > 0.25) {
         this.patchFired = true;
-        const e = this.patchTarget;
+        const e = this.patchTarget_;
         const from = this.char.cursor ? this.char.cursor.getWorldPosition(new THREE.Vector3()) : this.pos.clone().add(new THREE.Vector3(0, 1.3, 0));
-        if (this.patchMode === 'self') {
-          const heal = Math.min(25, this.maxHp - this.hp);
-          this.hp += heal; this.stamina = Math.min(100, this.stamina + 30);
-          this.ctx.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 1, 0)), 20, [0, 2], 3);
-          this.ctx.hud.float(this.pos.clone().add(new THREE.Vector3(0, 2.1, 0)), `+${heal} HP`, 'xp');
-          this.ctx.hud.system('> SELF-PATCH: +25 HP, +30 stamina');
-        } else {
-          this.ctx.effects.beam(from, e.pos.clone().add(new THREE.Vector3(0, 0.6, 0)));
-          e.patch(this.patchMode);
-          this.ctx.effects.burst(e.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 18, [0, 2], 4);
-          this.ctx.hud.system(this.patchMode === 'fix'
-            ? '> PATCH: glitch removed\n> frozen 3s, DOUBLE damage - heavy hit to SHATTER'
-            : '> LAG SPIKE: target frozen 1.5s, +50% damage');
-        }
+        this.ctx.effects.beam(from, e.pos.clone().add(new THREE.Vector3(0, 0.6, 0)));
+        e.patch();
+        this.ctx.effects.burst(e.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 18, [0, 2], 4);
+        this.ctx.hud.system('BUG FIXED!\nx2 DAMAGE for 3s - attack!', 2.4);
       }
       if (this.stateT > 0.55) this.#toMove();
     } else if (this.state === 'hit') {

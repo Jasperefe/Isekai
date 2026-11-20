@@ -23,13 +23,28 @@ export class Hud {
     const cd = $('patch-cd'); if (cd) cd.style.height = (p.patchCd / 8 * 100) + '%';
     const sc = $('skill-cd'); if (sc) sc.style.height = (p.skillCd / 6 * 100) + '%';
     const cp = $('chip-patch'), cs = $('chip-skill');
-    cp.textContent = p.patchCd > 0 ? `E PATCH ${Math.ceil(p.patchCd)}s` : 'E PATCH READY'; cp.classList.toggle('cool', p.patchCd > 0);
+    const target = p.patchTarget(), ready = !!target && p.patchCd <= 0;
+    cp.textContent = p.patchCd > 0 ? `E PATCH ${Math.ceil(p.patchCd)}s` : ready ? 'PRESS E: PATCH IT!' : 'E PATCH';
+    cp.classList.toggle('cool', p.patchCd > 0 || !target); cp.classList.toggle('ready', ready);
+    $('btn-patch')?.classList.toggle('ready', ready);
+    // First time a glitched enemy comes close: explain Patch once.
+    if (target && !this.tutorialShown && target.pos.distanceTo(p.pos) < 9) { this.tutorialShown = true; this.tutorial(); }
+    if (this.tutT > 0) { this.tutT -= dt; if (this.tutT <= 0) $('tutorial').classList.add('hidden'); }
     cs.textContent = p.skillCd > 0 ? `R BLADE STORM ${Math.ceil(p.skillCd)}s` : 'R BLADE STORM'; cs.classList.toggle('cool', p.skillCd > 0 || p.stamina < 40);
     if (this.msgTimer > 0) { this.msgTimer -= dt; if (this.msgTimer <= 0) $('system-msg').classList.remove('show'); }
   }
 
   system(text, time = 2.4) {
     const m = $('system-msg'); m.textContent = text; m.classList.add('show'); this.msgTimer = time;
+  }
+
+  tutorial() {
+    const el = $('tutorial');
+    el.innerHTML = `<b>GLITCHED ENEMY</b>
+      <ol><li>Purple enemies are <i>bugged</i>: your attacks barely hurt them.</li>
+      <li>Press <span class="k">PATCH</span> to fix the bug.</li>
+      <li>The fixed enemy <span class="k">freezes</span> and takes <span class="k">DOUBLE damage</span>. Attack!</li></ol>`;
+    el.classList.remove('hidden'); this.tutT = 7;
   }
 
   combo(n) {

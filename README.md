@@ -18,18 +18,19 @@ Play as Jasper in Starter Meadow and fight slimes. Jasper carries his sword on h
 | Dodge / Slide sweep (while sprinting) | Space | DASH |
 | Dash strike | Click during a dodge, or while sprinting | ATK |
 | Jump slam | F, then click in the air | JUMP, ATK |
-| Debug Shard (ranged) | T | SHARD |
 | Blade Storm (4-hit spin) | R | SKILL |
 | Patch | E | PATCH |
 | Draw / put away sword | X | SWORD |
 
-### Patch in battle
+### Patch
 
-- **Glitched enemy in range (10 m):** removes the glitch for good, freezes it for 3 s, it takes **x2 damage**.
-- **No glitch, normal enemy in range (6 m):** *Lag Spike*, freezes it for 1.5 s, it takes **x1.5 damage**.
-- **Nobody in range:** *Self-Patch*, +25 HP and +30 stamina.
-- **Shatter:** hit a frozen enemy with a heavy, finisher, Glitch Breaker or Counter to break the ice: bonus damage plus splash damage to enemies around it.
-- Cooldown: 8 s.
+Patch has one job: **fix glitched (purple) enemies**.
+
+1. Purple enemies are bugged: your attacks barely hurt them (RESIST).
+2. Press **PATCH** (E) near one: a beam fixes the bug, it turns green and freezes for 3 s.
+3. While frozen it takes **double damage**. Hit it with a heavy, finisher or counter to **SHATTER** the ice for splash damage.
+
+The PATCH button pulses when a glitched enemy is in range. Cooldown: 8 s.
 
 ## Run it
 
