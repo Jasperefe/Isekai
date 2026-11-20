@@ -1,12 +1,18 @@
-// ISEKAI: milestone 1 core prototype.
+// ISEKAI: Zone 1 (Starter Meadow).
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { Input, isTouch } from './input.js';
-import { World, heightAt } from './world.js';
+import { World, Z1 } from './world.js';
+import { VillageKit } from './village.js';
 import { buildCharacter, captureGrip } from './characters.js';
 import { Player } from './player.js';
 import { spawnSlimes } from './enemies.js';
+import { SlimeKing } from './boss.js';
+import { NPC } from './npc.js';
+import { Guide } from './guide.js';
+import { Dialogue } from './dialogue.js';
+import { Story } from './story.js';
 import { Effects } from './effects.js';
 import { Hud } from './hud.js';
 
@@ -31,16 +37,33 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
 });
 
-// Third-person orbit camera with collision-free smoothing and screen shake.
+// Third-person orbit camera with smoothing and screen shake.
 class CameraRig {
-  constructor(cam) { this.cam = cam; this.yaw = 0; this.pitch = 0.32; this.dist = isTouch ? 6.2 : 5.6; this.shakeT = 0; this.target = new THREE.Vector3(); }
+  constructor(cam, world) { this.cam = cam; this.world = world; this.yaw = 0; this.pitch = 0.32; this.dist = isTouch ? 6.2 : 5.6; this.shakeT = 0; this.target = new THREE.Vector3(); this.zoom = 1; }
   shake(a) { this.shakeT = Math.max(this.shakeT, a); }
-  update(dt, input, focus) {
+  update(dt, input, focus, wantZoom = 1, talk = null) {
     this.yaw -= input.look.dx; this.pitch = THREE.MathUtils.clamp(this.pitch + input.look.dy, -0.15, 1.05);
+    if (talk) {
+      // Conversation shot: look across both speakers from the side.
+      const mid = focus.clone().lerp(talk, 0.5);
+      const side = Math.atan2(talk.x - focus.x, talk.z - focus.z) + Math.PI / 2;
+      let d = side - this.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
+      if (Math.abs(d) > Math.PI / 2) d = Math.atan2(Math.sin(d + Math.PI), Math.cos(d + Math.PI)); // pick the nearer side
+      this.yaw += d * Math.min(1, dt * 4); this.pitch += (0.18 - this.pitch) * Math.min(1, dt * 4);
+      focus = mid; wantZoom = 0.8;
+    }
+    this.zoom += (wantZoom - this.zoom) * Math.min(1, dt * 2);
     this.target.lerp(focus.clone().add(new THREE.Vector3(0, 1.5, 0)), 1 - Math.pow(0.0001, dt));
-    const off = new THREE.Vector3(Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), Math.cos(this.yaw) * Math.cos(this.pitch)).multiplyScalar(this.dist);
-    const p = this.target.clone().add(off);
-    p.y = Math.max(p.y, heightAt(p.x, p.z) + 0.4);
+    const off = new THREE.Vector3(Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), Math.cos(this.yaw) * Math.cos(this.pitch)).multiplyScalar(this.dist * this.zoom);
+    // Pull the camera in if a building sits between it and Jasper.
+    let k = 1;
+    for (let i = 1; i <= 12; i++) {
+      const f = i / 12, q = this.target.clone().addScaledVector(off, f);
+      if (this.world.insideBuilding(q.x, q.y, q.z)) { k = Math.max(0.25, (i - 1.5) / 12); break; }
+    }
+    this.camK = (this.camK ?? 1) + (k - (this.camK ?? 1)) * Math.min(1, dt * (k < (this.camK ?? 1) ? 20 : 3));
+    const p = this.target.clone().addScaledVector(off, this.camK);
+    p.y = Math.max(p.y, this.world.groundAt(p.x, p.z) + 0.4);
     this.cam.position.copy(p);
     if (this.shakeT > 0) {
       this.shakeT = Math.max(0, this.shakeT - dt);
@@ -51,6 +74,9 @@ class CameraRig {
   }
 }
 
+// Input stand-in used while dialogue/cutscenes are on screen.
+const NO_INPUT = { move: { x: 0, y: 0 }, look: { dx: 0, dy: 0 }, sprint: false, blocking: false, consume: () => false };
+
 const loadFill = document.getElementById('load-fill');
 const loadText = document.getElementById('load-text');
 const manager = new THREE.LoadingManager();
@@ -59,78 +85,121 @@ const loader = new GLTFLoader(manager);
 loader.setMeshoptDecoder(MeshoptDecoder);
 
 async function boot() {
-  const [jasperG, a1, a2, natureG] = await Promise.all([
-    loader.loadAsync('assets/models/jasper.glb'),
-    loader.loadAsync('assets/models/anims1.glb'),
-    loader.loadAsync('assets/models/anims2.glb'),
-    loader.loadAsync('assets/models/nature.glb'),
-  ]);
+  const files = ['jasper', 'anims1', 'anims2', 'nature', 'village', 'bram', 'villager_f', 'villager_m'];
+  const [jasperG, a1, a2, natureG, villageG, bramG, vfG, vmG] = await Promise.all(files.map(f => loader.loadAsync(`assets/models/${f}.glb`)));
   loadText.textContent = 'Player One detected...';
   const clips = [...a1.animations, ...a2.animations];
   const idle = clips.find(c => c.name === 'Idle_Loop');
 
-  const world = new World(scene, natureG, quality);
+  const world = new World(scene, natureG, new VillageKit(villageG), quality);
   const effects = new Effects(scene);
-  const rig = new CameraRig(camera);
+  const rig = new CameraRig(camera, world);
   const hud = new Hud(camera);
-  const enemies = spawnSlimes(scene);
+  const enemies = spawnSlimes(scene, Z1.field);
+  const boss = new SlimeKing(scene, Z1.arena.clone().add(new THREE.Vector3(-4, 0, 0)), world, effects);
+  enemies.push(boss);
   let hitStop = 0;
-  let kills = 0;
   const ctx = {
-    world, effects, hud, enemies, camera: rig,
+    world, effects, hud, enemies, camera: rig, scene, boss,
     hitStop: t => { hitStop = Math.max(hitStop, t); },
-    onKill: () => {
-      kills++;
-      if (kills === 3) hud.objective('Tip: block (Q) right as a slime lunges to PARRY and stun it.');
-      if (kills === 8) hud.objective('Starter Meadow cleared! (Slimes respawn for practice.)');
-    },
+    onKill: e => story.onKill(e),
+    respawnPoint: () => story.respawnPoint(),
   };
   const jasper = buildCharacter(jasperG, 'jasper', idle);
   jasper.grip = captureGrip(jasper.root, clips.find(c => c.name === 'Sword_Idle'));
   const player = new Player(jasper, clips, scene, ctx);
-  rig.yaw = player.facing + Math.PI;
+
+  // Villagers.
+  const npcs = [
+    new NPC(scene, bramG, clips, idle, { name: 'BRAM', color: '#ffb35a', pos: Z1.forge.clone().add(new THREE.Vector3(1.2, 0, 1.4)), ry: -2.4, anim: 'Idle_FoldArms_Loop', hair: 0x6b3a1e, bugged: { anim: 'Idle_Talking_Loop' } }, world),
+    new NPC(scene, vfG, clips, idle, { name: 'NIA', color: '#ff8ae8', pos: new THREE.Vector3(-11.4, 0, -8.6), ry: 0.9, anim: 'Idle_Loop', hair: 0x2a1a12, tint: 0xd9c4ff, bugged: { anim: 'Idle_No_Loop' } }, world),
+    new NPC(scene, vmG, clips, idle, { name: 'TOMM', color: '#9cff5a', pos: new THREE.Vector3(9, 0, 3), ry: -1.2, anim: 'Farm_Watering', hair: 0xc89a5a, tint: 0xb8ffb0 }, world),
+  ];
+  // NIA is half inside a wall: sink her into the house corner while bugged.
+  npcs[1].root.position.set(0, -0.35, 0);
+  ctx.npcs = npcs;
+
+  const guide = new Guide(scene);
+  const dialogue = new Dialogue();
+  const story = new Story({ player, guide, dialogue, hud, world, npcs, boss, enemies, effects, scene, rig });
+  ctx.patchables = story.ctx.patchables;
+  Object.defineProperty(ctx, 'patchables', { get: () => story.ctx.patchables });
 
   const input = new Input(canvas);
   document.getElementById('loading').classList.add('hidden');
   hud.show();
-  hud.system('> PLAYER ONE DETECTED\n> WELCOME TO ASTER', 3.2);
-  if (!isTouch) setTimeout(() => hud.system('> Click the screen to look around', 2.5), 3600);
+  rig.yaw = Math.PI * 0; // camera behind Jasper (he faces -Z, toward the village)
+
+  // Menu.
+  const menu = document.getElementById('menu');
+  let paused = false;
+  document.getElementById('menu-btn').addEventListener('click', () => { paused = true; menu.classList.remove('hidden'); document.exitPointerLock?.(); });
+  document.getElementById('menu-resume').addEventListener('click', () => { paused = false; menu.classList.add('hidden'); });
+  document.getElementById('menu-restart').addEventListener('click', () => { Story.clearSave(); location.reload(); });
+
+  story.start();
+  if (!isTouch) setTimeout(() => hud.system('> Click the screen to look around', 2.5), 9000);
 
   const clock = new THREE.Clock();
   let t = 0;
-  renderer.setAnimationLoop(() => {
-    let dt = Math.min(clock.getDelta(), 1 / 20);
+  const frame = (rawDt, doRender = true) => {
+    let dt = Math.min(rawDt, 1 / 20);
+    if (paused) { if (doRender) renderer.render(scene, camera); return; }
     t += dt;
     input.update();
     if (hitStop > 0) { hitStop -= dt; dt *= 0.08; }
-    player.update(dt, input, rig.yaw);
-    for (const e of enemies) {
-      const atk = e.update(dt, t, player, world);
-      if (atk && player.pos.distanceTo(e.pos) < 2.1) player.damage(atk.damage, atk.from, atk.enemy);
+
+    // Talking: F / TALK near a villager starts dialogue; otherwise F jumps.
+    const talking = dialogue.active || story.busy;
+    let near = null;
+    if (!talking && player.state === 'move') {
+      let bd = 2.8;
+      for (const n of npcs) { const d = n.pos.distanceTo(player.pos); if (d < bd) { bd = d; near = n; } }
     }
-    // Bodies don't overlap: push Jasper and slimes apart.
+    hud.talkPrompt(near ? near.name : null);
+    if (!talking && input.pressed.has('talk')) {
+      input.pressed.delete('talk');
+      if (near) story.talk(near); else input.pressed.add('jump');
+    }
+    dialogue.update(dt, input);
+    const pIn = dialogue.active || story.busy ? NO_INPUT : input;
+
+    player.update(dt, pIn, rig.yaw);
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      const e = enemies[i];
+      if (e.gone) { scene.remove(e.group); enemies.splice(i, 1); continue; }
+      const atk = dialogue.active ? null : e.update(dt, t, player, world);
+      if (atk && player.pos.distanceTo(e.pos) < (atk.aoe || 2.1)) player.damage(atk.damage, atk.from, atk.enemy);
+    }
+    // Bodies don't overlap: push Jasper and enemies apart.
     for (const e of enemies) {
       if (!e.alive || !player.alive) continue;
-      const dx = player.pos.x - e.pos.x, dz = player.pos.z - e.pos.z, d = Math.hypot(dx, dz), min = 1.0;
+      const dx = player.pos.x - e.pos.x, dz = player.pos.z - e.pos.z, d = Math.hypot(dx, dz), min = (e.radius || 0.5) + 0.5;
       if (d < min && d > 1e-4) {
         const push = (min - d) / 2, nx = dx / d, nz = dz / d;
         player.pos.x += nx * push; player.pos.z += nz * push;
-        if (e.frozen <= 0) { e.pos.x -= nx * push; e.pos.z -= nz * push; } else { player.pos.x += nx * push; player.pos.z += nz * push; }
+        if (e.frozen <= 0 && !e.isBoss) { e.pos.x -= nx * push; e.pos.z -= nz * push; } else { player.pos.x += nx * push; player.pos.z += nz * push; }
       }
     }
+    for (const n of npcs) n.update(dt, camera);
+    guide.update(dt, t, player.pos, player.facing, camera);
     effects.update(dt);
     world.update(dt, t, player.pos);
-    rig.update(dt, input, player.pos);
+    story.update(dt, t);
+    rig.update(dt, input, player.pos, boss.alive ? 1.45 : 1, dialogue.active && story.talkNpc ? story.talkNpc.pos : null);
     // Fade slimes that get between the camera and Jasper.
     for (const e of enemies) {
-      const near = camera.position.distanceTo(e.group.position) < 3.2;
-      e.mat.opacity += ((near ? 0.25 : 0.92) - e.mat.opacity) * Math.min(1, dt * 10);
+      const near2 = camera.position.distanceTo(e.group.position) < 3.2 + (e.radius || 0);
+      e.mat.opacity += ((near2 ? 0.25 : 0.92) - e.mat.opacity) * Math.min(1, dt * 10);
     }
     hud.update(dt, player);
+    document.getElementById('hint').style.visibility = dialogue.active ? 'hidden' : '';
     input.endFrame();
-    renderer.render(scene, camera);
-  });
-  window.__game = { player, enemies, rig, scene, renderer };
+    if (doRender) renderer.render(scene, camera);
+  };
+  renderer.setAnimationLoop(() => frame(clock.getDelta()));
+  window.__step = (dt, n = 1) => { for (let i = 0; i < n; i++) frame(dt, false); }; // test hook
+  window.__game = { player, enemies, rig, scene, renderer, story, npcs, world, boss, dialogue, hud, guide, input, ctx };
 }
 
 boot().catch(err => {

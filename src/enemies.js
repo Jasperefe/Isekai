@@ -119,6 +119,7 @@ export class Slime {
 
   update(dt, t, player, world) {
     if (this.dead) {
+      if (this.noRespawn && this.deathT > 1) { this.group.visible = false; this.gone = true; return null; }
       this.deathT += dt;
       const k = Math.max(0, 1 - this.deathT / 0.35);
       this.group.scale.set(1 + (1 - k) * 0.8, k, 1 + (1 - k) * 0.8);
@@ -172,7 +173,7 @@ export class Slime {
     this.pos.addScaledVector(this.knock, dt); this.knock.multiplyScalar(Math.pow(0.02, dt));
     world.resolve(this.pos, 0.5);
     const hop = this.frozen > 0 || this.stunned > 0 ? 0 : Math.max(0, Math.sin((this.hopT % 1) * Math.PI)) * 0.55;
-    this.group.position.set(this.pos.x, heightAt(this.pos.x, this.pos.z) + hop, this.pos.z);
+    this.group.position.set(this.pos.x, world.groundAt(this.pos.x, this.pos.z) + hop, this.pos.z);
     this.group.rotation.y = this.facing;
     const squash = this.frozen > 0 ? 1 : this.windup > 0 ? 0.7 : 1 + Math.sin(this.hopT * Math.PI * 2) * 0.12;
     this.body.scale.set(1 / Math.sqrt(squash), squash, 1 / Math.sqrt(squash));
@@ -195,10 +196,9 @@ export class Slime {
   }
 }
 
-export function spawnSlimes(scene) {
+export function spawnSlimes(scene, center) {
   const spots = [
-    [8, 10, false], [-9, 12, false], [12, -6, false], [-14, -4, true], [4, -15, false],
-    [-6, -18, true], [20, 8, false], [-20, 14, true],
+    [-6, 3, false], [5, 5, false], [8, -4, false], [-3, -7, true], [0, 9, false], [12, 6, true], [-10, -2, false],
   ];
-  return spots.map(([x, z, g]) => new Slime(scene, new THREE.Vector3(x, 0, z), g));
+  return spots.map(([x, z, g]) => new Slime(scene, new THREE.Vector3(center.x + x, 0, center.z + z), g));
 }

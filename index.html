@@ -26,13 +26,22 @@
     <div class="bar st"><div id="st-fill"></div></div>
     <div class="bar xp"><div id="xp-fill"></div></div>
   </div>
-  <div id="objective">Defeat the slimes in Starter Meadow.</div>
+  <div id="quest"><div class="qt" id="quest-title"></div><div class="qx" id="quest-text"></div></div>
+  <button id="menu-btn" aria-label="Menu">&#9776;</button>
+  <div id="menu" class="hidden"><div class="mbox"><b>PAUSED</b><button id="menu-resume">Resume</button><button id="menu-restart">Restart story</button></div></div>
+  <div id="toast" class="hidden"><small id="toast-kicker"></small><b id="toast-title"></b><span id="toast-text"></span></div>
+  <div id="subtitle" class="hidden"></div>
+  <div id="bossbar" class="hidden"><div class="bname" id="boss-name">SLIME KING</div><div class="bbar"><div id="boss-fill"></div></div></div>
+  <div id="talk-prompt" class="hidden"></div>
+  <div id="dialogue" class="hidden"><div class="dname"></div><div class="dtext"></div><div class="dnext">&#9660;</div></div>
+  <div id="cinematic" class="hidden"><pre id="cine-text"></pre></div>
+  <div id="zone-done" class="hidden"><div class="zbox"><small>ZONE 1</small><h1>STARTER MEADOW CLEARED</h1><p id="zone-stats"></p><p>Next: <b>Glitchwood Forest</b> (coming in the next milestone)</p><button id="zone-continue">Keep exploring</button></div></div>
   <div id="tutorial" class="hidden"></div>
   <div id="system-msg"></div>
   <div id="combo"></div>
   <div id="float-layer"></div>
   <div id="chips"><span id="chip-patch">E PATCH</span><span id="chip-skill">R BLADE STORM</span></div>
-  <div id="hint">WASD move · Mouse look · Keep clicking = 8-move chain · Click+Right-click = Pommel Bash · Click,Click+Right-click = Glitch Breaker · Right-click heavy · Q block / parry then click = COUNTER · Space dodge (while sprinting = slide) · Dodge+click = dash strike · Jump+click = slam · R Blade Storm · E Patch · F jump · X draw / put away sword</div>
+  <div id="hint">WASD move · Mouse look · Keep clicking = 8-move chain · Click+Right-click = Pommel Bash · Click,Click+Right-click = Glitch Breaker · Right-click heavy · Q block / parry then click = COUNTER · Space dodge (while sprinting = slide) · Dodge+click = dash strike · Jump+click = slam · R Blade Storm · E Patch · F talk / jump · X draw / put away sword</div>
   <div id="death" class="hidden"><div>GAME OVER?</div><small>Respawning...</small></div>
 </div>
 
@@ -47,6 +56,9 @@
     <button id="btn-block" class="btn">BLOCK</button>
     <button id="btn-skill" class="btn skill">SKILL<span class="cd" id="skill-cd"></span></button>
     <button id="btn-sword" class="btn">SWORD</button>
+  </div>
+  <button id="btn-talk" class="btn hidden">TALK</button>
+  <div>
   </div>
 </div>
 

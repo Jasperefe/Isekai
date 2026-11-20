@@ -2,20 +2,21 @@
 // usage: node build-assets.mjs <viewerModelDir> <ual1.glb> <ual2.glb> <natureGltfDir> <outDir>
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, EXTMeshoptCompression } from '@gltf-transform/extensions';
-import { mergeDocuments, unpartition, dedup, prune, resample, textureCompress, meshopt, weld } from '@gltf-transform/functions';
-import { MeshoptEncoder, MeshoptDecoder } from 'meshoptimizer';
+import { mergeDocuments, unpartition, dedup, prune, resample, textureCompress, meshopt, weld, simplify } from '@gltf-transform/functions';
+import { MeshoptEncoder, MeshoptDecoder, MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
 import path from 'node:path';
 import fs from 'node:fs';
 
-const [, , M, UAL1, UAL2, NATURE, OUT] = process.argv;
+const [, , M, UAL1, UAL2, NATURE, OUT, VILLAGE] = process.argv;
 fs.mkdirSync(OUT, { recursive: true });
-await MeshoptEncoder.ready; await MeshoptDecoder.ready;
+await MeshoptEncoder.ready; await MeshoptDecoder.ready; await MeshoptSimplifier.ready;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
   'meshopt.encoder': MeshoptEncoder, 'meshopt.decoder': MeshoptDecoder,
 });
 
-async function finish(doc, file, texSize = 1024) {
+async function finish(doc, file, texSize = 1024, simplifyRatio = 0) {
+  if (simplifyRatio) await doc.transform(weld(), simplify({ simplifier: MeshoptSimplifier, ratio: simplifyRatio, error: 0.03, lockBorder: false }));
   await doc.transform(
     dedup(), prune(), resample(),
     textureCompress({ encoder: sharp, targetFormat: 'webp', resize: [texSize, texSize], quality: 80 }),
@@ -66,9 +67,47 @@ async function anims(file, keep, out) {
   await io.write(path.join(OUT, out), doc);
   console.log(out, (fs.statSync(path.join(OUT, out)).size / 1024).toFixed(0) + ' KB', doc.getRoot().listAnimations().map(a => a.getName()).join(','));
 }
-await anims(UAL1, ['Idle_Loop', 'Jog_Fwd_Loop', 'Sprint_Loop', 'Walk_Loop', 'Jump_Start', 'Jump_Loop', 'Jump_Land', 'Roll',
+await anims(UAL1, ['Idle_Talking_Loop', 'Interact', 'Sitting_Idle_Loop', 'Idle_Loop', 'Jog_Fwd_Loop', 'Sprint_Loop', 'Walk_Loop', 'Jump_Start', 'Jump_Loop', 'Jump_Land', 'Roll',
   'Death01', 'Hit_Chest', 'Sword_Attack', 'Sword_Idle', 'Spell_Simple_Shoot', 'Punch_Jab', 'Punch_Cross', 'Spell_Simple_Enter'], 'anims1.glb');
-await anims(UAL2, ['Sword_Regular_A', 'Sword_Regular_A_Rec', 'Sword_Regular_B', 'Sword_Regular_B_Rec', 'Sword_Regular_C', 'Sword_Dash', 'Sword_Block', 'Sword_Heavy_Combo', 'Melee_Hook', 'Hit_Knockback', 'OverhandThrow', 'Slide_Start', 'Slide_Exit'], 'anims2.glb');
+await anims(UAL2, ['Sword_Regular_A', 'Sword_Regular_A_Rec', 'Sword_Regular_B', 'Sword_Regular_B_Rec', 'Sword_Regular_C', 'Sword_Dash', 'Sword_Block', 'Sword_Heavy_Combo', 'Melee_Hook', 'Hit_Knockback', 'OverhandThrow', 'Slide_Start', 'Slide_Exit',
+  'LayToIdle', 'Idle_FoldArms_Loop', 'Farm_Watering', 'TreeChopping_Loop', 'Yes', 'Idle_No_Loop', 'Chest_Open'], 'anims2.glb');
+
+// Generic library: one top-level node per source file.
+async function library(dir, names, out, texSize) {
+  const doc = await io.read(`${dir}/${names[0]}.gltf`);
+  const label = (d, nm) => { const sc = d.getRoot().listScenes()[0]; const kids = sc.listChildren(); const g = d.createNode(nm); kids.forEach(k => { sc.removeChild(k); g.addChild(k); }); sc.addChild(g); };
+  label(doc, names[0]);
+  for (const nm of names.slice(1)) { const d = await io.read(`${dir}/${nm}.gltf`); label(d, nm); mergeDocuments(doc, d); }
+  const root = doc.getRoot();
+  const [main, ...rest] = root.listScenes();
+  for (const sc of rest) { for (const n of sc.listChildren()) main.addChild(n); sc.dispose(); }
+  root.setDefaultScene(main);
+  await doc.transform(unpartition(), weld());
+  await finish(doc, out, texSize);
+}
+
+if (VILLAGE) {
+  await library(VILLAGE, ['Wall_Plaster_Straight', 'Wall_Plaster_Door_Round', 'Wall_Plaster_Window_Wide_Round', 'Wall_Plaster_WoodGrid',
+    'Wall_UnevenBrick_Straight', 'Wall_UnevenBrick_Door_Round', 'Wall_UnevenBrick_Window_Wide_Round', 'Corner_Exterior_Wood', 'Corner_Exterior_Brick',
+    'Roof_RoundTiles_4x4', 'Roof_RoundTiles_4x6', 'Roof_Front_Brick4', 'Door_1_Round', 'Window_Wide_Round1', 'WindowShutters_Wide_Round_Open',
+    'Prop_Crate', 'Prop_Wagon', 'Prop_WoodenFence_Single', 'Prop_Chimney', 'Prop_Vine1', 'Floor_WoodDark', 'Floor_Brick', 'Prop_Support', 'Wall_BottomCover'],
+    'village.glb', 512);
+}
+
+// NPCs (smaller textures).
+{
+  const doc = await mergeFiles([`${M}/Superhero_Male_FullBody.gltf`, `${M}/Male_Peasant.gltf`, `${M}/Hair_Buzzed.gltf`, `${M}/Hair_Beard.gltf`]);
+  await finish(doc, 'bram.glb', 512);
+}
+{
+  const doc = await mergeFiles([`${M}/Superhero_Female_FullBody.gltf`, `${M}/Female_Peasant.gltf`, `${M}/Hair_Buns.gltf`]);
+  await finish(doc, 'villager_f.glb', 512);
+}
+{
+  const doc = await mergeFiles([`${M}/Superhero_Male_FullBody.gltf`, `${M}/Male_Ranger.gltf`, `${M}/Hair_SimpleParted.gltf`]);
+  removeMeshNodes(doc, /Pauldron|Hood/);
+  await finish(doc, 'villager_m.glb', 512);
+}
 
 // Nature props: one file, one top-level node per prop.
 {
@@ -87,5 +126,5 @@ await anims(UAL2, ['Sword_Regular_A', 'Sword_Regular_A_Rec', 'Sword_Regular_B', 
   for (const s of rest) { for (const n of s.listChildren()) main.addChild(n); s.dispose(); }
   root.setDefaultScene(main);
   await doc.transform(unpartition(), weld());
-  await finish(doc, 'nature.glb', 512);
+  await finish(doc, 'nature.glb', 512, 0.4);
 }

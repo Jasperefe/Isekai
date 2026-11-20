@@ -2,9 +2,19 @@
 
 A 3D isekai mini RPG for the web (Three.js), built for CrazyGames and Playgama.
 
-## Milestone 1: core prototype
+## Milestone 2: Zone 1, Starter Meadow (story)
 
-Play as Jasper in Starter Meadow and fight slimes. Jasper carries his sword on his back and draws it when a fight starts; it goes back 4 s after the last attack, or press X / SWORD any time.
+Jasper wakes up in Aster, meets GUIDE, and plays through the first chapter:
+
+1. **Wake Up, Player One:** intro cinematic, follow the path to the village.
+2. **A Loop Too Long:** Bram the blacksmith is stuck in a dialogue loop. PATCH him to get the Debug Blade.
+3. **Slimes in the Field:** defeat 5 slimes in the east field (unlocks Blade Storm).
+4. **The Broken Bridge:** the bridge's middle is deleted. PATCH it to rebuild it.
+5. **Big Slime Problem:** boss fight with the Slime King. When he turns huge ("Unscaled") he is immune: PATCH him back, then hit him for double damage.
+
+Side quest: Nia is stuck inside a wall in the village (PATCH her). Tomm only has one line.
+Save crystals save progress and heal you. Progress is saved in the browser; use the menu (top right) to restart the story.
+Jasper starts bare-handed (punch combo); the sword and other buttons unlock as the story goes.
 
 | Action | PC | Phone |
 | --- | --- | --- |
@@ -17,8 +27,9 @@ Play as Jasper in Starter Meadow and fight slimes. Jasper carries his sword on h
 | Counter (after a parry) | Click within 1.2 s | ATK |
 | Dodge / Slide sweep (while sprinting) | Space | DASH |
 | Dash strike | Click during a dodge, or while sprinting | ATK |
-| Jump slam | F, then click in the air | JUMP, ATK |
+| Jump slam | F (away from villagers), then click in the air | JUMP, ATK |
 | Blade Storm (4-hit spin) | R | SKILL |
+| Talk | F (near a villager) | TALK |
 | Patch | E | PATCH |
 | Draw / put away sword | X | SWORD |
 
@@ -49,4 +60,4 @@ The game must be served over HTTP (not opened as a file):
 
 ## Credits
 
-All 3D models and animations are by Quaternius (CC0): Universal Base Characters, Modular Character Outfits (Fantasy), Universal Animation Library 1 and 2, and Stylized Nature MegaKit.
+All 3D models and animations are by Quaternius (CC0): Universal Base Characters, Modular Character Outfits (Fantasy), Universal Animation Library 1 and 2, Stylized Nature MegaKit and Medieval Village MegaKit.

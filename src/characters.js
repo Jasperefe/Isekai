@@ -138,21 +138,22 @@ function victoryExtras(root) {
 }
 
 // gltf: loaded GLTF of the merged character. idleClip: pose used while attaching props.
-export function buildCharacter(gltf, kind, idleClip) {
+export function buildCharacter(gltf, kind, idleClip, opts = {}) {
   const root = gltf.scene;
-  const hairColor = kind === 'jasper' ? 0x241a14 : 0xe9c27a;
+  const hairColor = opts.hair ?? (kind === 'jasper' ? 0x241a14 : 0xe9c27a);
   const skeleton = unifySkeleton(root);
   root.traverse(o => {
     if (!o.isMesh) return;
     o.castShadow = true; o.frustumCulled = false;
     if (/superhero/i.test(o.name) && o.isSkinnedMesh && !/eye/i.test(o.name)) trimToHead(o);
     if (o.material && /Hair/i.test(o.material.name)) { o.material = o.material.clone(); o.material.color.set(hairColor); }
+    if (opts.tint && o.material && !/Hair|Eye|Superhero|Regular/i.test(o.material.name)) { o.material = o.material.clone(); o.material.color.multiply(new THREE.Color(opts.tint)); }
   });
   // Pose once in idle so props line up with the hands, then attach.
   const mixer = new THREE.AnimationMixer(root);
   mixer.clipAction(idleClip).play(); mixer.update(0.6);
   root.updateMatrixWorld(true);
-  const extras = kind === 'jasper' ? jasperExtras(root) : victoryExtras(root);
+  const extras = kind === 'jasper' ? jasperExtras(root) : kind === 'victory' ? victoryExtras(root) : {};
   mixer.stopAllAction(); mixer.uncacheRoot(root);
   return { root, skeleton, ...extras };
 }

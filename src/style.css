@@ -21,7 +21,38 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1020; fon
 .bar.st { height: 8px; } .bar.st > div { background: linear-gradient(90deg, #f5c542, #ffe28a); }
 .bar.xp { height: 5px; } .bar.xp > div { background: #29e6ff; }
 #hp-text { position: absolute; inset: 0; font-size: 10px; line-height: 13px; text-align: center; font-weight: 700; }
-#objective { position: absolute; top: 14px; right: 14px; background: #00000070; border-left: 3px solid #29e6ff; padding: 8px 12px; font-size: 13px; max-width: 42vw; }
+#quest { position: absolute; top: 14px; right: 62px; background: #00000070; border-left: 3px solid #29e6ff; padding: 7px 12px; font-size: 13px; max-width: 40vw; }
+#quest .qt { font-size: 10px; letter-spacing: 2px; color: #29e6ff; font-weight: 800; text-transform: uppercase; }
+#quest .qx { margin-top: 2px; }
+#quest .qd { color: #ffe28a; font-weight: 700; margin-left: 6px; }
+#menu-btn { position: absolute; top: 12px; right: 14px; width: 40px; height: 40px; border-radius: 8px; border: 1px solid #ffffff50; background: #00000070; color: #fff; font-size: 20px; pointer-events: auto; padding: 0; }
+#menu { position: absolute; inset: 0; background: #000a; display: flex; align-items: center; justify-content: center; pointer-events: auto; z-index: 30; }
+.mbox, .zbox { background: #0b1020; border: 2px solid #29e6ff; border-radius: 10px; padding: 18px 24px; display: flex; flex-direction: column; gap: 10px; min-width: 220px; text-align: center; }
+.mbox button, .zbox button { padding: 10px; border-radius: 6px; border: 1px solid #29e6ff; background: #10183a; color: #fff; font-weight: 700; font-size: 14px; }
+#toast { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); background: #0b1020e6; border: 2px solid #ffe28a; border-radius: 8px; padding: 8px 18px; text-align: center; display: flex; flex-direction: column; gap: 2px; animation: toastIn .35s ease-out; max-width: 70vw; }
+#toast small { color: #ffe28a; font-size: 10px; letter-spacing: 3px; font-weight: 800; }
+#toast b { font-size: 18px; letter-spacing: 1px; }
+#toast span { font-size: 13px; opacity: .9; }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, -12px); } }
+#subtitle { position: absolute; bottom: 30%; left: 50%; transform: translateX(-50%); max-width: 60vw; background: #0b1020d0; border-left: 3px solid #29e6ff; padding: 6px 12px; font-size: 14px; }
+#bossbar { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); width: min(380px, 40vw); text-align: center; }
+#bossbar .bname { font-weight: 900; letter-spacing: 3px; font-size: 13px; color: #ff8ae8; text-shadow: 0 1px 3px #000; }
+#bossbar .bbar { height: 12px; background: #000a; border: 1px solid #ff2bd6; border-radius: 3px; overflow: hidden; margin-top: 3px; }
+#boss-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ff2bd6, #7a3cff); transition: width .15s; }
+#talk-prompt { position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%); background: #0b1020d0; border: 1px solid #29e6ff; border-radius: 6px; padding: 6px 12px; font-weight: 700; font-size: 14px; }
+#talk-prompt b { color: #29e6ff; }
+#dialogue { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(720px, 92vw); min-height: 92px; background: #0b1020ee; border: 2px solid #29e6ff; border-radius: 10px; padding: 10px 16px 14px; pointer-events: auto; z-index: 12; }
+#dialogue.glitch { border-color: #ff2bd6; animation: shake .2s infinite; }
+@keyframes shake { 50% { transform: translateX(calc(-50% + 2px)); } }
+#dialogue .dname { font-weight: 900; letter-spacing: 2px; font-size: 13px; }
+#dialogue .dtext { font-size: 16px; line-height: 1.4; margin-top: 4px; min-height: 44px; }
+#dialogue .dnext { position: absolute; right: 14px; bottom: 6px; font-size: 12px; color: #29e6ff; animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+#cinematic { position: fixed; inset: 0; background: #000; display: flex; align-items: center; justify-content: center; z-index: 15; transition: opacity .8s; }
+#cinematic pre { color: #29e6ff; font-size: 18px; text-shadow: 0 0 8px #29e6ff88; white-space: pre-wrap; }
+#zone-done { position: absolute; inset: 0; background: #000b; display: flex; align-items: center; justify-content: center; pointer-events: auto; z-index: 20; }
+.zbox small { color: #29e6ff; letter-spacing: 4px; font-weight: 800; }
+.zbox h1 { margin: 0; font-size: 26px; letter-spacing: 2px; text-shadow: 2px 0 #ff2bd6, -2px 0 #29e6ff; }
 #system-msg { position: absolute; top: 24%; left: 50%; transform: translateX(-50%); max-width: 46vw; font-family: ui-monospace, monospace; font-size: 16px; background: #0b1020b0; padding: 6px 10px; border-radius: 4px; color: #29e6ff; text-shadow: 0 0 8px #29e6ff99; text-align: center; opacity: 0; transition: opacity .4s; white-space: pre-wrap; }
 #system-msg.show { opacity: 1; }
 #hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 12px; opacity: .75; background: #00000060; padding: 6px 12px; border-radius: 4px; white-space: nowrap; }
@@ -63,7 +94,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1020; fon
 
 @media (pointer: coarse) { #hint, #chips { display: none; } #system-msg { left: 64%; max-width: 40vw; } }
 
-#combo { position: absolute; right: 22px; top: 38%; font-weight: 900; font-style: italic; font-size: 22px; color: #fff; text-shadow: 2px 0 #ff2bd6, -2px 0 #29e6ff; opacity: 0; text-align: right; }
+#combo { position: absolute; right: 22px; top: 30%; font-weight: 900; font-style: italic; font-size: 22px; color: #fff; text-shadow: 2px 0 #ff2bd6, -2px 0 #29e6ff; opacity: 0; text-align: right; }
 #combo b { font-size: 46px; }
 #combo small { display: block; font-size: 14px; color: #ffe28a; letter-spacing: 2px; }
 #combo.show { animation: pop 1.6s ease-out forwards; }
@@ -76,3 +107,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1020; fon
 .btn.ready { animation: pulse 0.8s ease-in-out infinite; background: #29e6ff; color: #0b1020 !important; }
 #chips span.ready { background: #29e6ff; color: #0b1020; animation: pulse 0.8s ease-in-out infinite; }
 @keyframes pulse { 50% { transform: scale(1.12); box-shadow: 0 0 18px #29e6ff; } }
+
+#btn-talk { position: absolute; right: calc(260px + env(safe-area-inset-right)); bottom: 24px; width: 70px; height: 70px; font-size: 13px; border-color: #29e6ff; background: #29e6ffcc; color: #0b1020; pointer-events: auto; animation: pulse 1s infinite; }
+@media (pointer: coarse) { #talk-prompt { display: none !important; } #quest { max-width: 34vw; font-size: 12px; } #dialogue .dtext { font-size: 14px; } }
+@media (pointer: fine) { #btn-talk { display: none !important; } }
