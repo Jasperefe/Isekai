@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>ISEKAI</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Cpath d=%22M6 3v24l6-6 4 9 4-2-4-9h9z%22 fill=%22%2329e6ff%22/%3E%3C/svg%3E">
+<link rel="stylesheet" href="src/style.css">
+<script type="importmap">
+{ "imports": { "three": "./lib/three.module.min.js", "three/addons/": "./lib/addons/" } }
+</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="loading">
+  <div class="load-title">ISEKAI</div>
+  <div class="load-sub" id="load-text">Loading world...</div>
+  <div class="load-bar"><div id="load-fill"></div></div>
+</div>
+
+<div id="hud" class="hidden">
+  <div id="bars">
+    <div class="name">JASPER <span id="lvl">LV 1</span></div>
+    <div class="bar hp"><div id="hp-fill"></div><span id="hp-text">100 / 100</span></div>
+    <div class="bar st"><div id="st-fill"></div></div>
+    <div class="bar xp"><div id="xp-fill"></div></div>
+  </div>
+  <div id="objective">Defeat the slimes in Starter Meadow</div>
+  <div id="system-msg"></div>
+  <div id="float-layer"></div>
+  <div id="hint">WASD move · Mouse look · Click attack · Right-click heavy · Space dodge · E Patch · Shift sprint · F jump</div>
+  <div id="death" class="hidden"><div>GAME OVER?</div><small>Respawning...</small></div>
+</div>
+
+<div id="touch" class="hidden">
+  <div id="stick-zone"><div id="stick-base"><div id="stick-knob"></div></div></div>
+  <div id="buttons">
+    <button id="btn-attack" class="btn big">ATK</button>
+    <button id="btn-heavy" class="btn">HVY</button>
+    <button id="btn-dash" class="btn">DASH</button>
+    <button id="btn-patch" class="btn patch">PATCH<span class="cd" id="patch-cd"></span></button>
+    <button id="btn-jump" class="btn">JUMP</button>
+  </div>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
