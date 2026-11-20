@@ -118,7 +118,7 @@ export class Player {
 
   // Sword in hand vs. on the back.
   #arm() {
-    this.combatT = 6;
+    this.combatT = 4;
     if (this.armed) return;
     this.armed = true; this.char.draw?.();
     this.ctx.effects.burst(this.char.tip.getWorldPosition(new THREE.Vector3()), 8, [0, 2], 2);
@@ -217,7 +217,7 @@ export class Player {
       this.stamina = 0;
       this.ctx.hud.float(at, 'GUARD BREAK', 'hurt');
     }
-    this.combatT = 6;
+    this.combatT = 4;
     const armor = this.state === 'act' && this.move?.armor;
     const dmg = armor ? Math.ceil(amount * 0.5) : amount;
     this.hp = Math.max(0, this.hp - dmg);
@@ -340,8 +340,9 @@ export class Player {
     this.skillCd = Math.max(0, this.skillCd - dt);
     this.throwCd = Math.max(0, this.throwCd - dt);
     if (this.armed && this.state === 'move') {
-      const near = this.ctx.enemies.some(e => e.alive && e.pos.distanceTo(this.pos) < 9);
-      if (near) this.combatT = Math.max(this.combatT, 2);
+      // Auto-sheathe 4s after the last attack, unless a slime is right next to Jasper.
+      const close = this.ctx.enemies.some(e => e.alive && e.pos.distanceTo(this.pos) < 3.5);
+      if (close) this.combatT = Math.max(this.combatT, 1);
       this.combatT -= dt;
       if (this.combatT <= 0) this.#disarm();
     }
@@ -365,6 +366,11 @@ export class Player {
       else if (this.state !== 'act' || this.stateT > 0.12) this.#startDash(input, camYaw);
     }
     if (input.consume('throw') && free && this.onGround) this.#startMove('throw', input, camYaw);
+    if (input.consume('sheathe') && free) {
+      if (this.armed) { this.combatT = 0; this.#disarm(); this.ctx.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 1.5, -0.2)), 6, [0, 2], 1.5); }
+      else this.#arm();
+      this.#locomotion();
+    }
     if (input.consume('patch') && free) this.#startPatch();
     if (input.consume('skill') && free && this.onGround) this.#startMove('skill', input, camYaw);
     if (input.consume('heavy')) {
