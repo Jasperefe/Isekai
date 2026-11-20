@@ -32,6 +32,13 @@ export class Hud {
     const m = $('system-msg'); m.textContent = text; m.classList.add('show'); this.msgTimer = time;
   }
 
+  combo(n) {
+    const el = $('combo');
+    if (!n || n < 2) { el.classList.remove('show'); return; }
+    el.innerHTML = `<b>${n}</b> HIT${n >= 8 ? '<small>FINISHER</small>' : ''}`;
+    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  }
+
   objective(text) { $('objective').innerHTML = text; }
 
   float(worldPos, text, cls = '') {

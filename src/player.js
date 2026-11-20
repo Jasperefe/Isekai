@@ -13,9 +13,15 @@ const CFG = {
 
 // Attack moves. hits = clip times (seconds) when the blade connects; end = when the move can chain/finish.
 const MOVES = {
-  A: { clip: 'Sword_Regular_A', ts: 1.2, hits: [0.24], dmg: 10, reach: 2.6, arc: 1.8, lunge: 2.4, rec: 'Sword_Regular_A_Rec', next: 'B', branch: 'bash' },
-  B: { clip: 'Sword_Regular_B', ts: 1.2, hits: [0.24], dmg: 12, reach: 2.6, arc: 1.8, lunge: 2.4, rec: 'Sword_Regular_B_Rec', next: 'C', branch: 'breaker' },
-  C: { clip: 'Sword_Regular_C', ts: 1.3, hits: [0.63], dmg: 20, reach: 3.0, arc: 2.8, lunge: 3.2, end: 1.15, knock: 9, wide: true, color: 0x7ff3ff, shatter: true },
+  // Light chain: keep tapping attack to flow through 8 moves.
+  A: { clip: 'Sword_Regular_A', ts: 1.2, hits: [0.24], dmg: 10, reach: 2.6, arc: 1.8, lunge: 2.4, rec: 'Sword_Regular_A_Rec', next: 'B', branch: 'bash', step: 1 },
+  B: { clip: 'Sword_Regular_B', ts: 1.2, hits: [0.24], dmg: 11, reach: 2.6, arc: 1.8, lunge: 2.4, rec: 'Sword_Regular_B_Rec', next: 'jab', branch: 'breaker', step: 2 },
+  jab: { clip: 'Punch_Jab', ts: 1.5, hits: [0.16], dmg: 7, reach: 2.0, arc: 1.6, lunge: 2.0, end: 0.42, next: 'hook', noSlash: true, punch: true, step: 3 },
+  hook: { clip: 'Melee_Hook', ts: 1.1, hits: [0.25], dmg: 9, reach: 2.1, arc: 1.8, lunge: 2.2, end: 0.47, next: 'spin1', noSlash: true, punch: true, stun: 0.5, step: 4 },
+  spin1: { clip: 'Sword_Heavy_Combo', ts: 1.35, from: 0.85, hits: [1.17], dmg: 13, reach: 2.8, arc: 2.6, lunge: 2.4, end: 1.45, next: 'spin2', wide: true, color: 0x7ff3ff, step: 5 },
+  spin2: { clip: 'Sword_Heavy_Combo', ts: 1.35, from: 1.5, hits: [1.78], dmg: 14, reach: 2.8, arc: 2.6, lunge: 2.4, end: 2.05, next: 'stab', wide: true, color: 0x7ff3ff, step: 6 },
+  stab: { clip: 'Sword_Dash', ts: 1.3, hits: [0.3], dmg: 16, reach: 3.2, arc: 1.4, lunge: 8, lungeT: 0.15, end: 0.75, next: 'C', knock: 6, step: 7 },
+  C: { clip: 'Sword_Regular_C', ts: 1.3, hits: [0.63], dmg: 24, reach: 3.2, arc: 3.0, lunge: 3.2, end: 1.15, knock: 10, wide: true, color: 0xffe28a, shatter: true, shock: true, step: 8, name: 'FINISHER!' },
   heavy: { clip: 'Sword_Attack', ts: 1.15, hits: [0.38], dmg: 26, reach: 3.2, arc: 3.2, lunge: 2.6, end: 1.05, knock: 10, wide: true, color: 0xffe28a, shock: true, shatter: true },
   dashAtk: { clip: 'Sword_Dash', ts: 1.25, hits: [0.3], dmg: 22, reach: 3.2, arc: 2.4, lunge: 8, lungeT: 0.15, end: 0.95, knock: 8, wide: true },
   bash: { clip: 'Melee_Hook', ts: 1.0, hits: [0.24], dmg: 8, reach: 2.2, arc: 1.8, lunge: 2.0, end: 0.47, stun: 1.4, color: 0xffffff, name: 'POMMEL BASH' },
@@ -46,7 +52,8 @@ export class Player {
     this.facing = Math.PI; this.state = 'move'; this.stateT = 0;
     this.queued = false; this.invuln = 0; this.patchCd = 0; this.skillCd = 0; this.throwCd = 0; this.current = null;
     this.riposteT = 0; this.projectiles = [];
-    this.play('Sword_Idle', 0);
+    this.armed = true; this.combatT = 0; this.comboCount = 0;
+    this.#disarm(); this.play('Idle_Loop', 0);
   }
 
   get alive() { return this.state !== 'dead'; }
@@ -61,7 +68,7 @@ export class Player {
     return next;
   }
 
-  #toMove() { this.state = 'move'; this.stateT = 0; this.queued = false; this.move = null; this.#locomotion(); }
+  #toMove() { this.state = 'move'; this.stateT = 0; this.queued = false; this.move = null; this.ctx.hud.combo(0); this.#locomotion(); }
 
   #moveDir(input, camYaw) {
     const f = new THREE.Vector3(-Math.sin(camYaw), 0, -Math.cos(camYaw));
@@ -104,7 +111,23 @@ export class Player {
     if (m.name) this.ctx.hud.float(this.pos.clone().add(new THREE.Vector3(0, 2.3, 0)), m.name, 'xp');
     if (m.invuln) this.invuln = 0.6;
     this.state = 'act'; this.move = m; this.moveKey = key; this.stateT = 0; this.queued = false; this.queuedBranch = false; this.hitIdx = 0;
-    this.action = this.play(m.clip, 0.07, m.ts);
+    this.action = this.play(m.clip, 0.07, m.ts, m.from || 0);
+    if (m.step) { this.comboCount = m.step; this.ctx.hud.combo(m.step); }
+    this.#arm();
+  }
+
+  // Sword in hand vs. on the back.
+  #arm() {
+    this.combatT = 6;
+    if (this.armed) return;
+    this.armed = true; this.char.draw?.();
+    this.ctx.effects.burst(this.char.tip.getWorldPosition(new THREE.Vector3()), 8, [0, 2], 2);
+  }
+
+  #disarm() {
+    if (!this.armed) return;
+    this.armed = false; this.char.sheathe?.();
+    if (this.state === 'move') this.#locomotion();
   }
 
   #startDash(input, camYaw) {
@@ -119,11 +142,13 @@ export class Player {
   }
 
   #startBlock() {
+    this.#arm();
     this.state = 'block'; this.stateT = 0;
     this.play('Sword_Block', 0.06, 1.6);
   }
 
   #startAirAttack() {
+    this.#arm();
     this.state = 'air'; this.stateT = 0; this.velY = Math.min(this.velY, 2) - 6;
     this.action = this.play('Sword_Attack', 0.06, 1.3, 0.12);
   }
@@ -154,7 +179,7 @@ export class Player {
   #locomotion() {
     if (!this.onGround) return this.play('Jump_Loop', 0.15);
     const sp = Math.hypot(this.vel.x, this.vel.z);
-    if (sp < 0.3) this.play('Sword_Idle', 0.2);
+    if (sp < 0.3) this.play(this.armed ? 'Sword_Idle' : 'Idle_Loop', 0.3);
     else if (sp < 3.2) this.play('Walk_Loop', 0.2, Math.max(0.8, sp / CFG.walk));
     else if (sp < 6) this.play('Jog_Fwd_Loop', 0.2, sp / CFG.jog);
     else this.play('Sprint_Loop', 0.2, sp / CFG.sprint);
@@ -192,6 +217,7 @@ export class Player {
       this.stamina = 0;
       this.ctx.hud.float(at, 'GUARD BREAK', 'hurt');
     }
+    this.combatT = 6;
     const armor = this.state === 'act' && this.move?.armor;
     const dmg = armor ? Math.ceil(amount * 0.5) : amount;
     this.hp = Math.max(0, this.hp - dmg);
@@ -258,7 +284,7 @@ export class Player {
   respawn() {
     this.hp = this.maxHp; this.stamina = 100; this.pos.set(0, heightAt(0, 0), 0); this.vel.set(0, 0, 0);
     this.state = 'move'; this.invuln = 1.5; this.ctx.hud.death(false);
-    this.current?.stop(); this.current = null; this.play('Sword_Idle', 0);
+    this.current?.stop(); this.current = null; this.#disarm(); this.play('Idle_Loop', 0);
     this.ctx.hud.system('> RESPAWN: save crystal restored');
   }
 
@@ -313,6 +339,12 @@ export class Player {
     this.patchCd = Math.max(0, this.patchCd - dt);
     this.skillCd = Math.max(0, this.skillCd - dt);
     this.throwCd = Math.max(0, this.throwCd - dt);
+    if (this.armed && this.state === 'move') {
+      const near = this.ctx.enemies.some(e => e.alive && e.pos.distanceTo(this.pos) < 9);
+      if (near) this.combatT = Math.max(this.combatT, 2);
+      this.combatT -= dt;
+      if (this.combatT <= 0) this.#disarm();
+    }
     this.riposteT = Math.max(0, this.riposteT - dt);
     this.#updateProjectiles(dt);
     const regen = this.state === 'move' ? 1 : this.state === 'block' ? 0.25 : 0.45;
@@ -453,7 +485,7 @@ export class Player {
     }
 
     this.mixer.update(dt);
-    this.char.grip?.(); // keep the fingers closed around the sword
+    if (this.armed) this.char.grip?.(); // keep the fingers closed around the sword
     this.#applyTransform();
     // Blink while invulnerable after taking a hit.
     this.root.visible = !(this.invuln > 0 && this.state !== 'dash' && Math.floor(this.invuln * 20) % 2 === 0 && this.hp < this.maxHp);

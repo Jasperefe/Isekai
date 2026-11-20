@@ -4,12 +4,12 @@ A 3D isekai mini RPG for the web (Three.js), built for CrazyGames and Playgama.
 
 ## Milestone 1: core prototype
 
-Play as Jasper in Starter Meadow and fight slimes.
+Play as Jasper in Starter Meadow and fight slimes. Jasper carries his sword on his back and draws it when a fight starts; it goes back about 6 s after combat ends.
 
 | Action | PC | Phone |
 | --- | --- | --- |
 | Move / Look | WASD + mouse (click the screen first) | Joystick + drag right side |
-| 3-hit combo | Click x3 | ATK x3 |
+| 8-move chain (slash, backslash, jab, hook, spin, rising spin, stab, finisher) | Keep clicking | Keep tapping ATK |
 | Pommel Bash (stuns) | Click, Right-click | ATK, HVY |
 | Glitch Breaker (ignores glitch resist) | Click, Click, Right-click | ATK, ATK, HVY |
 | Heavy slam (shockwave) | Right-click | HVY |

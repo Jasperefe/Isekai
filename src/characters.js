@@ -93,6 +93,25 @@ function jasperExtras(root) {
   blade.position.set(-0.035, 0.095, 0);
   hand.add(blade);
   const tip = new THREE.Object3D(); tip.position.z = 0.1 + len; blade.add(tip);
+  const handMount = { parent: hand, pos: blade.position.clone(), quat: blade.quaternion.clone() };
+
+  // Back mount: handle over the right shoulder, blade running diagonally down the back.
+  // Built in world space (model faces +Z, back is -Z) at the current pose, then parented to spine_03.
+  const spine = findBone(root, 'spine_03');
+  const sp = spine.getWorldPosition(new THREE.Vector3());
+  const zAxis = new THREE.Vector3(-0.55, -0.9, 0).normalize();     // blade direction (down-left)
+  const xAxis = new THREE.Vector3(0, 0, 1);                         // flat of the blade faces the back
+  const yAxis = new THREE.Vector3().crossVectors(zAxis, xAxis).normalize();
+  xAxis.crossVectors(yAxis, zAxis).normalize();
+  const back = new THREE.Object3D();
+  back.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xAxis, yAxis, zAxis));
+  back.position.set(sp.x + 0.2, sp.y + 0.28, sp.z - 0.17);
+  root.add(back); root.updateMatrixWorld(true); spine.attach(back);
+  const backMount = { parent: spine, pos: back.position.clone(), quat: back.quaternion.clone() };
+  spine.remove(back);
+  const mountTo = m => { m.parent.add(blade); blade.position.copy(m.pos); blade.quaternion.copy(m.quat); };
+  const sheathe = () => mountTo(backMount);
+  const draw = () => mountTo(handMount);
 
   // Floating cursor icon (follows the left hand).
   const shape = new THREE.Shape();
@@ -101,7 +120,7 @@ function jasperExtras(root) {
   const cursor = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.01, bevelEnabled: false }), MAT.cyan);
   const lh = wp('hand_l');
   attachAt(root, cursor, 'hand_l', new THREE.Vector3(lh.x - 0.1, lh.y + 0.12, lh.z + 0.08));
-  return { blade, tip, cursor };
+  return { blade, tip, cursor, sheathe, draw };
 }
 
 function victoryExtras(root) {
