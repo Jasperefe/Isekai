@@ -26,10 +26,11 @@
     <div class="bar st"><div id="st-fill"></div></div>
     <div class="bar xp"><div id="xp-fill"></div></div>
   </div>
-  <div id="objective">Defeat the slimes in Starter Meadow</div>
+  <div id="objective">Defeat the slimes in Starter Meadow.<br><small>Purple = GLITCHED: PATCH it first, then attack.</small></div>
   <div id="system-msg"></div>
   <div id="float-layer"></div>
-  <div id="hint">WASD move · Mouse look · Click attack · Right-click heavy · Space dodge · E Patch · Shift sprint · F jump</div>
+  <div id="chips"><span id="chip-patch">E PATCH</span><span id="chip-skill">R BLADE STORM</span></div>
+  <div id="hint">WASD move · Mouse look · Click attack (x3 combo) · Right-click heavy · Q hold block (tap at hit = PARRY) · Space dodge · Dodge/Sprint + attack = dash strike · Jump + attack = slam · R Blade Storm · E Patch · F jump</div>
   <div id="death" class="hidden"><div>GAME OVER?</div><small>Respawning...</small></div>
 </div>
 
@@ -41,6 +42,8 @@
     <button id="btn-dash" class="btn">DASH</button>
     <button id="btn-patch" class="btn patch">PATCH<span class="cd" id="patch-cd"></span></button>
     <button id="btn-jump" class="btn">JUMP</button>
+    <button id="btn-block" class="btn">BLOCK</button>
+    <button id="btn-skill" class="btn skill">SKILL<span class="cd" id="skill-cd"></span></button>
   </div>
 </div>
 

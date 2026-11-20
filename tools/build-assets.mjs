@@ -68,7 +68,7 @@ async function anims(file, keep, out) {
 }
 await anims(UAL1, ['Idle_Loop', 'Jog_Fwd_Loop', 'Sprint_Loop', 'Walk_Loop', 'Jump_Start', 'Jump_Loop', 'Jump_Land', 'Roll',
   'Death01', 'Hit_Chest', 'Sword_Attack', 'Sword_Idle', 'Spell_Simple_Shoot'], 'anims1.glb');
-await anims(UAL2, ['Sword_Regular_A', 'Sword_Regular_B', 'Sword_Regular_C', 'Sword_Dash', 'Hit_Knockback'], 'anims2.glb');
+await anims(UAL2, ['Sword_Regular_A', 'Sword_Regular_A_Rec', 'Sword_Regular_B', 'Sword_Regular_B_Rec', 'Sword_Regular_C', 'Sword_Dash', 'Sword_Block', 'Sword_Heavy_Combo', 'Melee_Hook', 'Hit_Knockback'], 'anims2.glb');
 
 // Nature props: one file, one top-level node per prop.
 {

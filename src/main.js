@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { Input, isTouch } from './input.js';
 import { World, heightAt } from './world.js';
-import { buildCharacter } from './characters.js';
+import { buildCharacter, captureGrip } from './characters.js';
 import { Player } from './player.js';
 import { spawnSlimes } from './enemies.js';
 import { Effects } from './effects.js';
@@ -81,11 +81,12 @@ async function boot() {
     hitStop: t => { hitStop = Math.max(hitStop, t); },
     onKill: () => {
       kills++;
-      if (kills === 3) hud.objective('Tip: glitched slimes RESIST damage. Press E / PATCH to fix them first.');
+      if (kills === 3) hud.objective('Tip: block (Q) right as a slime lunges to PARRY and stun it.');
       if (kills === 8) hud.objective('Starter Meadow cleared! (Slimes respawn for practice.)');
     },
   };
   const jasper = buildCharacter(jasperG, 'jasper', idle);
+  jasper.grip = captureGrip(jasper.root, clips.find(c => c.name === 'Sword_Idle'));
   const player = new Player(jasper, clips, scene, ctx);
   rig.yaw = player.facing + Math.PI;
 
@@ -105,7 +106,17 @@ async function boot() {
     player.update(dt, input, rig.yaw);
     for (const e of enemies) {
       const atk = e.update(dt, t, player, world);
-      if (atk && player.pos.distanceTo(e.pos) < 1.6) player.damage(atk.damage, atk.from);
+      if (atk && player.pos.distanceTo(e.pos) < 2.1) player.damage(atk.damage, atk.from, atk.enemy);
+    }
+    // Bodies don't overlap: push Jasper and slimes apart.
+    for (const e of enemies) {
+      if (!e.alive || !player.alive) continue;
+      const dx = player.pos.x - e.pos.x, dz = player.pos.z - e.pos.z, d = Math.hypot(dx, dz), min = 1.0;
+      if (d < min && d > 1e-4) {
+        const push = (min - d) / 2, nx = dx / d, nz = dz / d;
+        player.pos.x += nx * push; player.pos.z += nz * push;
+        if (e.frozen <= 0) { e.pos.x -= nx * push; e.pos.z -= nz * push; } else { player.pos.x += nx * push; player.pos.z += nz * push; }
+      }
     }
     effects.update(dt);
     world.update(dt, t, player.pos);

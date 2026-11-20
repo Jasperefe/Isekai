@@ -21,6 +21,10 @@ export class Hud {
     $('xp-fill').style.width = (p.xp / (p.level * 100) * 100) + '%';
     $('lvl').textContent = 'LV ' + p.level;
     const cd = $('patch-cd'); if (cd) cd.style.height = (p.patchCd / 8 * 100) + '%';
+    const sc = $('skill-cd'); if (sc) sc.style.height = (p.skillCd / 6 * 100) + '%';
+    const cp = $('chip-patch'), cs = $('chip-skill');
+    cp.textContent = p.patchCd > 0 ? `E PATCH ${Math.ceil(p.patchCd)}s` : 'E PATCH READY'; cp.classList.toggle('cool', p.patchCd > 0);
+    cs.textContent = p.skillCd > 0 ? `R BLADE STORM ${Math.ceil(p.skillCd)}s` : 'R BLADE STORM'; cs.classList.toggle('cool', p.skillCd > 0 || p.stamina < 40);
     if (this.msgTimer > 0) { this.msgTimer -= dt; if (this.msgTimer <= 0) $('system-msg').classList.remove('show'); }
   }
 
@@ -28,7 +32,7 @@ export class Hud {
     const m = $('system-msg'); m.textContent = text; m.classList.add('show'); this.msgTimer = time;
   }
 
-  objective(text) { $('objective').textContent = text; }
+  objective(text) { $('objective').innerHTML = text; }
 
   float(worldPos, text, cls = '') {
     this.v.copy(worldPos).project(this.camera);

@@ -4,18 +4,24 @@ A 3D isekai mini RPG for the web (Three.js), built for CrazyGames and Playgama.
 
 ## Milestone 1: core prototype
 
-Play as Jasper in Starter Meadow: run, jump, a 3-hit sword combo, heavy attack, Debug Dash (roll), and **Patch** (freeze a glitched slime for 3 s so it takes double damage).
+Play as Jasper in Starter Meadow and fight slimes.
 
 | Action | PC | Phone |
 | --- | --- | --- |
 | Move | WASD / arrows | Left joystick |
 | Look | Mouse (click the screen first) | Drag the right side |
-| Attack | Left click / J | ATK |
-| Heavy attack | Right click / K | HVY |
-| Dodge | Space | DASH |
+| Attack (3-hit combo) | Left click / J | ATK |
+| Heavy attack (shockwave) | Right click / K | HVY |
+| Block (hold) / Parry (block just as a slime lunges) | Q | BLOCK |
+| Dodge (Debug Dash) | Space | DASH |
+| Dash strike | Attack during a dodge or while sprinting | same |
+| Jump slam | Attack in the air | same |
+| Blade Storm (4-hit spin, 40 stamina) | R | SKILL |
 | Patch | E | PATCH |
 | Sprint | Shift | Push the stick fully |
 | Jump | F | JUMP |
+
+**Patch:** purple slimes are GLITCHED and resist damage. Patch removes the glitch for good, freezes the slime for 3 s and makes it take double damage.
 
 ## Run it
 

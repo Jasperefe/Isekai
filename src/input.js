@@ -14,7 +14,7 @@ export class Input {
     addEventListener('keydown', e => {
       if (e.repeat) return;
       this.keys.add(e.code);
-      const map = { Space: 'dash', KeyE: 'patch', KeyF: 'jump', KeyJ: 'attack', KeyK: 'heavy' };
+      const map = { Space: 'dash', KeyE: 'patch', KeyF: 'jump', KeyJ: 'attack', KeyK: 'heavy', KeyR: 'skill' };
       if (map[e.code]) this.pressed.add(map[e.code]);
     });
     addEventListener('keyup', e => this.keys.delete(e.code));
@@ -84,6 +84,7 @@ export class Input {
     };
     bind('btn-attack', 'attack'); bind('btn-heavy', 'heavy'); bind('btn-dash', 'dash');
     bind('btn-patch', 'patch'); bind('btn-jump', 'jump');
+    bind('btn-block', 'block', true); bind('btn-skill', 'skill');
   }
 
   #moveStick(t, cx, cy, R, knob) {
@@ -106,6 +107,8 @@ export class Input {
     if (isTouch) return Math.hypot(this.move.x, this.move.y) > 0.95;
     return this.keys.has('ShiftLeft') || this.keys.has('ShiftRight');
   }
+
+  get blocking() { return this.keys.has('KeyQ') || this.held.has('block') || this.rightHeld; }
 
   consume(action) { const had = this.pressed.has(action); this.pressed.delete(action); return had; }
 

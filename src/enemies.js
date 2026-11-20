@@ -12,6 +12,21 @@ const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 
 const pupilMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
 const shardMatA = new THREE.MeshBasicMaterial({ color: 0xff2bd6 });
 const shardMatB = new THREE.MeshBasicMaterial({ color: 0x29e6ff });
+// Floating "GLITCHED" tag above glitched slimes.
+function makeTag() {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+  const g = c.getContext('2d');
+  g.font = 'bold 30px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = 'rgba(20,0,30,0.65)'; g.fillRect(18, 10, 220, 44);
+  g.fillStyle = '#ff2bd6'; g.fillText('GLITCHED', 128, 33);
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+  sp.scale.set(1.3, 0.33, 1); sp.position.y = 1.75; sp.renderOrder = 10;
+  return sp;
+}
+const starMat = new THREE.MeshBasicMaterial({ color: 0xffe28a });
+const STAR_GEO = new THREE.OctahedronGeometry(0.08);
+
 const iceMat = new THREE.MeshStandardMaterial({ color: 0x9feeff, transparent: true, opacity: 0.45, emissive: 0x29e6ff, emissiveIntensity: 0.6 });
 
 export class Slime {
@@ -37,15 +52,21 @@ export class Slime {
       }
       this.ice = new THREE.Mesh(new THREE.IcosahedronGeometry(0.8, 1), iceMat);
       this.ice.position.y = 0.55; this.ice.visible = false; this.group.add(this.ice);
+      this.tag = makeTag(); this.group.add(this.tag);
     }
+    // Stun stars (shown after a parry).
+    this.stars = new THREE.Group();
+    for (let i = 0; i < 3; i++) { const st = new THREE.Mesh(STAR_GEO, starMat); st.userData.a = i / 3 * Math.PI * 2; this.stars.add(st); }
+    this.stars.position.y = 1.35; this.stars.visible = false; this.group.add(this.stars);
     scene.add(this.group);
     this.spawn();
   }
 
   spawn() {
-    this.hp = this.maxHp; this.dead = false; this.patched = false; this.frozen = 0;
+    this.hp = this.maxHp; this.dead = false; this.patched = false; this.frozen = 0; this.stunned = 0;
+    if (this.tag) this.tag.visible = true;
     this.pos = this.home.clone(); this.vel = new THREE.Vector3(); this.facing = Math.random() * Math.PI * 2;
-    this.hopT = Math.random(); this.attackCd = 0; this.hitFlash = 0; this.deathT = 0; this.knock = new THREE.Vector3();
+    this.hopT = Math.random(); this.attackCd = 0; this.windup = 0; this.hitFlash = 0; this.deathT = 0; this.knock = new THREE.Vector3();
     this.group.visible = true; this.group.scale.setScalar(1);
     this.mat.color.set(this.glitched ? 0x7a3cff : 0x5fd35a);
     if (this.shards) this.shards.forEach(s => (s.visible = true));
@@ -75,7 +96,15 @@ export class Slime {
     this.mat.color.set(0x5fd35a);
     if (this.shards) this.shards.forEach(s => (s.visible = false));
     if (this.ice) this.ice.visible = true;
+    if (this.tag) this.tag.visible = false;
     return true;
+  }
+
+  stun(t, fromPos) {
+    if (this.dead) return;
+    this.stunned = Math.max(this.stunned, t);
+    const away = this.pos.clone().sub(fromPos).setY(0).normalize();
+    this.knock.copy(away).multiplyScalar(9);
   }
 
   update(dt, t, player, world) {
@@ -89,9 +118,16 @@ export class Slime {
       return null;
     }
     let attack = null;
+    this.stars.visible = this.stunned > 0;
+    if (this.stunned > 0) {
+      this.stunned -= dt;
+      this.stars.children.forEach(st => { const a = st.userData.a + t * 5; st.position.set(Math.cos(a) * 0.45, 0, Math.sin(a) * 0.45); });
+    }
     if (this.frozen > 0) {
       this.frozen -= dt;
       if (this.frozen <= 0 && this.ice) this.ice.visible = false;
+    } else if (this.stunned > 0) {
+      // Dazed: no movement or attacks.
     } else {
       const toP = player.pos.clone().sub(this.pos).setY(0);
       const dist = toP.length();
@@ -104,29 +140,36 @@ export class Slime {
       }
       const dir = target.clone().sub(this.pos).setY(0);
       if (dir.lengthSq() > 0.01) this.facing = Math.atan2(dir.x, dir.z);
-      // Hop movement.
-      this.hopT += dt * (chase ? 1.8 : 1.1);
-      const hopPhase = this.hopT % 1;
-      const speed = chase ? 3.4 : 1.4;
-      if (hopPhase < 0.55 && dir.lengthSq() > (chase ? 1.4 : 0.2)) this.pos.addScaledVector(dir.normalize(), speed * dt * 1.6);
-      // Contact attack.
       this.attackCd -= dt;
-      if (chase && dist < 1.35 && this.attackCd <= 0) {
-        this.attackCd = 1.3;
-        attack = { damage: this.glitchedActive ? 14 : 9, from: this.pos.clone() };
+      if (this.windup > 0) {
+        // Telegraphed attack: crouch, then lunge.
+        this.windup -= dt;
+        if (this.windup <= 0) {
+          this.attackCd = 1.5;
+          this.knock.copy(dir.normalize()).multiplyScalar(5); // small lunge toward the player
+          if (dist < 2.0) attack = { damage: this.glitchedActive ? 14 : 9, from: this.pos.clone(), enemy: this };
+        }
+      } else {
+        // Hop movement.
+        this.hopT += dt * (chase ? 1.8 : 1.1);
+        const hopPhase = this.hopT % 1;
+        const speed = chase ? 3.4 : 1.4;
+        if (hopPhase < 0.55 && dir.lengthSq() > (chase ? 1.4 : 0.2)) this.pos.addScaledVector(dir.clone().normalize(), speed * dt * 1.6);
+        if (chase && dist < 1.7 && this.attackCd <= 0) this.windup = 0.5;
       }
     }
     this.pos.addScaledVector(this.knock, dt); this.knock.multiplyScalar(Math.pow(0.02, dt));
     world.resolve(this.pos, 0.5);
-    const hop = this.frozen > 0 ? 0 : Math.max(0, Math.sin((this.hopT % 1) * Math.PI)) * 0.55;
+    const hop = this.frozen > 0 || this.stunned > 0 ? 0 : Math.max(0, Math.sin((this.hopT % 1) * Math.PI)) * 0.55;
     this.group.position.set(this.pos.x, heightAt(this.pos.x, this.pos.z) + hop, this.pos.z);
     this.group.rotation.y = this.facing;
-    const squash = this.frozen > 0 ? 1 : 1 + Math.sin(this.hopT * Math.PI * 2) * 0.12;
+    const squash = this.frozen > 0 ? 1 : this.windup > 0 ? 0.7 : 1 + Math.sin(this.hopT * Math.PI * 2) * 0.12;
     this.body.scale.set(1 / Math.sqrt(squash), squash, 1 / Math.sqrt(squash));
 
     // Hit flash and glitch flicker.
     this.hitFlash -= dt;
     if (this.hitFlash > 0) this.mat.emissive.set(0xffffff), (this.mat.emissiveIntensity = 1.2);
+    else if (this.windup > 0) { this.mat.emissive.set(0xff7a1a); this.mat.emissiveIntensity = 1.3; }
     else if (this.glitchedActive) {
       const flick = Math.sin(t * 37 + this.home.x) > 0.85;
       this.mat.emissive.set(flick ? 0xff2bd6 : 0x3a0f80); this.mat.emissiveIntensity = flick ? 1.4 : 0.6;

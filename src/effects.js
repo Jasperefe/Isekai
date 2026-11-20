@@ -53,6 +53,16 @@ export class Effects {
     this.items.push({ obj: ring, life: 0.6, max: 0.6, update: (it, k) => { ring.material.opacity = k; ring.scale.setScalar(0.5 + (1 - k)); } });
   }
 
+  // Expanding ground ring for heavy hits and slams.
+  shockwave(pos, radius = 3) {
+    const mat = new THREE.MeshBasicMaterial({ color: 0xffe28a, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending });
+    const m = new THREE.Mesh(new THREE.RingGeometry(0.8, 1, 40), mat);
+    m.rotation.x = -Math.PI / 2; m.position.copy(pos).add(new THREE.Vector3(0, 0.12, 0));
+    this.scene.add(m);
+    this.items.push({ obj: m, life: 0.4, max: 0.4, update: (it, k) => { m.scale.setScalar(0.3 + (1 - k) * radius); mat.opacity = 0.85 * k; } });
+    this.burst(pos.clone().add(new THREE.Vector3(0, 0.3, 0)), 12, [2, 3], 5);
+  }
+
   update(dt) {
     for (let i = this.items.length - 1; i >= 0; i--) {
       const it = this.items[i];

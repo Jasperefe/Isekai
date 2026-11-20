@@ -74,22 +74,25 @@ function jasperExtras(root) {
   hp.scale.y = 0.86;
   attachAt(root, hp, 'Head', new THREE.Vector3(head.x, head.y + 0.085, head.z - 0.01), new THREE.Euler(-0.12, 0, 0));
 
-  // Debug Blade in the right hand.
-  const hand = wp('hand_r');
+  // Debug Blade, built in hand-bone space: the grip runs along +Z (pinky -> index side),
+  // the cutting edge points along +Y (knuckles), palm faces -X.
+  const hand = findBone(root, 'hand_r');
   const blade = new THREE.Group();
-  const b1 = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.85, 0.012), MAT.steel); b1.position.y = -0.52; blade.add(b1);
-  const edge = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.8, 0.016), MAT.cyan); edge.position.set(0.026, -0.5, 0); blade.add(edge);
-  const guard = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.03, 0.05), MAT.dark); guard.position.y = -0.08; blade.add(guard);
-  blade.add(new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.16, 10), MAT.dark));
+  const len = 0.95;
+  const b1 = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.05, len), MAT.steel); b1.position.z = 0.1 + len / 2; blade.add(b1);
+  const tipM = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.1, 4), MAT.steel); tipM.rotation.x = Math.PI / 2; tipM.scale.set(1, 1, 0.5); tipM.position.z = 0.1 + len + 0.05; blade.add(tipM);
+  const edge = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.01, len * 0.92), MAT.cyan); edge.position.set(0, 0.028, 0.1 + len * 0.48); blade.add(edge);
+  const guard = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.2, 0.03), MAT.dark); guard.position.z = 0.085; blade.add(guard);
+  const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.019, 0.019, 0.2, 10), MAT.dark); grip.rotation.x = Math.PI / 2; grip.position.z = -0.02; blade.add(grip);
+  const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), MAT.cyan); pommel.position.z = -0.13; blade.add(pommel);
   for (let i = 0; i < 5; i++) {
     const px = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.022, 0.022), MAT.cyan);
-    px.position.set(0.05 + (i % 2) * 0.02, -0.25 - i * 0.14, 0); blade.add(px);
+    px.position.set(0, 0.045 + (i % 2) * 0.02, 0.3 + i * 0.15); blade.add(px);
   }
   blade.traverse(o => { o.castShadow = true; });
-  attachAt(root, blade, 'hand_r', new THREE.Vector3(hand.x, hand.y + 0.02, hand.z + 0.02), new THREE.Euler(0.15, 0, 0));
-
-  // Blade tip marker (used for slash trails).
-  const tip = new THREE.Object3D(); tip.position.y = -0.95; blade.add(tip);
+  blade.position.set(-0.035, 0.095, 0);
+  hand.add(blade);
+  const tip = new THREE.Object3D(); tip.position.z = 0.1 + len; blade.add(tip);
 
   // Floating cursor icon (follows the left hand).
   const shape = new THREE.Shape();
@@ -133,4 +136,17 @@ export function buildCharacter(gltf, kind, idleClip) {
   const extras = kind === 'jasper' ? jasperExtras(root) : victoryExtras(root);
   mixer.stopAllAction(); mixer.uncacheRoot(root);
   return { root, skeleton, ...extras };
+}
+
+// Right-hand finger pose taken from a sword clip, re-applied every frame so the grip never opens.
+export function captureGrip(root, gripClip) {
+  const fingers = [];
+  root.traverse(o => { if (o.isBone && /^(thumb|index|middle|ring|pinky)_0[1-3]_r$/.test(o.name)) fingers.push(o); });
+  const saved = fingers.map(b => b.quaternion.clone());
+  const mixer = new THREE.AnimationMixer(root);
+  const a = mixer.clipAction(gripClip); a.play(); mixer.update(0.5);
+  const pose = fingers.map(b => b.quaternion.clone());
+  mixer.stopAllAction(); mixer.uncacheRoot(root);
+  fingers.forEach((b, i) => b.quaternion.copy(saved[i]));
+  return () => fingers.forEach((b, i) => b.quaternion.copy(pose[i]));
 }
