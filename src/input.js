@@ -14,7 +14,7 @@ export class Input {
     addEventListener('keydown', e => {
       if (e.repeat) return;
       this.keys.add(e.code);
-      const map = { Space: 'dash', KeyE: 'patch', KeyF: 'jump', KeyJ: 'attack', KeyK: 'heavy', KeyR: 'skill' };
+      const map = { Space: 'dash', KeyE: 'patch', KeyF: 'jump', KeyJ: 'attack', KeyK: 'heavy', KeyR: 'skill', KeyT: 'throw' };
       if (map[e.code]) this.pressed.add(map[e.code]);
     });
     addEventListener('keyup', e => this.keys.delete(e.code));
@@ -84,7 +84,7 @@ export class Input {
     };
     bind('btn-attack', 'attack'); bind('btn-heavy', 'heavy'); bind('btn-dash', 'dash');
     bind('btn-patch', 'patch'); bind('btn-jump', 'jump');
-    bind('btn-block', 'block', true); bind('btn-skill', 'skill');
+    bind('btn-block', 'block', true); bind('btn-skill', 'skill'); bind('btn-throw', 'throw');
   }
 
   #moveStick(t, cx, cy, R, knob) {

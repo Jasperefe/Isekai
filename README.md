@@ -8,20 +8,27 @@ Play as Jasper in Starter Meadow and fight slimes.
 
 | Action | PC | Phone |
 | --- | --- | --- |
-| Move | WASD / arrows | Left joystick |
-| Look | Mouse (click the screen first) | Drag the right side |
-| Attack (3-hit combo) | Left click / J | ATK |
-| Heavy attack (shockwave) | Right click / K | HVY |
-| Block (hold) / Parry (block just as a slime lunges) | Q | BLOCK |
-| Dodge (Debug Dash) | Space | DASH |
-| Dash strike | Attack during a dodge or while sprinting | same |
-| Jump slam | Attack in the air | same |
-| Blade Storm (4-hit spin, 40 stamina) | R | SKILL |
+| Move / Look | WASD + mouse (click the screen first) | Joystick + drag right side |
+| 3-hit combo | Click x3 | ATK x3 |
+| Pommel Bash (stuns) | Click, Right-click | ATK, HVY |
+| Glitch Breaker (ignores glitch resist) | Click, Click, Right-click | ATK, ATK, HVY |
+| Heavy slam (shockwave) | Right-click | HVY |
+| Block (hold) / Parry (block as a slime lunges) | Q | BLOCK |
+| Counter (after a parry) | Click within 1.2 s | ATK |
+| Dodge / Slide sweep (while sprinting) | Space | DASH |
+| Dash strike | Click during a dodge, or while sprinting | ATK |
+| Jump slam | F, then click in the air | JUMP, ATK |
+| Debug Shard (ranged) | T | SHARD |
+| Blade Storm (4-hit spin) | R | SKILL |
 | Patch | E | PATCH |
-| Sprint | Shift | Push the stick fully |
-| Jump | F | JUMP |
 
-**Patch:** purple slimes are GLITCHED and resist damage. Patch removes the glitch for good, freezes the slime for 3 s and makes it take double damage.
+### Patch in battle
+
+- **Glitched enemy in range (10 m):** removes the glitch for good, freezes it for 3 s, it takes **x2 damage**.
+- **No glitch, normal enemy in range (6 m):** *Lag Spike*, freezes it for 1.5 s, it takes **x1.5 damage**.
+- **Nobody in range:** *Self-Patch*, +25 HP and +30 stamina.
+- **Shatter:** hit a frozen enemy with a heavy, finisher, Glitch Breaker or Counter to break the ice: bonus damage plus splash damage to enemies around it.
+- Cooldown: 8 s.
 
 ## Run it
 

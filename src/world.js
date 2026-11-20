@@ -106,37 +106,65 @@ export class World {
     if (collide) for (const t of transforms) this.colliders.push({ x: t.p.x, z: t.p.z, r: collide * t.s.x });
   }
 
+  // Measure the ground footprint of a prop (trunk / rock base) so collisions match the mesh.
+  #footprint(template, includeLeaves, maxY) {
+    template.updateMatrixWorld(true);
+    const inv = new THREE.Matrix4().copy(template.matrixWorld).invert(), m = new THREE.Matrix4(), v = new THREE.Vector3();
+    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity, n = 0;
+    template.traverse(o => {
+      if (!o.isMesh) return;
+      if (!includeLeaves && /Leaves|Leaf|Grass|Flower/i.test(o.material.name)) return;
+      m.multiplyMatrices(inv, o.matrixWorld);
+      const pos = o.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i).applyMatrix4(m);
+        if (v.y > maxY) continue;
+        minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x); minZ = Math.min(minZ, v.z); maxZ = Math.max(maxZ, v.z); n++;
+      }
+    });
+    if (!n) return null;
+    return { cx: (minX + maxX) / 2, cz: (minZ + maxZ) / 2, r: Math.max(maxX - minX, maxZ - minZ) / 2 };
+  }
+
   #props(gltf, quality) {
     const lib = {};
     for (const c of gltf.scene.children) lib[c.name] = c;
     const r = rng(1234);
     const place = (name, count, minD, maxD, sMin, sMax, opts = {}) => {
       if (!lib[name]) return;
+      // opts.collide: 'solid' (trunk/rock base) or 'leafy' (bush canopy, slightly shrunk).
+      const fp = opts.collide ? this.#footprint(lib[name], opts.collide === 'leafy', opts.collide === 'leafy' ? 1.0 : 1.4) : null;
       const list = [];
       let tries = 0;
       while (list.length < count && tries++ < count * 30) {
         const a = r() * Math.PI * 2, d = minD + r() * (maxD - minD);
         const x = Math.cos(a) * d, z = Math.sin(a) * d;
         if (opts.avoidPath && Math.abs(z - Math.sin(x * 0.08) * 6 - 4) < 3) continue;
-        if (opts.spacing && this.colliders.some(c => Math.hypot(c.x - x, c.z - z) < opts.spacing)) continue;
-        const s = sMin + r() * (sMax - sMin);
-        list.push({ p: new THREE.Vector3(x, heightAt(x, z) - 0.05, z), q: new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), r() * Math.PI * 2), s: new THREE.Vector3(s, s, s) });
-        if (opts.collide) this.colliders.push({ x, z, r: opts.collide * s });
+        if (opts.spacing && this.colliders.some(c => Math.hypot(c.x - x, c.z - z) < opts.spacing + c.r)) continue;
+        if (Math.hypot(x, z) < 5) continue; // keep the spawn point clear
+        const s = sMin + r() * (sMax - sMin), yaw = r() * Math.PI * 2;
+        list.push({ p: new THREE.Vector3(x, heightAt(x, z) - 0.05, z), q: new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), s: new THREE.Vector3(s, s, s) });
+        if (fp) {
+          const c = Math.cos(yaw), sn = Math.sin(yaw);
+          const ox = (fp.cx * c + fp.cz * sn) * s, oz = (-fp.cx * sn + fp.cz * c) * s;
+          const shrink = opts.collide === 'leafy' ? 0.6 : 0.9;
+          this.colliders.push({ x: x + ox, z: z + oz, r: Math.max(0.25, fp.r * s * shrink) });
+        }
       }
       this.#instance(lib[name], list, { shadow: opts.shadow !== false });
     };
     const dense = quality.dense;
-    place('CommonTree_1', 9, 14, 52, 0.85, 1.2, { collide: 0.6, avoidPath: true, spacing: 5 });
-    place('CommonTree_2', 9, 14, 52, 0.85, 1.2, { collide: 0.6, avoidPath: true, spacing: 5 });
-    place('CommonTree_3', 7, 18, 52, 0.85, 1.2, { collide: 0.6, avoidPath: true, spacing: 5 });
-    place('Pine_1', 10, 30, 56, 0.9, 1.4, { collide: 0.5, avoidPath: true, spacing: 4 });
-    place('Pine_2', 8, 30, 56, 0.9, 1.4, { collide: 0.5, avoidPath: true, spacing: 4 });
-    place('TwistedTree_1', 3, 20, 45, 0.9, 1.1, { collide: 0.6, avoidPath: true, spacing: 6 });
-    place('Rock_Medium_1', 6, 10, 50, 0.6, 1.2, { collide: 0.8, avoidPath: true, spacing: 3 });
-    place('Rock_Medium_2', 6, 10, 50, 0.6, 1.2, { collide: 0.8, avoidPath: true, spacing: 3 });
-    place('Rock_Medium_3', 5, 10, 50, 0.6, 1.2, { collide: 0.8, avoidPath: true, spacing: 3 });
-    place('Bush_Common', 14, 7, 52, 0.55, 0.85, { avoidPath: true });
-    place('Bush_Common_Flowers', 12, 7, 52, 0.55, 0.85, { avoidPath: true });
+    place('CommonTree_1', 9, 14, 52, 0.85, 1.2, { collide: 'solid', avoidPath: true, spacing: 5 });
+    place('CommonTree_2', 9, 14, 52, 0.85, 1.2, { collide: 'solid', avoidPath: true, spacing: 5 });
+    place('CommonTree_3', 7, 18, 52, 0.85, 1.2, { collide: 'solid', avoidPath: true, spacing: 5 });
+    place('Pine_1', 10, 30, 56, 0.9, 1.4, { collide: 'solid', avoidPath: true, spacing: 4 });
+    place('Pine_2', 8, 30, 56, 0.9, 1.4, { collide: 'solid', avoidPath: true, spacing: 4 });
+    place('TwistedTree_1', 3, 20, 45, 0.9, 1.1, { collide: 'solid', avoidPath: true, spacing: 6 });
+    place('Rock_Medium_1', 6, 10, 50, 0.6, 1.2, { collide: 'solid', avoidPath: true, spacing: 3 });
+    place('Rock_Medium_2', 6, 10, 50, 0.6, 1.2, { collide: 'solid', avoidPath: true, spacing: 3 });
+    place('Rock_Medium_3', 5, 10, 50, 0.6, 1.2, { collide: 'solid', avoidPath: true, spacing: 3 });
+    place('Bush_Common', 14, 7, 52, 0.55, 0.85, { avoidPath: true, collide: 'leafy', spacing: 1 });
+    place('Bush_Common_Flowers', 12, 7, 52, 0.55, 0.85, { avoidPath: true, collide: 'leafy', spacing: 1 });
     place('Fern_1', 14, 6, 50, 0.45, 0.7, { shadow: false });
     place('Mushroom_Common', 10, 6, 45, 0.4, 0.7, { shadow: false });
     place('Flower_4_Group', dense ? 50 : 25, 3, 50, 0.3, 0.45, { shadow: false });
@@ -148,7 +176,7 @@ export class World {
 
   // Push a circle (x, z, radius) out of trees/rocks and keep it inside the meadow.
   resolve(p, radius) {
-    for (const c of this.colliders) {
+    for (let pass = 0; pass < 2; pass++) for (const c of this.colliders) {
       const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz), min = c.r + radius;
       if (d < min && d > 1e-4) { p.x = c.x + dx / d * min; p.z = c.z + dz / d * min; }
     }

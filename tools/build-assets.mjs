@@ -67,8 +67,8 @@ async function anims(file, keep, out) {
   console.log(out, (fs.statSync(path.join(OUT, out)).size / 1024).toFixed(0) + ' KB', doc.getRoot().listAnimations().map(a => a.getName()).join(','));
 }
 await anims(UAL1, ['Idle_Loop', 'Jog_Fwd_Loop', 'Sprint_Loop', 'Walk_Loop', 'Jump_Start', 'Jump_Loop', 'Jump_Land', 'Roll',
-  'Death01', 'Hit_Chest', 'Sword_Attack', 'Sword_Idle', 'Spell_Simple_Shoot'], 'anims1.glb');
-await anims(UAL2, ['Sword_Regular_A', 'Sword_Regular_A_Rec', 'Sword_Regular_B', 'Sword_Regular_B_Rec', 'Sword_Regular_C', 'Sword_Dash', 'Sword_Block', 'Sword_Heavy_Combo', 'Melee_Hook', 'Hit_Knockback'], 'anims2.glb');
+  'Death01', 'Hit_Chest', 'Sword_Attack', 'Sword_Idle', 'Spell_Simple_Shoot', 'Punch_Jab', 'Punch_Cross', 'Spell_Simple_Enter'], 'anims1.glb');
+await anims(UAL2, ['Sword_Regular_A', 'Sword_Regular_A_Rec', 'Sword_Regular_B', 'Sword_Regular_B_Rec', 'Sword_Regular_C', 'Sword_Dash', 'Sword_Block', 'Sword_Heavy_Combo', 'Melee_Hook', 'Hit_Knockback', 'OverhandThrow', 'Slide_Start', 'Slide_Exit'], 'anims2.glb');
 
 // Nature props: one file, one top-level node per prop.
 {

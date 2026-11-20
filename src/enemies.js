@@ -63,7 +63,7 @@ export class Slime {
   }
 
   spawn() {
-    this.hp = this.maxHp; this.dead = false; this.patched = false; this.frozen = 0; this.stunned = 0;
+    this.hp = this.maxHp; this.dead = false; this.patched = false; this.frozen = 0; this.stunned = 0; this.patchMult = 2;
     if (this.tag) this.tag.visible = true;
     this.pos = this.home.clone(); this.vel = new THREE.Vector3(); this.facing = Math.random() * Math.PI * 2;
     this.hopT = Math.random(); this.attackCd = 0; this.windup = 0; this.hitFlash = 0; this.deathT = 0; this.knock = new THREE.Vector3();
@@ -78,11 +78,11 @@ export class Slime {
   get glitchedActive() { return this.glitched && !this.patched; }
 
   // Returns the damage actually dealt.
-  takeHit(amount, fromPos) {
+  takeHit(amount, fromPos, opts = {}) {
     if (this.dead) return 0;
     let dmg = amount;
-    if (this.glitchedActive && this.frozen <= 0) dmg = Math.round(amount * 0.35); // resists until patched
-    if (this.frozen > 0) dmg = Math.round(amount * 2);                            // patched + frozen: double
+    if (this.glitchedActive && this.frozen <= 0 && !opts.pierce) dmg = Math.round(amount * 0.35); // resists until patched
+    if (this.frozen > 0) dmg = Math.round(amount * this.patchMult);                               // patched + frozen
     this.hp -= dmg; this.hitFlash = 0.15;
     const away = this.pos.clone().sub(fromPos).setY(0).normalize();
     this.knock.copy(away).multiplyScalar(this.frozen > 0 ? 0 : 6);
@@ -90,14 +90,26 @@ export class Slime {
     return dmg;
   }
 
-  patch() {
-    if (!this.glitchedActive || this.dead) return false;
-    this.patched = true; this.frozen = 3;
+  // mode 'fix': remove the glitch, freeze 3s, x2 damage. mode 'lag': freeze 1.5s, x1.5 damage.
+  patch(mode = 'fix') {
+    if (this.dead) return false;
+    if (mode === 'lag' || !this.glitchedActive) {
+      this.frozen = 1.5; this.patchMult = 1.5; this.windup = 0;
+      if (this.ice) this.ice.visible = true; else this.#ensureIce(); this.ice.visible = true;
+      return true;
+    }
+    this.patched = true; this.frozen = 3; this.patchMult = 2; this.windup = 0;
     this.mat.color.set(0x5fd35a);
     if (this.shards) this.shards.forEach(s => (s.visible = false));
     if (this.ice) this.ice.visible = true;
     if (this.tag) this.tag.visible = false;
     return true;
+  }
+
+  #ensureIce() {
+    if (this.ice) return;
+    this.ice = new THREE.Mesh(new THREE.IcosahedronGeometry(0.8, 1), iceMat);
+    this.ice.position.y = 0.55; this.ice.visible = false; this.group.add(this.ice);
   }
 
   stun(t, fromPos) {
