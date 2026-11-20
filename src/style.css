@@ -39,19 +39,20 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1020; fon
 #stick-zone { position: absolute; left: 0; bottom: 0; width: 45%; height: 55%; pointer-events: auto; }
 #stick-base { position: absolute; left: 40px; bottom: 40px; width: 120px; height: 120px; border-radius: 50%; background: #ffffff18; border: 2px solid #ffffff40; }
 #stick-knob { position: absolute; left: 35px; top: 35px; width: 50px; height: 50px; border-radius: 50%; background: #ffffff70; }
-#buttons { position: absolute; right: 18px; bottom: 22px; width: 220px; height: 210px; pointer-events: none; }
-.btn { position: absolute; pointer-events: auto; width: 62px; height: 62px; border-radius: 50%; border: 2px solid #ffffff60; background: #10183ad0; color: #fff; font-weight: 800; font-size: 11px; letter-spacing: 1px; overflow: hidden; }
+/* Action buttons: three tidy rows, no overlaps (positions from the bottom-right corner). */
+#buttons { position: absolute; right: calc(14px + env(safe-area-inset-right)); bottom: 14px; width: 230px; height: 214px; pointer-events: none; }
+.btn { position: absolute; pointer-events: auto; width: 58px; height: 58px; padding: 0; border-radius: 50%; border: 2px solid #ffffff60; background: #10183ad0; color: #fff; font-family: inherit; font-weight: 800; font-size: 10px; letter-spacing: 0; line-height: 1; text-align: center; overflow: hidden; }
+.btn.big { width: 84px; height: 84px; font-size: 16px; letter-spacing: 1px; }
+#btn-attack { right: 0; bottom: 0; }
+#btn-heavy  { right: 94px; bottom: 2px; }
+#btn-block  { right: 162px; bottom: 2px; }
+#btn-dash   { right: 6px; bottom: 94px; }
+#btn-patch  { right: 82px; bottom: 76px; border-color: #29e6ff; color: #29e6ff; }
+#btn-skill  { right: 150px; bottom: 76px; border-color: #ff2bd6; color: #ff2bd6; }
+#btn-jump   { right: 10px; bottom: 162px; width: 50px; height: 50px; }
+#btn-throw  { right: 86px; bottom: 146px; width: 50px; height: 50px; }
+#btn-sword  { right: 154px; bottom: 146px; width: 50px; height: 50px; }
 .btn:active { background: #29e6ff90; }
-.btn.big { width: 88px; height: 88px; right: 0; bottom: 0; font-size: 15px; }
-#btn-heavy { right: 98px; bottom: 0; }
-#btn-dash { right: 0; bottom: 100px; }
-#btn-patch { right: 82px; bottom: 76px; border-color: #29e6ff; color: #29e6ff; }
-#btn-jump { right: 186px; bottom: 150px; width: 54px; height: 54px; }
-#btn-block { right: 176px; bottom: 6px; width: 66px; height: 66px; }
-#btn-sword { right: 30px; bottom: 175px; width: 50px; height: 50px; font-size: 9px; }
-#btn-throw { right: 92px; bottom: 150px; width: 54px; height: 54px; font-size: 10px; }
-#btn-skill { right: 150px; bottom: 82px; border-color: #ff2bd6; color: #ff2bd6; }
-#buttons { width: 260px; height: 230px; }
 #chips { position: absolute; top: 92px; left: 14px; display: flex; gap: 6px; font-size: 11px; font-weight: 800; letter-spacing: 1px; }
 #chips span { background: #00000070; border: 1px solid #29e6ff; color: #29e6ff; padding: 3px 7px; border-radius: 3px; }
 #chips span.cool { border-color: #ffffff40; color: #ffffff70; }
