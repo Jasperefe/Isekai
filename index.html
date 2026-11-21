@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>ISEKAI</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Cpath d=%22M6 3v24l6-6 4 9 4-2-4-9h9z%22 fill=%22%2329e6ff%22/%3E%3C/svg%3E">
-<link rel="stylesheet" href="src/style.css?v=17">
+<link rel="stylesheet" href="src/style.css?v=18">
 <script type="importmap">
 { "imports": { "three": "./lib/three.module.min.js", "three/addons/": "./lib/addons/" } }
 </script>
@@ -31,6 +31,7 @@
     </div>
   </div>
   <div id="quest"><div class="qt"><i></i><span id="quest-title"></span></div><div class="qx" id="quest-text"></div></div>
+  <div id="minimap"><canvas></canvas></div>
   <button id="menu-btn" aria-label="Menu"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><span class="dot"></span></button>
   <div id="toast" class="hidden"><small id="toast-kicker"></small><b id="toast-title"></b><span id="toast-text"></span></div>
   <div id="subtitle" class="hidden"></div>
@@ -68,7 +69,14 @@
         </div>
       </section>
       <section data-tab="skills"><div class="sp-line">Skill points: <b id="sp-count">0</b> <small>(+1 every level)</small></div><div class="tree" id="tree"></div></section>
-      <section data-tab="map"><canvas id="mapcv" width="420" height="420"></canvas><div class="maplegend" id="maplegend"></div></section>
+      <section data-tab="map">
+        <div class="mapwrap" id="mapwrap">
+          <canvas id="mapcv"></canvas>
+          <div class="seg mapmode" id="map-mode"><button data-mm="zone" class="on">ZONE</button><button data-mm="world">WORLD</button></div>
+          <div class="mapbtns"><button id="map-zin" aria-label="Zoom in">+</button><button id="map-zout" aria-label="Zoom out">&minus;</button><button id="map-me" aria-label="Find Jasper"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button></div>
+        </div>
+        <div class="mapside" id="mapside"></div>
+      </section>
       <section data-tab="settings">
         <div class="setgrid">
           <div class="setcard">
@@ -79,7 +87,8 @@
           <div class="setcard">
             <h5>GRAPHICS</h5>
             <div class="seg" id="gfx-seg"><button data-gfx="auto">Auto</button><button data-gfx="high">High</button><button data-gfx="medium">Med</button><button data-gfx="low">Low</button></div>
-            <div class="setinfo"><span id="menu-fps">measuring FPS...</span><span id="build">build 17</span></div>
+            <label class="tgl"><span>Minimap</span><button id="mm-toggle" class="sw on" aria-label="Minimap on or off"><i></i></button></label>
+            <div class="setinfo"><span id="menu-fps">measuring FPS...</span><span id="build">build 18</span></div>
             <button id="menu-gfx" class="hidden"></button>
           </div>
           <div class="setcard wide">
@@ -148,6 +157,6 @@
   <button id="btn-talk" class="btn ctx hidden"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M4 4h16a2 2 0 012 2v9a2 2 0 01-2 2h-8l-5 4v-4H4a2 2 0 01-2-2V6a2 2 0 012-2z" fill="currentColor"/><circle cx="8" cy="10.5" r="1.3" fill="#0b1020"/><circle cx="12" cy="10.5" r="1.3" fill="#0b1020"/><circle cx="16" cy="10.5" r="1.3" fill="#0b1020"/></svg><em id="btn-talk-label">TALK</em></button>
 </div>
 
-<script type="module" src="src/main.js?v=17"></script>
+<script type="module" src="src/main.js?v=18"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
-import { sfx } from './audio.js?v=17';
+import { sfx } from './audio.js?v=18';
 // Pause menu: Gear (equip/scrap), Skills (tree), Map, Settings. Plus Bram's forge window.
-import { RARITY, itemIcon } from './items.js?v=17';
-import { SKILLS, BRANCHES } from './skills.js?v=17';
+import { RARITY, itemIcon } from './items.js?v=18';
+import { SKILLS, BRANCHES } from './skills.js?v=18';
 
 const $ = id => document.getElementById(id);
 const SLOT_NAMES = { weapon: 'Weapon', armor: 'Armor', charm: 'Charm' };
@@ -27,10 +27,11 @@ export class Menu {
     this.core.onPause(true);
     this.tab(tab || this.curTab || 'gear');
   }
-  hide() { sfx('close'); this.open = false; this.el.classList.add('hidden'); this.core.onPause(false); this.core.profile.save(); }
+  hide() { sfx('close'); this.open = false; this.mapView?.close(); this.el.classList.add('hidden'); this.core.onPause(false); this.core.profile.save(); }
 
   tab(t) {
     if (this.curTab !== t) sfx('click'); this.curTab = t;
+    if (t !== 'map') this.mapView?.close();
     for (const el of this.el.querySelectorAll('[data-tab]')) el.classList.toggle('on', el.dataset.tab === t);
     if (t === 'gear') this.#renderGear();
     if (t === 'skills') this.#renderSkills();
@@ -90,37 +91,8 @@ export class Menu {
     });
   }
 
-  // ---------- Map ----------
-  #renderMap() {
-    const z = this.core.zone(); if (!z) return;
-    const m = z.map, cv = $('mapcv'), g = cv.getContext('2d'), W = cv.width, R = m.radius;
-    const toC = (x, zz) => [W / 2 + x / R * W * 0.47, W / 2 + zz / R * W * 0.47];
-    g.fillStyle = '#0b1020'; g.fillRect(0, 0, W, W);
-    g.fillStyle = m.ground || '#3f7a35'; g.beginPath(); g.arc(W / 2, W / 2, W * 0.47, 0, Math.PI * 2); g.fill();
-    // River.
-    if (m.riverX) {
-      g.strokeStyle = '#3f8fd6'; g.lineWidth = 9; g.beginPath();
-      for (let zz = -R; zz <= R; zz += 4) { const [x, y] = toC(m.riverX(zz), zz); zz === -R ? g.moveTo(x, y) : g.lineTo(x, y); }
-      g.stroke();
-    }
-    // Paths.
-    g.strokeStyle = '#c9b27e'; g.lineWidth = 4;
-    for (const line of m.paths) { g.beginPath(); line.forEach(([x, zz], i) => { const [a, b] = toC(x, zz); i ? g.lineTo(a, b) : g.moveTo(a, b); }); g.stroke(); }
-    // Places.
-    g.font = 'bold 12px system-ui'; g.textAlign = 'center';
-    for (const p of m.places) {
-      const [x, y] = toC(p.p.x, p.p.z); g.fillStyle = p.color + 'aa'; g.beginPath(); g.arc(x, y, Math.max(5, p.r / R * W * 0.47), 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#fff'; g.fillText(p.name, x, y - Math.max(8, p.r / R * W * 0.47) - 3);
-    }
-    for (const c of m.crystals()) { const [x, y] = toC(c.x, c.z); g.fillStyle = '#29e6ff'; g.beginPath(); g.moveTo(x, y - 7); g.lineTo(x + 5, y); g.lineTo(x, y + 7); g.lineTo(x - 5, y); g.fill(); }
-    for (const c of m.chests()) if (c.opened) { const [x, y] = toC(c.p.x, c.p.z); g.fillStyle = '#8a5a2b'; g.fillRect(x - 5, y - 4, 10, 8); }
-    const o = m.objective(); if (o) { const [x, y] = toC(o.x, o.z); g.strokeStyle = '#ffe28a'; g.lineWidth = 3; g.beginPath(); g.arc(x, y, 9, 0, Math.PI * 2); g.stroke(); }
-    // Jasper.
-    const p = this.core.player; const [px, py] = toC(p.pos.x, p.pos.z);
-    g.save(); g.translate(px, py); g.rotate(-p.facing + Math.PI); g.fillStyle = '#fff'; g.beginPath(); g.moveTo(0, -9); g.lineTo(6, 7); g.lineTo(0, 3); g.lineTo(-6, 7); g.fill(); g.restore();
-    const found = m.chests().filter(c => c.opened).length;
-    $('maplegend').innerHTML = `<b>${z.name}</b><br><span style="color:#fff">&#9650;</span> Jasper<br><span style="color:#ffe28a">&#9711;</span> Objective<br><span style="color:#29e6ff">&#9670;</span> Save crystal<br><span style="color:#c08a4b">&#9632;</span> Chests found: ${found} / ${m.chests().length}`;
-  }
+  // ---------- Map (drawn by MapView in map.js) ----------
+  #renderMap() { this.mapView?.open(); }
 
   // ---------- Bram's forge ----------
   openForge() { sfx('open'); $('forge').classList.remove('hidden'); this.core.onPause(true); this.#renderForge(); }

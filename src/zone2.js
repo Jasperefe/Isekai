@@ -1,14 +1,14 @@
 // Zone 2: Glitchwood Forest. Same shape as zone1.js so the game core can load either.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=17';
-import { World2, Z2, PATHS2, WORLD2_RADIUS } from './world2.js?v=17';
-import { VillageKit } from './village.js?v=17';
-import { spawnZone2 } from './enemies2.js?v=17';
-import { Thornwraith } from './boss2.js?v=17';
-import { NPC } from './npc.js?v=17';
-import { Story2 } from './story2.js?v=17';
-import { makeChest } from './loot.js?v=17';
-import { makeItem } from './items.js?v=17';
+import { sfx, music } from './audio.js?v=18';
+import { World2, Z2, PATHS2, WORLD2_RADIUS } from './world2.js?v=18';
+import { VillageKit } from './village.js?v=18';
+import { spawnZone2 } from './enemies2.js?v=18';
+import { Thornwraith } from './boss2.js?v=18';
+import { NPC } from './npc.js?v=18';
+import { Story2 } from './story2.js?v=18';
+import { makeChest } from './loot.js?v=18';
+import { makeItem } from './items.js?v=18';
 
 export const ZONE_ID = 'z2';
 export const ZONE_NAME = 'Glitchwood Forest';
@@ -99,8 +99,16 @@ export async function loadZone(core) {
         { name: "Mira's Hut", p: Z2.hut, r: 6, color: '#ffb35a' },
         { name: 'Corrupted Grove', p: Z2.grove, r: Z2.groveR, color: '#8a4dc2' },
         { name: 'Root Hollow', p: Z2.hollow, r: Z2.hollowR, color: '#6b4a35' },
-        { name: 'Meadow Gate', p: Z2.gate, r: 3, color: '#3cd6ff' },
       ],
+      gates: [{ name: 'To Starter Meadow', p: Z2.gate, color: '#3cd6ff' }],
+      lair: Z2.hollow,
+      // Boss lair state for the map: sealed until every Null enemy is defeated.
+      lock: () => {
+        if (story.stage >= story.idx('done')) return { state: 'defeated' };
+        if (story.stage >= story.idx('hollow')) return { state: 'open' };
+        return { state: 'locked', left: story.guardsLeft };
+      },
+      cleared: () => story.stage >= story.idx('done'),
       ground: '#2c4a3a',
       crystals: () => world.crystals.map(c => c.pos),
       chests: () => chests.map(c => ({ p: c.pos3, opened: c.opened })),

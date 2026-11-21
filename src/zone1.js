@@ -1,15 +1,15 @@
 // Zone 1: Starter Meadow. Builds the map, villagers, enemies, boss, chests and story.
 // Every zone module exports the same shape so the game core can load zones one after another.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=17';
-import { World, Z1, riverX, PATHS, WORLD_RADIUS } from './world.js?v=17';
-import { VillageKit } from './village.js?v=17';
-import { spawnSlimes } from './enemies.js?v=17';
-import { SlimeKing } from './boss.js?v=17';
-import { NPC } from './npc.js?v=17';
-import { Story } from './story.js?v=17';
-import { makeChest } from './loot.js?v=17';
-import { makeItem } from './items.js?v=17';
+import { sfx, music } from './audio.js?v=18';
+import { World, Z1, riverX, PATHS, WORLD_RADIUS } from './world.js?v=18';
+import { VillageKit } from './village.js?v=18';
+import { spawnSlimes } from './enemies.js?v=18';
+import { SlimeKing } from './boss.js?v=18';
+import { NPC } from './npc.js?v=18';
+import { Story } from './story.js?v=18';
+import { makeChest } from './loot.js?v=18';
+import { makeItem } from './items.js?v=18';
 
 export const ZONE_ID = 'z1';
 export const ZONE_NAME = 'Starter Meadow';
@@ -106,9 +106,16 @@ export async function loadZone(core) {
         { name: 'Village', p: Z1.village, r: 14, color: '#b9a98a' },
         { name: 'Slime Field', p: Z1.field, r: 14, color: '#7cc35a' },
         { name: 'Slime Pond', p: Z1.arena, r: Z1.arenaR, color: '#8a5ac2' },
-        { name: 'Glitchwood Gate', p: Z1.gate, r: 3, color: '#ff2bd6' },
-        { name: "Bram's Forge", p: Z1.forge, r: 2.5, color: '#ffb35a' },
       ],
+      gates: [{ name: 'To Glitchwood', p: Z1.gate, color: '#ff2bd6' }],
+      lair: Z1.arena,
+      // Boss lair state for the map: locked until the field is clear and the bridge is fixed.
+      lock: () => {
+        if (story.stage >= story.idx('done')) return { state: 'defeated' };
+        if (story.stage >= story.idx('pond')) return { state: 'open' };
+        return { state: 'locked', left: story.guards.filter(e => e.alive).length };
+      },
+      cleared: () => story.stage >= story.idx('done'),
       crystals: () => world.crystals.map(c => c.pos),
       chests: () => chests.map(c => ({ p: c.pos3, opened: c.opened })),
       objective: () => story.objectivePos(),

@@ -2,22 +2,23 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=17';
-import { buildCharacter, captureGrip } from './characters.js?v=17';
-import { Player } from './player.js?v=17';
-import { Guide } from './guide.js?v=17';
-import { Dialogue } from './dialogue.js?v=17';
-import { Effects } from './effects.js?v=17';
-import { Hud } from './hud.js?v=17';
-import { Profile } from './profile.js?v=17';
-import { Loot } from './loot.js?v=17';
-import { Menu } from './menu.js?v=17';
-import { Console } from './console.js?v=17';
-import { Pet } from './pet.js?v=17';
-import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=17';
-import { capturePortrait, systemPortrait } from './portraits.js?v=17';
-import * as Zone1 from './zone1.js?v=17';
-import * as Zone2 from './zone2.js?v=17';
+import { Input, isTouch } from './input.js?v=18';
+import { buildCharacter, captureGrip } from './characters.js?v=18';
+import { Player } from './player.js?v=18';
+import { Guide } from './guide.js?v=18';
+import { Dialogue } from './dialogue.js?v=18';
+import { Effects } from './effects.js?v=18';
+import { Hud } from './hud.js?v=18';
+import { Profile } from './profile.js?v=18';
+import { Loot } from './loot.js?v=18';
+import { Menu } from './menu.js?v=18';
+import { Console } from './console.js?v=18';
+import { Pet } from './pet.js?v=18';
+import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=18';
+import { capturePortrait, systemPortrait } from './portraits.js?v=18';
+import { ZoneMap, MapView, Minimap } from './map.js?v=18';
+import * as Zone1 from './zone1.js?v=18';
+import * as Zone2 from './zone2.js?v=18';
 
 // Zone registry. Each zone is loaded on its own page load (gates save and reload).
 const ZONES = { z1: Zone1, z2: Zone2 };
@@ -144,6 +145,16 @@ async function boot() {
   rig.yaw = 0;
   setListener(player.pos);
   const $ = id => document.getElementById(id);
+  // Maps: the zone picture is rendered from the 3D world on the first frame.
+  const zmap = new ZoneMap({
+    renderer, scene, zone, profile, player,
+    hide: () => [player.group, guide.group, pet.group, loot.group, zone.world.skyDome, zone.world.barrierMesh, zone.world.motes, ...zone.enemies.map(e => e.group), ...zone.npcs.map(n => n.group)],
+  });
+  zmap.wantCapture = true;
+  menu.mapView = new MapView({ zmap, zone, player, profile, travel, menu });
+  const minimap = new Minimap({ zmap, zone, player, rig, onTap: () => menu.show('map') });
+  $('mm-toggle').classList.toggle('on', minimap.on);
+  $('mm-toggle').addEventListener('click', () => { minimap.setOn(!minimap.on); $('mm-toggle').classList.toggle('on', minimap.on); sfx('click'); });
   const autostart = () => { try { sessionStorage.setItem('isekai_autostart', '1'); } catch (e) { /* ignore */ } };
   $('menu-restart').addEventListener('click', () => { if (confirm('Erase all progress and restart?')) { Profile.clear(); autostart(); location.reload(); } });
   $('menu-replay').addEventListener('click', () => {
@@ -228,6 +239,7 @@ async function boot() {
   const frame = (rawDt, doRender = true) => {
     let dt = Math.min(rawDt, 1 / 20);
     if (doRender && portraitJobs.length) runPortraits();
+    if (doRender && zmap.wantCapture) { zmap.wantCapture = false; try { zmap.capture(); } catch (e) { console.warn('map capture failed', e); } }
     if (titleMode) {
       // Slow orbit around the zone's showcase spot behind the title screen.
       t += dt;
@@ -293,6 +305,7 @@ async function boot() {
       e.mat.opacity += ((near2 ? 0.25 : 0.92) - e.mat.opacity) * Math.min(1, dt * 10);
     }
     hud.update(dt, player);
+    zmap.update(dt, player.pos); minimap.update(dt);
     document.body.classList.toggle('talking', dialogue.active);
     document.getElementById('hint').style.visibility = dialogue.active ? 'hidden' : '';
     input.endFrame();
@@ -341,7 +354,7 @@ async function boot() {
   };
   renderer.setAnimationLoop(() => { const d = clock.getDelta(); adapt(d); frame(d); });
   window.__step = (dt, n = 1) => { for (let i = 0; i < n; i++) frame(dt, false); }; // test hook
-  window.__game = { player, get enemies() { return zone.enemies; }, rig, scene, renderer, get story() { return zone.story; }, get npcs() { return zone.npcs; }, get world() { return zone.world; }, get boss() { return zone.boss; }, dialogue, hud, guide, input, ctx, profile, loot, menu, console: cons, pet, travel, get zone() { return zone; } };
+  window.__game = { zmap, minimap, player, get enemies() { return zone.enemies; }, rig, scene, renderer, get story() { return zone.story; }, get npcs() { return zone.npcs; }, get world() { return zone.world; }, get boss() { return zone.boss; }, dialogue, hud, guide, input, ctx, profile, loot, menu, console: cons, pet, travel, get zone() { return zone; } };
 }
 
 boot().catch(err => {

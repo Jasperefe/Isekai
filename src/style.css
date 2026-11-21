@@ -73,12 +73,18 @@ button { font-family: inherit; cursor: pointer; }
 #wallet .g b { color: var(--gold); } #wallet .s b { color: #ff7ae8; }
 #wallet i.coin { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff2b0, var(--gold) 50%, #b8860b); box-shadow: 0 0 4px #ffcc4d88; }
 #wallet i.gem { width: 11px; height: 11px; background: linear-gradient(135deg, #ffb8f4, #ff2bd6); transform: rotate(45deg) scale(0.85); box-shadow: 0 0 4px #ff2bd688; }
-#quest { position: absolute; top: calc(10px + var(--st-safe)); right: calc(70px + var(--sr)); max-width: 34vw; padding: 8px 12px 9px; background: linear-gradient(270deg, rgba(14, 20, 44, 0.82), rgba(14, 20, 44, 0.5)); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+#quest { position: absolute; top: calc(10px + var(--st-safe)); right: calc(var(--mm) + 78px + var(--sr)); max-width: clamp(150px, calc(100vw - 520px), 34vw); padding: 8px 12px 9px; background: linear-gradient(270deg, rgba(14, 20, 44, 0.82), rgba(14, 20, 44, 0.5)); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
 #quest .qt { display: flex; align-items: center; gap: 6px; font-size: 10px; letter-spacing: 0.18em; color: var(--cyan); font-weight: 900; text-transform: uppercase; }
 #quest .qt i { width: 8px; height: 8px; background: var(--cyan); transform: rotate(45deg); box-shadow: 0 0 6px var(--cyan); flex: none; }
 #quest .qx { margin-top: 3px; font-size: 13px; line-height: 1.3; }
 #quest .qd { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: rgba(255, 204, 77, 0.15); color: var(--gold); font-weight: 800; font-size: 12px; }
 #menu-btn { position: absolute; top: calc(10px + var(--st-safe)); right: calc(12px + var(--sr)); width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--line); background: linear-gradient(180deg, var(--panel2), var(--panel)); color: #fff; pointer-events: auto; padding: 0; display: grid; place-items: center; box-shadow: var(--shadow); }
+#minimap { position: absolute; top: calc(8px + var(--st-safe)); right: calc(68px + var(--sr)); width: var(--mm); height: var(--mm); border-radius: 50%; pointer-events: auto; background: rgba(6, 9, 20, 0.6); box-shadow: var(--shadow), 0 0 0 1px rgba(41, 230, 255, 0.25); }
+#minimap canvas { width: 100%; height: 100%; display: block; }
+#minimap.hidden { display: none; }
+:root { --mm: min(84px, max(56px, calc(100vh - 256px))); }
+@supports (height: 100dvh) { :root { --mm: min(84px, max(56px, calc(100dvh - 256px))); } }
+body.mm-off { --mm: -8px; }
 #menu-btn .dot { position: absolute; top: 4px; right: 4px; width: 11px; height: 11px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 8px var(--gold); display: none; }
 #menu-btn.alert .dot { display: block; animation: pulse 1s infinite; }
 #menu-btn:active { transform: scale(0.94); }
@@ -242,9 +248,49 @@ section[data-tab="skills"].on, section[data-tab="settings"].on { flex-direction:
 .node.have { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, rgba(255, 255, 255, 0.03)); color: #fff; }
 .node.have b::after { content: ' \2713'; color: var(--c); }
 @keyframes glow { 50% { box-shadow: 0 0 12px #ffcc4d66; } }
-section[data-tab="map"].on { align-items: center; justify-content: center; }
-#mapcv { height: 100%; max-height: 440px; aspect-ratio: 1; background: #0e1a12; border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); }
-.maplegend { font-size: 12px; line-height: 1.9; }
+/* Map tab: big map on the left, info on the right */
+section[data-tab="map"].on { padding: 10px; gap: 10px; overflow: hidden; }
+.mapwrap { position: relative; flex: 1; min-width: 0; border-radius: 14px; overflow: hidden; background: #060914; box-shadow: inset 0 0 0 1px var(--line); }
+#mapcv { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.mapmode { position: absolute; top: 8px; left: 8px; width: 150px; background: rgba(6, 10, 24, 0.85); }
+.mapmode button { padding: 6px 2px; font-size: 11px; letter-spacing: 0.14em; }
+.mapbtns { position: absolute; right: 8px; bottom: 8px; display: flex; flex-direction: column; gap: 6px; }
+.mapbtns button { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: rgba(6, 10, 24, 0.85); color: #fff; font-size: 20px; font-weight: 700; display: grid; place-items: center; padding: 0; }
+.mapbtns button:active { background: rgba(41, 230, 255, 0.25); }
+.mapwrap.world .mapbtns { display: none; }
+.mapside { flex: 0 0 214px; display: flex; flex-direction: column; gap: 7px; overflow: auto; font-size: 12px; }
+.mapside .ms-kick { color: var(--cyan); font-weight: 900; letter-spacing: 0.28em; font-size: 10px; }
+.mapside h4 { margin: -4px 0 0; font-size: 17px; letter-spacing: 0.02em; }
+.ms-obj { background: rgba(255, 204, 77, 0.07); border: 1px solid rgba(255, 204, 77, 0.3); border-radius: 10px; padding: 7px 10px; display: flex; flex-direction: column; gap: 1px; }
+.ms-obj small { color: var(--gold); font-weight: 900; letter-spacing: 0.22em; font-size: 9px; }
+.ms-obj b { font-size: 12.5px; } .ms-obj span { color: #c9d3ef; font-size: 11.5px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ms-rows { display: flex; flex-direction: column; gap: 4px; }
+.ms-rows div { display: flex; align-items: center; gap: 7px; background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 5px 9px; font-weight: 700; color: #c9d3ef; }
+.ms-rows em, .ms-zone em { margin-left: auto; font-style: normal; font-weight: 900; color: #fff; font-size: 11px; }
+em.ok { color: #7dff9a; } em.go { color: var(--gold); } em.bad { color: #ff8a9c; } em.here { color: var(--cyan); }
+.ms-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--muted); font-size: 10.5px; font-weight: 700; padding: 0 2px; }
+.ms-legend span { display: flex; align-items: center; gap: 5px; }
+.lg { display: inline-block; flex: none; width: 10px; height: 10px; }
+.lg.lair { border-radius: 50%; border: 2px solid #ff5d7a; }
+.lg.chest { background: var(--gold); border-radius: 2px; height: 8px; }
+.lg.fog { border-radius: 2px; background: repeating-linear-gradient(45deg, #29e6ff 0 2px, transparent 2px 4px); }
+.lg.me { width: 0; height: 0; border: 5px solid transparent; border-bottom: 10px solid #fff; border-top: 0; }
+.lg.obj { border-radius: 50%; border: 2px solid var(--gold); }
+.lg.cry { width: 8px; height: 8px; background: var(--cyan); transform: rotate(45deg); }
+.lg.foe { border-radius: 50%; background: #ff3b5c; width: 8px; height: 8px; }
+.lg.gate { border-radius: 50%; border: 2px solid var(--mag); width: 8px; height: 11px; }
+.ms-list { display: flex; flex-direction: column; gap: 5px; }
+.ms-zone { display: flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.04); border-left: 3px solid var(--c); border-radius: 8px; padding: 7px 9px; font-weight: 800; }
+.ms-zone b { color: var(--c); width: 10px; }
+.ms-zone.locked { opacity: 0.55; border-left-color: #5a6280; } .ms-zone.locked b { color: #8a93b0; }
+.ms-note { margin: 2px 0 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
+@media (max-width: 700px) { .mapside { flex-basis: 170px; } .mapside h4 { font-size: 15px; } }
+/* Settings switch */
+.tgl { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 700; color: #c9d3ef; }
+.sw { width: 48px; height: 26px; border-radius: 13px; border: 1px solid rgba(255, 255, 255, 0.15); background: rgba(0, 0, 0, 0.4); position: relative; padding: 0; }
+.sw i { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #8a93b0; transition: transform 0.15s, background 0.15s; }
+.sw.on { background: rgba(41, 230, 255, 0.3); border-color: rgba(41, 230, 255, 0.6); }
+.sw.on i { transform: translateX(22px); background: #fff; box-shadow: 0 0 8px var(--cyan); }
 .setgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .setcard { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 14px; padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 9px; }
 .setcard.wide { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: stretch; }
