@@ -1,5 +1,6 @@
 // Dialogue box: portrait, speaker name plate, typed text with voice blips, tap/click/F to continue.
-import { sfx } from './audio.js?v=29';
+import { sfx } from './audio.js?v=30';
+import { VICTORY_LINES } from './victory.js?v=30';
 
 export const SPEAKER_COLORS = {
   GUIDE: '#29e6ff', JASPER: '#e9f2ff', BRAM: '#ffb35a', NIA: '#ff8ae8', TOMM: '#9cff5a', MIRA: '#9cf0ff',
@@ -26,7 +27,7 @@ export class Dialogue {
   // lines: [{ who, text, glitch? }]. Resolves when the player finishes reading.
   play(lines) {
     // New Game+ as Victory: Jasper and Victory swap places in every line.
-    if (this.swap) lines = lines.map(l => ({ ...l, who: { JASPER: 'VICTORY', VICTORY: 'JASPER' }[l.who] || l.who, text: swapNames(l.text) }));
+    if (this.swap) lines = lines.flatMap(l => l.raw ? [l] : VICTORY_LINES[l.text] || [{ ...l, who: { JASPER: 'VICTORY', VICTORY: 'JASPER' }[l.who] || l.who, text: swapNames(l.text) }]);
     return new Promise(resolve => {
       this.queue = lines.slice(); this.onDone = resolve; this.active = true;
       this.el.classList.remove('hidden');
@@ -74,5 +75,7 @@ export class Dialogue {
   }
 }
 
-const SWAP = { Jasper: 'Victory', Victory: 'Jasper', JASPER: 'VICTORY', VICTORY: 'JASPER' };
-export function swapNames(text) { return String(text).replace(/\b(Jasper|Victory|JASPER|VICTORY)\b/g, m => SWAP[m]); }
+const SWAP = { Jasper: 'Victory', Victory: 'Jasper', JASPER: 'VICTORY', VICTORY: 'JASPER',
+  'BLADE STORM': 'RADIANCE', 'Blade Storm': 'Radiance', PATCH: 'STARFALL', Patch: 'Starfall', DODGE: 'BLINK', BLOCK: 'AEGIS', HEAVY: 'LUNGE' };
+// New Game+ as Victory: names and her own ability names. (PATCHED / patched stay as they are.)
+export function swapNames(text) { return String(text).replace(/\b(Jasper|Victory|JASPER|VICTORY|BLADE STORM|Blade Storm|PATCH|Patch|DODGE|BLOCK|HEAVY)\b/g, m => SWAP[m]); }

@@ -1,8 +1,8 @@
 // Jasper: movement, sword combat, Debug Dash, block/parry, Blade Storm, Patch
 // and the animation state machine.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=29';
-import { heightAt } from './world.js?v=29';
+import { sfx } from './audio.js?v=30';
+import { heightAt } from './world.js?v=30';
 
 const CFG = {
   walk: 2.2, jog: 5.4, sprint: 7.8, accel: 14, turn: 12,
@@ -37,6 +37,24 @@ const MOVES = {
   skill: { clip: 'Sword_Heavy_Combo', ts: 1.4, hits: [0.38, 1.17, 1.78, 2.6], dmg: 15, reach: 3.3, arc: Math.PI * 2, lunge: 1.2, end: 3.0, knock: 6, wide: true, color: 0xff2bd6, armor: true },
 };
 
+// Victory (New Game+): a quicker rapier chain in gold. Same animation set, different rhythm and reach.
+const GOLD = 0xffd36b;
+const VMOVES = {
+  ...MOVES,
+  A: { clip: 'Sword_Regular_A', ts: 1.55, hits: [0.24], dmg: 9, reach: 2.8, arc: 1.5, lunge: 2.8, rec: 'Sword_Regular_A_Rec', next: 'B', branch: 'bash', color: GOLD, step: 1 },
+  B: { clip: 'Sword_Regular_B', ts: 1.55, hits: [0.24], dmg: 10, reach: 2.8, arc: 1.5, lunge: 2.8, rec: 'Sword_Regular_B_Rec', next: 'thrust', branch: 'breaker', color: GOLD, step: 2 },
+  thrust: { clip: 'Sword_Dash', ts: 1.6, hits: [0.3], dmg: 13, reach: 3.4, arc: 1.0, lunge: 7, lungeT: 0.12, end: 0.62, next: 'spin1', color: GOLD, pierce: true, step: 3 },
+  spin1: { clip: 'Sword_Heavy_Combo', ts: 1.6, from: 0.85, hits: [1.17], dmg: 12, reach: 2.9, arc: 2.6, lunge: 2.6, end: 1.45, next: 'spin2', wide: true, color: GOLD, step: 4 },
+  spin2: { clip: 'Sword_Heavy_Combo', ts: 1.6, from: 1.5, hits: [1.78], dmg: 13, reach: 2.9, arc: 2.6, lunge: 2.6, end: 2.05, next: 'thrust2', wide: true, color: GOLD, step: 5 },
+  thrust2: { clip: 'Sword_Dash', ts: 1.6, hits: [0.3], dmg: 15, reach: 3.6, arc: 1.0, lunge: 8, lungeT: 0.12, end: 0.62, next: 'C', color: GOLD, pierce: true, knock: 6, step: 6 },
+  C: { clip: 'Sword_Regular_C', ts: 1.45, hits: [0.63], dmg: 26, reach: 3.4, arc: 3.0, lunge: 3.4, end: 1.1, knock: 10, wide: true, color: 0xfff2c0, shatter: true, shock: true, step: 7, name: 'STARBURST!' },
+  heavy: { clip: 'Sword_Dash', ts: 1.2, hits: [0.3], dmg: 27, reach: 3.8, arc: 1.3, lunge: 11, lungeT: 0.2, end: 0.9, knock: 9, wide: true, color: GOLD, pierce: true, shatter: true, name: 'LUNGE' },
+  bash: { ...MOVES.bash, name: 'HILT STRIKE', color: GOLD },
+  breaker: { ...MOVES.breaker, name: 'STAR BREAKER', color: 0xfff2c0 },
+  riposte: { ...MOVES.riposte, name: 'REFLECT!', color: GOLD },
+  skill: { clip: 'Spell_Simple_Shoot', ts: 1.1, hits: [], end: 0.75, lunge: 0, armor: true, radiance: 0.32 },
+};
+
 export class Player {
   constructor(char, clips, scene, ctx) {
     this.char = char; this.ctx = ctx; // ctx: { world, effects, hud, enemies, camera, hitStop }
@@ -59,6 +77,9 @@ export class Player {
     this.queued = false; this.invuln = 0; this.patchCd = 0; this.skillCd = 0; this.throwCd = 0; this.current = null;
     this.riposteT = 0; this.projectiles = [];
     this.unlocks = { sword: true, patch: true, skill: true };
+    this.hero = this.profile.d.hero === 'victory' ? 'victory' : 'jasper';
+    this.isV = this.hero === 'victory';
+    this.MOVES = this.isV ? VMOVES : MOVES;
     this.armed = true; this.combatT = 0; this.comboCount = 0;
     this.#disarm(); this.play('Idle_Loop', 0);
   }
@@ -107,13 +128,13 @@ export class Player {
   }
 
   #startMove(key, input, camYaw) {
-    const m = MOVES[key];
+    const m = this.MOVES[key];
     if (key === 'heavy' && this.stamina < CFG.heavyCost) return this.ctx.hud.flash('st');
     if (key === 'skill') {
       if (this.skillCd > 0) return;
       if (this.stamina < this.st.skillCost) return this.ctx.hud.flash('st');
-      this.stamina -= this.st.skillCost; this.skillCd = CFG.skillCooldown;
-      this.ctx.hud.system('> BLADE STORM.exe', 1.2); sfx('consoleRun');
+      this.stamina -= this.st.skillCost; this.skillCd = this.isV ? 8 : CFG.skillCooldown;
+      if (this.isV) sfx('ability'); else { this.ctx.hud.system('> BLADE STORM.exe', 1.2); sfx('consoleRun'); }
     }
     if (key === 'heavy') this.stamina -= CFG.heavyCost;
     if (key === 'breaker' || key === 'bash') { if (this.stamina < 12) return this.ctx.hud.flash('st'); this.stamina -= 12; }
@@ -127,7 +148,7 @@ export class Player {
     else this.#aim(input, camYaw, key === 'throw' ? 20 : 4);
     if (m.name) this.ctx.hud.float(this.pos.clone().add(new THREE.Vector3(0, 2.3, 0)), m.name, 'xp');
     if (m.invuln) this.invuln = 0.6;
-    this.state = 'act'; this.move = m; this.moveKey = key; this.stateT = 0; this.queued = false; this.queuedBranch = false; this.hitIdx = 0;
+    this.state = 'act'; this.move = m; this.moveKey = key; this.stateT = 0; this.queued = false; this.queuedBranch = false; this.hitIdx = 0; this.radiated = false;
     this.action = this.play(m.clip, 0.07, m.ts, m.from || 0);
     this.#arm();
   }
@@ -151,10 +172,51 @@ export class Player {
     this.stamina -= this.st.dashCost;
     const mv = this.#moveDir(input, camYaw);
     if (mv.lengthSq() > 0.01) this.facing = Math.atan2(mv.x, mv.z);
+    if (this.isV) return this.#blink();
     this.state = 'dash'; this.stateT = 0; this.invuln = this.st.iframe; sfx('dash');
     this.play('Roll', 0.06, 1.45);
     this.dashDur = Math.min(0.6, this.current.getClip().duration / 1.45);
     this.ctx.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 8, [0, 1], 3);
+  }
+
+  // Victory's Blink: a short teleport (up to 5.5 m) that leaves a gold afterimage. Stops at walls and ledges.
+  #blink() {
+    const { world, effects } = this.ctx;
+    const dir = new THREE.Vector3(Math.sin(this.facing), 0, Math.cos(this.facing));
+    const start = this.pos.clone(), p = this.pos.clone();
+    effects.burst(start.clone().add(new THREE.Vector3(0, 1, 0)), 16, [4, 2], 3);
+    for (let i = 0; i < 11; i++) {
+      const q = p.clone().addScaledVector(dir, 0.5);
+      world.resolve(q, 0.45, !!this.ctx.console?.noclip);
+      const g = world.groundAt(q.x, q.z, p.y);
+      if (g < p.y - 1.2 || g > p.y + 0.7) break; // never blink off a ledge or up a wall
+      if (q.distanceTo(p) < 0.2) break;
+      p.copy(q); p.y = g;
+    }
+    this.pos.copy(p);
+    this.state = 'dash'; this.stateT = 0; this.invuln = Math.max(0.35, this.st.iframe); sfx('teleport');
+    this.dashDur = 0.16; this.vel.set(0, 0, 0);
+    this.play('Jog_Fwd_Loop', 0.05, 1.6);
+    effects.burst(this.pos.clone().add(new THREE.Vector3(0, 1, 0)), 22, [4, 2], 4);
+    effects.beam(start.clone().add(new THREE.Vector3(0, 1, 0)), this.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0xffd36b);
+  }
+
+  // Victory's Radiance: a burst of light. Damages and pushes back everything around her and heals her.
+  #radiance() {
+    const { effects, hud } = this.ctx;
+    const r = 6.5, dmg = Math.round((30 + this.level * 3 + (this.st.flatAtk || 0)) * (this.st.atkMult || 1));
+    effects.shockwave(this.pos.clone(), r); effects.burst(this.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 40, [4, 2], 8);
+    this.ctx.camera.shake(0.25); sfx('bossSlam', this.pos, 0.5);
+    for (const e of this.ctx.enemies) {
+      if (!e.alive || e.pos.distanceTo(this.pos) > r + (e.radius || 0.5)) continue;
+      const was = e.alive, d = e.takeHit(dmg, this.pos, { heavy: true, pierce: true });
+      if (d) hud.float(e.pos.clone().add(new THREE.Vector3(0, 1.8, 0)), String(d), 'crit');
+      e.stun?.(0.8, this.pos);
+      if (was && !e.alive && !e.isClone) { this.gainXp(e.xp ?? 30); this.ctx.onKill?.(e); }
+    }
+    const heal = Math.round(this.maxHp * 0.2);
+    this.hp = Math.min(this.maxHp, this.hp + heal);
+    hud.float(this.pos.clone().add(new THREE.Vector3(0, 2.4, 0)), `RADIANCE +${heal}`, 'xp');
   }
 
   #startBlock() {
@@ -172,7 +234,7 @@ export class Player {
   // Patch has one job: fix a GLITCHED (purple) enemy. Fixed enemies freeze and take double damage.
   patchTarget() {
     if (!this.unlocks.patch) return null;
-    let best = null, bestD = this.st.patchRange;
+    let best = null, bestD = this.st.patchRange * (this.isV ? 1.7 : 1);
     for (const e of this.ctx.enemies) {
       if (!(e.glitchedActive || e.patchable) || !e.alive) continue;
       const d = e.pos.distanceTo(this.pos) - (e.radius || 0.5);
@@ -220,12 +282,18 @@ export class Player {
     const facingIt = fwd.dot(toEnemy) > -0.1;
     if (this.state === 'block' && facingIt) {
       const at = this.pos.clone().add(new THREE.Vector3(0, 1.4, 0)).addScaledVector(toEnemy, 0.6);
-      if (this.stateT < CFG.parryWindow) {
-        // Perfect timing: parry.
+      if (this.stateT < CFG.parryWindow * (this.isV ? 1.45 : 1)) {
+        // Perfect timing: parry. Victory's Aegis also throws the hit straight back.
+        if (this.isV && enemy?.alive) {
+          const back = Math.round(amount * 1.5), was = enemy.alive;
+          const d = enemy.takeHit(back, this.pos, { pierce: true });
+          if (d) this.ctx.hud.float(enemy.pos.clone().add(new THREE.Vector3(0, 1.8, 0)), 'REFLECT ' + d, 'crit');
+          if (was && !enemy.alive && !enemy.isClone) { this.gainXp(enemy.xp ?? 30); this.ctx.onKill?.(enemy); }
+        }
         enemy?.stun(1.8, this.pos);
         this.stamina = Math.min(100, this.stamina + 15);
         this.riposteT = 1.2;
-        this.ctx.hud.system('> PARRY! Attack now to COUNTER', 1.2); sfx('parry');
+        this.ctx.hud.system(this.isV ? 'AEGIS! Attack now to COUNTER' : '> PARRY! Attack now to COUNTER', 1.2); sfx('parry');
         this.ctx.hud.float(at, 'PARRY!', 'crit');
         this.ctx.effects.burst(at, 18, [2, 0], 5);
         this.ctx.effects.slash(this.pos, this.facing, 0xffe28a, true);
@@ -303,7 +371,7 @@ export class Player {
 
   gainXp(n) {
     const d = this.profile.d;
-    n = Math.round(n * this.st.xpMul);
+    n = Math.round(n * this.st.xpMul * (this.ctx.xpMul?.() || 1));
     d.xp += n;
     while (d.xp >= d.level * 100) {
       d.xp -= d.level * 100; d.level++; d.skillPoints++;
@@ -325,7 +393,17 @@ export class Player {
     this.#applyTransform();
   }
 
+  // Rewarded revive: back on your feet where you fell.
+  revive() {
+    this.deathHeld = false; this.hp = this.maxHp; this.stamina = 100;
+    this.state = 'move'; this.invuln = 2.5; this.ctx.hud.death(false);
+    this.current?.stop(); this.current = null; this.play('Idle_Loop', 0);
+    this.ctx.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 1, 0)), 30, [4, 2], 6);
+    this.ctx.hud.system('REVIVED!', 1.6); sfx('levelUp');
+  }
+
   respawn() {
+    this.deathHeld = false; this.onRespawn?.();
     const sp = this.ctx.respawnPoint ? this.ctx.respawnPoint() : new THREE.Vector3();
     this.refreshStats(); this.hp = this.maxHp; this.stamina = 100; this.spawnAt(sp);
     this.state = 'move'; this.invuln = 1.5; this.ctx.hud.death(false);
@@ -417,7 +495,7 @@ export class Player {
       this.mixer.update(dt); this.#applyTransform(); return;
     }
     if (this.state === 'dead') {
-      if (this.stateT > 3.2) this.respawn();
+      if (this.stateT > 3.2 && !this.deathHeld) this.respawn();
       this.mixer.update(dt); this.#applyTransform(); return;
     }
 
@@ -493,6 +571,7 @@ export class Player {
       if (m.hits.length && t < lungeT + (m.hits[0] - 0.2)) desired.copy(fwd).multiplyScalar(m.lunge);
       while (this.hitIdx < m.hits.length && t >= m.hits[this.hitIdx]) { this.#strike(m); this.hitIdx++; }
       if (m.release && !this.thrown && t >= m.release) { this.thrown = true; this.#throwShard(); }
+      if (m.radiance && !this.radiated && t >= m.radiance) { this.radiated = true; this.#radiance(); }
       const end = m.end ?? this.action.getClip().duration;
       if (t >= end || !this.action.isRunning()) {
         if (this.queuedBranch && m.branch) this.#startMove(m.branch, input, camYaw);
@@ -512,9 +591,10 @@ export class Player {
       if (!this.patchFired && this.stateT > 0.25) {
         this.patchFired = true;
         const e = this.patchTarget_;
-        const from = this.char.cursor ? this.char.cursor.getWorldPosition(new THREE.Vector3()) : this.pos.clone().add(new THREE.Vector3(0, 1.3, 0));
-        this.ctx.effects.beam(from, e.pos.clone().add(new THREE.Vector3(0, 0.6, 0)));
+        const from = this.isV ? e.pos.clone().add(new THREE.Vector3(0.6, 14, 0.4)) : this.char.cursor ? this.char.cursor.getWorldPosition(new THREE.Vector3()) : this.pos.clone().add(new THREE.Vector3(0, 1.3, 0));
+        this.ctx.effects.beam(from, e.pos.clone().add(new THREE.Vector3(0, 0.6, 0)), this.isV ? 0xffd36b : 0x29e6ff);
         sfx('patch');
+        if (this.isV) { this.ctx.effects.shockwave(e.pos.clone(), 1.6); this.ctx.effects.burst(e.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 24, [4, 2], 5); }
         e.patch(this.st.freezeBonus);
         this.ctx.effects.burst(e.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 18, [0, 2], 4);
         // Area Patch (taught by Old Mira): also fixes every glitched enemy near the target.
@@ -579,6 +659,15 @@ export class Player {
     // Blink while invulnerable after taking a hit.
     this.root.visible = !(this.invuln > 0 && this.state !== 'dash' && Math.floor(this.invuln * 20) % 2 === 0 && this.hp < this.maxHp);
     if (this.char.cursor) this.char.cursor.rotation.y += dt * 2;
+    // Victory's Aegis: a golden shield bubble while she guards.
+    if (this.isV) {
+      if (!this.aegis) {
+        this.aegis = new THREE.Mesh(new THREE.SphereGeometry(1.05, 20, 14), new THREE.MeshBasicMaterial({ color: 0xffd36b, transparent: true, opacity: 0.2, depthWrite: false, blending: THREE.AdditiveBlending }));
+        this.aegis.position.y = 1; this.group.add(this.aegis);
+      }
+      this.aegis.visible = this.state === 'block';
+      if (this.aegis.visible) this.aegis.material.opacity = (this.stateT < CFG.parryWindow * 1.45 ? 0.38 : 0.18) + Math.sin(this.stateT * 20) * 0.04;
+    }
   }
 
   #applyTransform() {

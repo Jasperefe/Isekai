@@ -1,4 +1,4 @@
-import { sfx } from './audio.js?v=29';
+import { sfx } from './audio.js?v=30';
 // CONSOLE: Jasper's cheat menu (taught by Old Mira). Opens a radial menu and slows time.
 // Commands are unlocked with Debug Points and each has a cooldown.
 const $ = id => document.getElementById(id);

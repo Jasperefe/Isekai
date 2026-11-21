@@ -1,8 +1,8 @@
 // Zone 1 story: quests, cutscenes, objective markers, unlocks and save/load.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=29';
-import { Z1 } from './world.js?v=29';
-import { Slime } from './enemies.js?v=29';
+import { sfx, music } from './audio.js?v=30';
+import { Z1 } from './world.js?v=30';
+import { Slime } from './enemies.js?v=30';
 
 
 // Quest stages in order.
@@ -207,7 +207,7 @@ export class Story {
     ]);
     player.char.blade.visible = true;
     player.unlocks.sword = true; hud.setUnlocks(player.unlocks);
-    hud.newAbility('DEBUG BLADE', 'Tap ATK to chain up to 8 moves. HVY, BLOCK and SWORD unlocked.');
+    if (this.ctx.player.isV) hud.newAbility('STAR RAPIER', 'Tap ATTACK for a fast 7-hit chain. LUNGE, AEGIS and BLINK unlocked.'); else hud.newAbility('DEBUG BLADE', 'Tap ATTACK to chain up to 8 moves. HEAVY and BLOCK unlocked.');
     this.#setStage('slimes');
   }
 
@@ -275,7 +275,7 @@ export class Story {
       { who: 'GUIDE', text: 'New skill unlocked: BLADE STORM. Use it when you are surrounded!' },
     ]);
     this.ctx.player.unlocks.skill = true; this.ctx.hud.setUnlocks(this.ctx.player.unlocks);
-    this.ctx.hud.newAbility('BLADE STORM', 'SKILL button / R: a 4-hit spin. Costs 40 stamina.');
+    if (this.ctx.player.isV) this.ctx.hud.newAbility('RADIANCE', 'SKILL button / R: a burst of light that pushes enemies back and heals you.'); else this.ctx.hud.newAbility('BLADE STORM', 'SKILL button / R: a 4-hit spin. Costs 40 stamina.');
     this.#setStage('bridge');
   }
 

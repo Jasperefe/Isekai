@@ -1,14 +1,14 @@
 // Zone 2: Glitchwood Forest. Same shape as zone1.js so the game core can load either.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=29';
-import { World2, Z2, PATHS2, WORLD2_RADIUS } from './world2.js?v=29';
-import { VillageKit } from './village.js?v=29';
-import { spawnZone2 } from './enemies2.js?v=29';
-import { Thornwraith } from './boss2.js?v=29';
-import { NPC } from './npc.js?v=29';
-import { Story2 } from './story2.js?v=29';
-import { makeChest } from './loot.js?v=29';
-import { makeItem } from './items.js?v=29';
+import { sfx, music } from './audio.js?v=30';
+import { World2, Z2, PATHS2, WORLD2_RADIUS } from './world2.js?v=30';
+import { VillageKit } from './village.js?v=30';
+import { spawnZone2 } from './enemies2.js?v=30';
+import { Thornwraith } from './boss2.js?v=30';
+import { NPC } from './npc.js?v=30';
+import { Story2 } from './story2.js?v=30';
+import { makeChest } from './loot.js?v=30';
+import { makeItem } from './items.js?v=30';
 
 export const ZONE_ID = 'z2';
 export const ZONE_NAME = 'Glitchwood Forest';

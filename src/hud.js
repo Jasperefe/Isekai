@@ -1,7 +1,7 @@
 // DOM-based HUD: bars, floating numbers, system messages and death screen.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=29';
-import { swapNames } from './dialogue.js?v=29';
+import { sfx } from './audio.js?v=30';
+import { swapNames } from './dialogue.js?v=30';
 
 const $ = id => document.getElementById(id);
 
@@ -24,22 +24,29 @@ export class Hud {
     $('xp-fill').style.width = (p.xp / (p.level * 100) * 100) + '%';
     $('lvl').textContent = 'LV ' + p.level;
     $('patch-cd')?.style.setProperty('--p', Math.max(0, p.patchCd / (p.patchCdMax || 8)));
-    $('skill-cd')?.style.setProperty('--p', Math.max(0, p.skillCd / 6));
+    $('skill-cd')?.style.setProperty('--p', Math.max(0, p.skillCd / (p.isV ? 8 : 6)));
     const cp = $('chip-patch'), cs = $('chip-skill');
     const target = p.patchTarget(), ready = !!target && p.patchCd <= 0;
-    cp.textContent = p.patchCd > 0 ? `E PATCH ${Math.ceil(p.patchCd)}s` : ready ? 'PRESS E: PATCH IT!' : 'E PATCH';
+    const pn = p.isV ? 'STARFALL' : 'PATCH';
+    cp.textContent = p.patchCd > 0 ? `E ${pn} ${Math.ceil(p.patchCd)}s` : ready ? `PRESS E: ${pn}!` : `E ${pn}`;
     cp.classList.toggle('cool', p.patchCd > 0 || !target); cp.classList.toggle('ready', ready);
     $('btn-patch')?.classList.toggle('ready', ready);
     // First time a glitched enemy comes close: explain Patch once.
     if (target && target.takeHit && !target.isBoss && !this.tutorialShown && target.pos.distanceTo(p.pos) < 9) { this.tutorialShown = true; this.tutorial(); }
     if (this.tutT > 0) { this.tutT -= dt; if (this.tutT <= 0) $('tutorial').classList.add('hidden'); }
-    cs.textContent = p.skillCd > 0 ? `R BLADE STORM ${Math.ceil(p.skillCd)}s` : 'R BLADE STORM'; cs.classList.toggle('cool', p.skillCd > 0 || p.stamina < 40);
+    const sn = p.isV ? 'RADIANCE' : 'BLADE STORM';
+    cs.textContent = p.skillCd > 0 ? `R ${sn} ${Math.ceil(p.skillCd)}s` : `R ${sn}`; cs.classList.toggle('cool', p.skillCd > 0 || p.stamina < 40);
     if (this.boss) { const w = Math.max(0, this.boss.hp / this.boss.maxHp * 100) + '%'; $('boss-fill').style.width = w; $('boss-trail').style.width = w; }
     if (this.msgTimer > 0) { this.msgTimer -= dt; if (this.msgTimer <= 0) $('system-msg').classList.remove('show'); }
   }
 
   system(text, time = 2.4) {
     if (this.swap) text = swapNames(text);
+    // Short pills only: the same message is not repeated within 20 s, and none stays more than 3.5 s.
+    const now = performance.now(), seen = (this.seen ||= new Map());
+    if (seen.get(text) > now) return;
+    seen.set(text, now + 20000); if (seen.size > 60) seen.clear();
+    time = Math.min(time, 3.5);
     const m = $('system-msg'); m.textContent = text; m.classList.add('show'); this.msgTimer = time;
   }
 
@@ -89,7 +96,8 @@ export class Hud {
     if (this.swap) { title = swapNames(title); text = swapNames(text); }
     $('toast-kicker').textContent = kicker; $('toast-title').textContent = title; $('toast-text').textContent = text;
     const el = $('toast'); el.classList.remove('hidden'); el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
-    clearTimeout(this.toastTO); this.toastTO = setTimeout(() => el.classList.add('hidden'), time * 1000);
+    document.body.classList.add('toast-on');
+    clearTimeout(this.toastTO); this.toastTO = setTimeout(() => { el.classList.add('hidden'); document.body.classList.remove('toast-on'); }, Math.min(time, 3.5) * 1000);
   }
 
   subtitle(text) {
@@ -99,7 +107,7 @@ export class Hud {
 
   setUnlocks(u) {
     const show = (id, on) => $(id)?.classList.toggle('hidden', !on);
-    show('btn-heavy', u.sword); show('btn-block', u.sword); show('btn-sword', u.sword);
+    show('btn-heavy', u.sword); show('btn-block', u.sword);
     show('btn-patch', u.patch); show('btn-skill', u.skill);
     show('chip-patch', u.patch); show('chip-skill', u.skill);
   }
@@ -112,7 +120,7 @@ export class Hud {
 
   setPortrait(url) { if (url) $('pp-face').src = url; }
 
-  bossBar(on, boss) { this.boss = on ? boss : null; $('bossbar').classList.toggle('hidden', !on); if (on && boss?.name) $('boss-name').textContent = boss.name; }
+  bossBar(on, boss) { this.boss = on ? boss : null; $('bossbar').classList.toggle('hidden', !on); document.body.classList.toggle('boss', !!on); if (on && boss?.name) $('boss-name').textContent = boss.name; }
 
   cinematic(lines) {
     return new Promise(resolve => {

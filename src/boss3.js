@@ -6,8 +6,8 @@
 //   PATCH during the trick inspects them: the real one glows gold for a moment.
 // - Below 35% he is ENRAGED: faster combos, two charges in a row.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=29';
-import { KnightBody, arcDecal } from './enemies3.js?v=29';
+import { sfx } from './audio.js?v=30';
+import { KnightBody, arcDecal } from './enemies3.js?v=30';
 
 const SCALE = 1.4;
 
@@ -69,7 +69,7 @@ export class SirDuplicate {
   reset() {
     this.hp = this.maxHp; this.dead = false; this.active = false; this.frozen = 0; this.stunned = 0; this.patchMult = 2;
     this.pos = this.home.clone(); this.knock = new THREE.Vector3(); this.facing = 0;
-    this.state = 'idle'; this.stateT = 0; this.cd = 1.5; this.mirrors = [false, false]; this.enraged = false; this.wave = null;
+    this.state = 'idle'; this.stateT = 0; this.cd = 1.5; this.mirrors = [false, false, false]; this.enraged = false; this.wave = null;
     this.hitFlash = 0; this.deathT = 0; this.mirroring = false; this.revealT = 0; this.charges = 0;
     this.group.visible = false; this.group.scale.setScalar(1); this.body.root.rotation.set(0, 0, 0);
     for (const o of [this.arc, this.lane, this.ring, this.waveMesh, this.reveal]) o.visible = false;
@@ -203,11 +203,11 @@ export class SirDuplicate {
     if (!this.enraged && hpF < 0.35) { this.enraged = true; this.onEnrage?.(); }
     const rage = this.enraged ? 1.25 : 1;
     if (this.mirroring) return this.#mirrorUpdate(dt, player) || attack;
-    [0.7, 0.35].forEach((th, i) => { if (!this.mirrors[i] && hpF < th && (this.state === 'chase' || this.state === 'stunned') && this.frozen <= 0) { this.mirrors[i] = true; this.#startMirror(player); } });
+    [0.75, 0.5, 0.25].forEach((th, i) => { if (!this.mirrors[i] && hpF < th && (this.state === 'chase' || this.state === 'stunned') && this.frozen <= 0) { this.mirrors[i] = true; this.#startMirror(player); } });
     if (this.mirroring) return attack;
     if (this.frozen > 0) this.frozen -= dt;
     if (this.stunned > 0) this.stunned -= dt;
-    this.cd -= dt * rage;
+    this.cd -= dt * rage * 1.3; // Hard: attacks come 30% sooner
     const turn = (target, rate) => { let d = target - this.facing; d = Math.atan2(Math.sin(d), Math.cos(d)); this.facing += Math.sign(d) * Math.min(Math.abs(d), rate * dt); };
     const fwd = () => new THREE.Vector3(Math.sin(this.facing), 0, Math.cos(this.facing));
     let anim = null;

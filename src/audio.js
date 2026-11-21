@@ -16,7 +16,7 @@ function init() {
   if (ctx || MUTE) return;
   const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
   ctx = new AC();
-  master = ctx.createGain(); master.connect(ctx.destination);
+  master = ctx.createGain(); master.gain.value = muted ? 0 : 1; master.connect(ctx.destination);
   // Gentle limiter so stacked hits never clip.
   const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -10; comp.ratio.value = 6; comp.connect(master);
   sfxBus = ctx.createGain(); sfxBus.gain.value = vol.sfx; sfxBus.connect(comp);
@@ -41,6 +41,9 @@ export function setVolumes(v) {
   if (musicBus) musicBus.gain.setTargetAtTime(vol.music, ctx.currentTime, 0.05);
 }
 export const volumes = () => ({ ...vol });
+// Mute everything (ads, platform pause). Volumes are kept.
+let muted = false;
+export function setMuted(m) { muted = !!m; if (master) master.gain.setTargetAtTime(muted ? 0 : 1, ctx.currentTime, 0.02); }
 export function setListener(pos) { listener = pos; }
 
 // ---------------------------------------------------------------- Music

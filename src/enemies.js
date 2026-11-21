@@ -1,8 +1,8 @@
 // Placeholder enemies for the prototype: normal slimes and "glitched" slimes.
 // Glitched slimes take reduced damage until Jasper patches them.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=29';
-import { heightAt } from './world.js?v=29';
+import { sfx } from './audio.js?v=30';
+import { heightAt } from './world.js?v=30';
 
 const SLIME_GEO = new THREE.SphereGeometry(0.55, 24, 16);
 SLIME_GEO.translate(0, 0.55, 0);

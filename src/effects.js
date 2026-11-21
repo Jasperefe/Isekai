@@ -7,7 +7,7 @@ export class Effects {
   constructor(scene) {
     this.scene = scene;
     this.items = [];
-    this.pixMats = [0x29e6ff, 0xff2bd6, 0xffffff, 0x9cff5a].map(c => new THREE.MeshBasicMaterial({ color: c, transparent: true }));
+    this.pixMats = [0x29e6ff, 0xff2bd6, 0xffffff, 0x9cff5a, 0xffd36b].map(c => new THREE.MeshBasicMaterial({ color: c, transparent: true }));
   }
 
   // Curved slash ribbon in front of the player.
@@ -37,11 +37,11 @@ export class Effects {
     }
   }
 
-  beam(from, to) {
+  beam(from, to, color = 0x29e6ff) {
     const dir = to.clone().sub(from), len = dir.length();
     const geo = new THREE.CylinderGeometry(0.05, 0.05, len, 8, 1, true);
     geo.translate(0, len / 2, 0); geo.rotateX(Math.PI / 2);
-    const mat = new THREE.MeshBasicMaterial({ color: 0x29e6ff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
+    const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
     const m = new THREE.Mesh(geo, mat);
     m.position.copy(from); m.lookAt(to);
     this.scene.add(m);

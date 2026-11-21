@@ -1,14 +1,15 @@
 // Zone 4: The Unfinished Zone. Same shape as the other zone modules so the game core can load it.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=29';
-import { World4, Z4, ISLANDS, SECRET, VOID, WORLD4_RADIUS } from './world4.js?v=29';
-import { spawnZone4, Placeholder } from './enemies4.js?v=29';
-import { Nova } from './boss4.js?v=29';
-import { Ally } from './ally.js?v=29';
-import { Story4 } from './story4.js?v=29';
-import { Endings } from './endings.js?v=29';
-import { makeChest } from './loot.js?v=29';
-import { makeItem } from './items.js?v=29';
+import { sfx } from './audio.js?v=30';
+import { World4, Z4, ISLANDS, SECRET, VOID, WORLD4_RADIUS } from './world4.js?v=30';
+import { spawnZone4, Placeholder } from './enemies4.js?v=30';
+import { Nova } from './boss4.js?v=30';
+import { Ally } from './ally.js?v=30';
+import { Story4 } from './story4.js?v=30';
+import { Endings } from './endings.js?v=30';
+import { applyDifficulty } from './difficulty.js?v=30';
+import { makeChest } from './loot.js?v=30';
+import { makeItem } from './items.js?v=30';
 
 export const ZONE_ID = 'z4';
 export const ZONE_NAME = 'The Unfinished Zone';
@@ -29,7 +30,7 @@ export async function loadZone(core) {
   const novaHome = new THREE.Vector3(Z4.novaHome.x, ISLANDS.C.y, Z4.novaHome.z);
   const spawnMinion = (p, glitched) => {
     const m = new Placeholder(scene, p, effects, { level: profile.d.level, glitched });
-    m.minion = true; m.noRespawn = true; m.alert = true;
+    m.minion = true; m.noRespawn = true; m.alert = true; applyDifficulty('z4', m);
     effects.burst(p.clone().add(new THREE.Vector3(0, 1.2, 0)), 20, [0, 1], 5);
     enemies.push(m);
   };

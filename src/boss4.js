@@ -2,13 +2,13 @@
 // It floats out of reach and attacks with its own interface:
 // - ERROR RAIN: red squares on the ground, then error windows crash down on them.
 // - DELETE BEAM: a red line sweeps round the arena at ankle height. JUMP over it.
-// - SUMMON (below 66%): Placeholders drop in. Defeat them to bring NOVA down sooner.
+// - SUMMON (at 75%, 50% and 25%): Placeholders drop in. Defeat them to bring NOVA down sooner.
 // After each attack cycle NOVA sinks to the floor to "reload": that is the moment to hit its eye.
 // When the eye flickers (GLITCHED) PATCH it: stunned, x2 damage. Below 33% it is ENRAGED.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=29';
-import { label } from './world4.js?v=29';
-import { Placeholder } from './enemies4.js?v=29';
+import { sfx } from './audio.js?v=30';
+import { label } from './world4.js?v=30';
+import { Placeholder } from './enemies4.js?v=30';
 
 const MAGENTA = 0xff2bd6, CYAN = 0x29e6ff;
 
@@ -70,7 +70,7 @@ export class Nova {
   reset() {
     this.hp = this.maxHp; this.dead = false; this.active = false; this.frozen = 0; this.stunned = 0; this.patchMult = 2;
     this.pos = this.home.clone(); this.pos.y = this.floorY; this.knock = new THREE.Vector3(); this.facing = 0;
-    this.state = 'idle'; this.stateT = 0; this.cycle = 0; this.enraged = false; this.summoned = [false, false]; this.eyeGlitch = false; this.deathT = 0; this.hitFlash = 0;
+    this.state = 'idle'; this.stateT = 0; this.cycle = 0; this.enraged = false; this.summoned = [false, false, false]; this.eyeGlitch = false; this.deathT = 0; this.hitFlash = 0;
     this.y = 6.2; this.group.visible = false; this.group.scale.setScalar(1);
     for (const m of this.marks) this.scene.remove(m.mesh); this.marks = [];
     for (const d of this.drops) this.scene.remove(d.mesh); this.drops = [];
@@ -156,7 +156,7 @@ export class Nova {
       }
     }
     // Phase summons.
-    [0.66, 0.4].forEach((th, i) => {
+    [0.75, 0.5, 0.25].forEach((th, i) => {
       if (!this.summoned[i] && hpF < th) {
         this.summoned[i] = true; this.onSummon?.();
         for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2 + Math.random(); this.spawnMinion(new THREE.Vector3(this.home.x + Math.cos(a) * 9, this.floorY, this.home.z + Math.sin(a) * 9), k === 0); }
@@ -166,17 +166,17 @@ export class Nova {
     this.y += (wantY - this.y) * Math.min(1, dt * (this.down ? 3 : 1.5));
     switch (this.state) {
       case 'rain':
-        if (this.stateT < 0.1 && !this.rained) { this.rained = true; this.#rain(player, this.enraged ? 6 : 4); }
-        if (this.stateT > 1.6 / rage && this.rains < (this.enraged ? 3 : 2)) { this.rains++; this.stateT = 0.11; this.#rain(player, this.enraged ? 6 : 4); }
+        if (this.stateT < 0.1 && !this.rained) { this.rained = true; this.#rain(player, this.enraged ? 7 : 5); }
+        if (this.stateT > 1.4 / rage && this.rains < (this.enraged ? 4 : 3)) { this.rains++; this.stateT = 0.11; this.#rain(player, this.enraged ? 7 : 5); }
         if (this.rains === undefined) this.rains = 0;
-        if (this.stateT > 2.4 && this.rains >= (this.enraged ? 3 : 2)) { this.state = 'beamWind'; this.stateT = 0; this.rains = 0; this.rained = false; this.beam.visible = true; this.beamMesh.material.opacity = 1; this.beam2.visible = this.enraged; sfx('warn'); this.beamA = Math.atan2(player.pos.x - this.home.x, player.pos.z - this.home.z) + Math.PI / 2; }
+        if (this.stateT > 2.2 && this.rains >= (this.enraged ? 4 : 3)) { this.state = 'beamWind'; this.stateT = 0; this.rains = 0; this.rained = false; this.beam.visible = true; this.beamMesh.material.opacity = 1; this.beam2.visible = this.enraged; sfx('warn'); this.beamA = Math.atan2(player.pos.x - this.home.x, player.pos.z - this.home.z) + Math.PI / 2; }
         break;
       case 'beamWind':
         this.beam.rotation.y = this.beamA; this.beam.scale.y = 0.3 + Math.sin(this.stateT * 30) * 0.2;
         if (this.stateT > 1.0) { this.state = 'beam'; this.stateT = 0; this.beam.scale.y = 1; sfx('sweep'); this.onBeam?.(); }
         break;
       case 'beam': {
-        const speed = (this.enraged ? 1.9 : 1.5);
+        const speed = (this.enraged ? 2.3 : 1.85);
         this.beam.rotation.y = this.beamA + this.stateT * speed;
         // Contact: Jasper on the ground, near the beam line.
         if (player.alive && player.onGround && (this.beamHitT || 0) <= 0) {
@@ -193,7 +193,7 @@ export class Nova {
       }
       case 'reload':
         this.reloadTag.position.set(this.pos.x, this.floorY + 6.4, this.pos.z); this.reloadTag.lookAt(player.pos.clone().setY(this.floorY + 6.4));
-        if (this.stateT > (this.enraged ? 5 : 6.5)) { this.reloadTag.visible = false; this.eyeGlitch = false; this.state = 'rain'; this.stateT = 0; this.cycle++;
+        if (this.stateT > (this.enraged ? 3.8 : 4.8)) { this.reloadTag.visible = false; this.eyeGlitch = false; this.state = 'rain'; this.stateT = 0; this.cycle++;
           // Rising back up: a shockwave pushes Jasper away.
           this.effects.shockwave(this.pos.clone().setY(this.floorY), 5); sfx('bossSlam');
           if (player.alive && player.onGround && Math.hypot(player.pos.x - this.pos.x, player.pos.z - this.pos.z) < 5) attack = attack || { damage: this.dmg.slam, from: this.pos.clone(), enemy: this, direct: true };

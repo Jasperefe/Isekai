@@ -2,26 +2,28 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=29';
-import { buildCharacter, captureGrip } from './characters.js?v=29';
-import { Player } from './player.js?v=29';
-import { Guide } from './guide.js?v=29';
-import { Dialogue } from './dialogue.js?v=29';
-import { Effects } from './effects.js?v=29';
-import { Hud } from './hud.js?v=29';
-import { Profile } from './profile.js?v=29';
-import { Loot } from './loot.js?v=29';
-import { Menu } from './menu.js?v=29';
-import { Console } from './console.js?v=29';
-import { Pet } from './pet.js?v=29';
-import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=29';
-import { capturePortrait, systemPortrait } from './portraits.js?v=29';
-import { ZoneMap, MapView, Minimap } from './map.js?v=29';
-import * as Zone1 from './zone1.js?v=29';
-import * as Zone2 from './zone2.js?v=29';
-import * as Zone3 from './zone3.js?v=29';
-import * as Zone4 from './zone4.js?v=29';
-import { Endings } from './endings.js?v=29';
+import { Input, isTouch } from './input.js?v=30';
+import { buildCharacter, captureGrip } from './characters.js?v=30';
+import { Player } from './player.js?v=30';
+import { Guide } from './guide.js?v=30';
+import { Dialogue } from './dialogue.js?v=30';
+import { Effects } from './effects.js?v=30';
+import { Hud } from './hud.js?v=30';
+import { Profile } from './profile.js?v=30';
+import { Loot } from './loot.js?v=30';
+import { Menu } from './menu.js?v=30';
+import { Console } from './console.js?v=30';
+import { Pet } from './pet.js?v=30';
+import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=30';
+import { capturePortrait, systemPortrait } from './portraits.js?v=30';
+import { ZoneMap, MapView, Minimap } from './map.js?v=30';
+import * as Zone1 from './zone1.js?v=30';
+import * as Zone2 from './zone2.js?v=30';
+import * as Zone3 from './zone3.js?v=30';
+import * as Zone4 from './zone4.js?v=30';
+import { Endings } from './endings.js?v=30';
+import { DIFFICULTY, applyAll } from './difficulty.js?v=30';
+import { ads } from './ads.js?v=30';
 
 // Zone registry. Each zone is loaded on its own page load (gates save and reload).
 const ZONES = { z1: Zone1, z2: Zone2, z3: Zone3, z4: Zone4 };
@@ -98,6 +100,9 @@ const loader = new GLTFLoader(manager);
 loader.setMeshoptDecoder(MeshoptDecoder);
 
 async function boot() {
+  // Playgama Bridge first (never wait more than 5 s for it).
+  await Promise.race([ads.init(), new Promise(r => setTimeout(r, 5000))]);
+  ads.message('in_game_loading_started');
   const [jasperG, a1, a2, propsG] = await Promise.all(['jasper', 'anims1', 'anims2', 'props'].map(f => loader.loadAsync(`assets/models/${f}.glb`)));
   const clips = [...a1.animations, ...a2.animations];
   const idle = clips.find(c => c.name === 'Idle_Loop');
@@ -110,7 +115,7 @@ async function boot() {
   const effects = new Effects(scene);
   const rig = new CameraRig(camera, null);
   const hud = new Hud(camera);
-  let hitStop = 0, zone = null, paused = false, lookIdle = 0, autoTurn = 0;
+  let hitStop = 0, zone = null, paused = false, lookIdle = 0, autoTurn = 0, adPaused = false;
   // Shared context used by the player; zone-specific parts are filled in when a zone loads.
   const ctx = {
     effects, hud, camera: rig, scene, profile,
@@ -118,6 +123,7 @@ async function boot() {
     hitStop: t => { hitStop = Math.max(hitStop, t); },
     onKill: e => { profile.d.totals.kills++; loot.enemyDrop(e); zone?.onKill(e); },
     respawnPoint: () => zone.respawnPoint(),
+    xpMul: () => ads.xpMul,
   };
   Object.defineProperty(ctx, 'patchables', { get: () => zone?.story.ctx.patchables || [] });
   const jasper = buildCharacter(heroG, 'jasper', idle, heroV ? { hair: 0xe9c27a, hero: 'victory' } : {});
@@ -127,7 +133,7 @@ async function boot() {
   const dialogue = new Dialogue();
   dialogue.swap = heroV; hud.swap = heroV;
   const loot = new Loot(scene, { player, profile, hud, effects, get world() { return ctx.world; } }, propsG);
-  const menu = new Menu({ profile, player, hud, onPause: v => { paused = v; }, zone: () => zone });
+  const menu = new Menu({ profile, player, hud, onPause: v => { paused = v; ads.message(v ? 'gameplay_stopped' : 'gameplay_started'); }, zone: () => zone });
   const cons = new Console({ profile, hud, player, effects, paused: () => paused });
   ctx.console = cons;
   const pet = new Pet(scene);
@@ -138,16 +144,24 @@ async function boot() {
     document.getElementById('load-fill').style.width = '0%';
     document.getElementById('loading').classList.remove('hidden');
     try { sessionStorage.setItem('isekai_autostart', '1'); } catch (e) { /* ignore */ }
-    setTimeout(() => location.reload(), 350);
+    // Natural break: an interstitial may play before the next zone loads.
+    setTimeout(() => ads.interstitial('zone_travel', () => location.reload()), 350);
   };
 
   // Load a zone (Zone 1 for now; the profile remembers which zone you're in).
   const core = { allyModel: heroV ? jasperG : null, allyOpts: heroV ? { name: 'JASPER', kind: 'jasper', color: '#29e6ff' } : null, pet, console: cons, travel, props: propsG, loader, scene, quality, clips, idle, player, hud, effects, profile, guide, dialogue, rig, loot, openForge: () => menu.openForge(), pause: v => menu.core.onPause(v), onKill: e => ctx.onKill(e) };
   zone = await ZONES[profile.d.zone in ZONES ? profile.d.zone : 'z1'].loadZone(core);
+  applyAll(zone.id, zone.enemies);
   ctx.world = zone.world; ctx.enemies = zone.enemies; ctx.npcs = zone.npcs; rig.world = zone.world;
 
   const input = new Input(canvas);
   document.getElementById('loading').classList.add('hidden');
+  ads.message('in_game_loading_stopped'); ads.message('game_ready');
+  ads.bind({ player, profile, hud, canOffer: () => !paused && !titleMode && !dialogue.active && !zone.story.busy && player.alive && !hud.boss && !cons.open && !portrait });
+  ads.onPause = v => { adPaused = v; ads.message(v ? 'gameplay_stopped' : 'gameplay_started'); };
+  // Death: offer a rewarded revive (not in boss fights); otherwise respawn at the crystal.
+  player.onRespawn = () => ads.interstitial('respawn');
+  let wasDead = false;
   hud.wallet(profile.d);
   rig.yaw = 0;
   // Every spawn (arriving through a gate, respawning, entering the throne room) puts the camera
@@ -188,16 +202,18 @@ async function boot() {
     profile.save(); autostart(); location.reload();
   });
   // New Game+ (after any ending).
-  if (heroV) $('pp-hero').textContent = 'VICTORY';
-  $('menu-ngplus').classList.toggle('hidden', !(profile.d.endings || []).length);
-  $('menu-ngplus').addEventListener('click', () => { menu.hide(); new Endings({ profile, player }).newGamePlus(); });
-  // TESTING ONLY (remove before release): jump straight to the next zone.
-  const ZONE_ORDER = Object.keys(ZONES);
-  $('menu-next').addEventListener('click', () => {
-    const next = ZONE_ORDER[(ZONE_ORDER.indexOf(zone.id) + 1) % ZONE_ORDER.length];
-    if (!confirm(`TEST: jump to ${ZONE_NAMES[next]}?`)) return;
-    menu.hide(); travel(next);
-  });
+  if (heroV) {
+    $('pp-hero').textContent = 'VICTORY'; $('pp-tag').textContent = 'PLAYER TWO'; document.body.classList.add('hero-v');
+    // Victory's own buttons.
+    for (const [id, l] of [['btn-heavy', 'LUNGE'], ['btn-dash', 'BLINK'], ['btn-block', 'AEGIS'], ['btn-patch', 'STARFALL'], ['btn-skill', 'RADIANCE']]) { const em = $(id)?.querySelector('em'); if (em) em.textContent = l; }
+    $('btn-skill')?.querySelector('svg')?.replaceChildren(...new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4M4.6 4.6l2.8 2.8M16.6 16.6l2.8 2.8M4.6 19.4l2.8-2.8M16.6 7.4l2.8-2.8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', 'image/svg+xml').documentElement.childNodes);
+    $('btn-patch')?.querySelector('svg')?.replaceChildren(...new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg"><path d="M12 2l2.9 6.3 6.9.7-5.2 4.6 1.5 6.8L12 16.9 5.9 20.4l1.5-6.8L2.2 9l6.9-.7z" fill="currentColor"/></svg>', 'image/svg+xml').documentElement.childNodes);
+    $('hint').textContent = $('hint').textContent.replace('R Blade Storm', 'R Radiance').replace('E Patch', 'E Starfall (long range)').replace('Q block / parry', 'Q Aegis / reflect').replace('Space dodge', 'Space Blink');
+  }
+  for (const [id, hero] of [['menu-ngv', 'victory'], ['menu-ngj', 'jasper']]) {
+    $(id).classList.toggle('hidden', !(profile.d.endings || []).length);
+    $(id).addEventListener('click', () => { menu.hide(); new Endings({ profile, player }).newGamePlus(hero); });
+  }
   // Sound settings.
   const bindVol = (id, key) => {
     const el = $(id), val = $(id + '-v');
@@ -244,6 +260,7 @@ async function boot() {
   const startGame = () => {
     titleMode = false; document.body.classList.remove('title'); $('title').classList.add('hidden');
     hud.show(); zone.start();
+    ads.message('gameplay_started');
     if (profile.d.pet === 'pip') pet.follow(player);
     music(ZONE_MUSIC[zone.id], 2.5);
     if (!isTouch) setTimeout(() => hud.system('> Click the screen to look around', 2.5), 9000);
@@ -289,7 +306,7 @@ async function boot() {
       if (doRender) renderer.render(scene, camera);
       return;
     }
-    if (paused || portrait) { if (doRender) renderer.render(scene, camera); return; }
+    if (paused || portrait || adPaused) { if (doRender) renderer.render(scene, camera); return; }
     cons.update(dt);
     if (cons.open) dt *= 0.12; // the Console slows time while open
     t += dt;
@@ -324,7 +341,7 @@ async function boot() {
       if (e.dead && !e.deathSeen) { e.deathSeen = true; if (!e.isBoss && zone.map.cleared?.()) e.respawnT = Math.max(e.respawnT || 0, 180); } // cleared zone: back after 3 minutes
       else if (!e.dead) e.deathSeen = false;
       const atk = dialogue.active ? null : e.update(dt * cons.enemyTimeScale, t, player, world);
-      if (atk && (atk.direct || player.pos.distanceTo(e.pos) < (atk.aoe || 2.1))) player.damage(atk.damage, atk.from, atk.enemy, atk);
+      if (atk && (atk.direct || player.pos.distanceTo(e.pos) < (atk.aoe || 2.1))) player.damage(Math.round(atk.damage * (e.diffDmg || DIFFICULTY[zone.id]?.dmg || 1)), atk.from, atk.enemy, atk);
     }
     // Bodies don't overlap: push Jasper and enemies apart.
     for (const e of enemies) {
@@ -337,6 +354,12 @@ async function boot() {
       }
     }
     zone.update(dt, t);
+    // Ads: revive offer on death, boost offer card now and then.
+    if (!player.alive && !wasDead) {
+      wasDead = true;
+      if (!hud.boss && ads.deathOffer(() => { player.revive(); document.body.classList.remove('revive'); }, () => { document.body.classList.remove('revive'); player.respawn(); })) { player.deathHeld = true; document.body.classList.add('revive'); }
+    } else if (player.alive) wasDead = false;
+    ads.update(dt);
     loot.update(dt, t);
     pet.update(dt, player, world);
     guide.update(dt, t, player.pos, player.facing, camera);

@@ -8,7 +8,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>ISEKAI</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Cpath d=%22M6 3v24l6-6 4 9 4-2-4-9h9z%22 fill=%22%2329e6ff%22/%3E%3C/svg%3E">
-<link rel="stylesheet" href="src/style.css?v=29">
+<link rel="stylesheet" href="src/style.css?v=30">
+<!-- Playgama Bridge (ads, pause/audio events). The game also runs if it fails to load. -->
+<script src="https://bridge.playgama.com/v1/stable/playgama-bridge.js"></script>
 <script type="importmap">
 { "imports": { "three": "./lib/three.module.min.js", "three/addons/": "./lib/addons/" } }
 </script>
@@ -26,15 +28,16 @@
   <div id="player-panel">
     <div class="pp-portrait"><img id="pp-face" alt=""><span id="lvl">LV 1</span></div>
     <div class="pp-main">
-      <div class="pp-name"><span id="pp-hero">JASPER</span> <span class="pp-tag">PLAYER ONE</span></div>
+      <div class="pp-name"><span id="pp-hero">JASPER</span> <span class="pp-tag" id="pp-tag">PLAYER ONE</span></div>
       <div class="bar hp"><div class="trail" id="hp-trail"></div><div class="fill" id="hp-fill"></div><span id="hp-text">100 / 100</span></div>
       <div class="bar st"><div class="fill" id="st-fill"></div></div>
       <div class="bar xp"><div class="fill" id="xp-fill"></div></div>
-      <div id="wallet"><span class="g"><i class="coin"></i><b id="w-gold">0</b></span><span class="s"><i class="gem"></i><b id="w-shards">0</b></span></div>
     </div>
   </div>
   <div id="quest"><div class="qt"><i></i><span id="quest-title"></span></div><div class="qx" id="quest-text"></div></div>
   <div id="minimap"><canvas></canvas></div>
+  <div id="wallet"><span class="g"><i class="coin"></i><b id="w-gold">0</b></span><span class="s"><i class="gem"></i><b id="w-shards">0</b></span></div>
+  <button id="btn-console" class="hudbtn con hidden" aria-label="Console"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="2.5" y="4" width="19" height="16" rx="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M6.5 9l3.5 3-3.5 3M12 15.5h5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   <button id="menu-btn" aria-label="Menu"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><span class="dot"></span></button>
   <div id="toast" class="hidden"><small id="toast-kicker"></small><b id="toast-title"></b><span id="toast-text"></span></div>
   <div id="subtitle" class="hidden"></div>
@@ -51,6 +54,7 @@
   <div id="cmd-active" class="hidden"></div>
   <div id="hint">WASD move · Mouse look · Keep clicking = 8-move chain · Click+Right-click = Pommel Bash · Click,Click+Right-click = Glitch Breaker · Right-click heavy · Q block / parry then click = COUNTER · Space dodge (while sprinting = slide) · Dodge+click = dash strike · Jump+click = slam · R Blade Storm · E Patch · F talk / jump · X draw / put away sword</div>
   <div id="death" class="hidden"><div>GAME OVER?</div><small>Respawning...</small></div>
+  <div id="xp-boost" class="hidden">2x XP</div>
 </div>
 
   <div id="menu" class="hidden">
@@ -91,15 +95,15 @@
             <h5>GRAPHICS</h5>
             <div class="seg" id="gfx-seg"><button data-gfx="auto">Auto</button><button data-gfx="high">High</button><button data-gfx="medium">Med</button><button data-gfx="low">Low</button></div>
             <label class="tgl"><span>Minimap</span><button id="mm-toggle" class="sw on" aria-label="Minimap on or off"><i></i></button></label>
-            <div class="setinfo"><span id="menu-fps">measuring FPS...</span><span id="build">build 29</span></div>
+            <div class="setinfo"><span id="menu-fps">measuring FPS...</span><span id="build">build 30</span></div>
             <button id="menu-gfx" class="hidden"></button>
           </div>
           <div class="setcard wide">
             <h5>PROGRESS</h5>
             <button id="menu-replay" class="sbtn">Replay this zone <small>keeps level, gear, skills</small></button>
-            <button id="menu-ngplus" class="sbtn hidden">New Game+ <small>replay the story, keep level, gear, gold</small></button>
-            <button id="menu-next" class="sbtn test">TEST: Next zone &#9654; <small>testing only, removed at release</small></button>
-            <button id="menu-credits" class="sbtn">Credits</button>
+            <button id="menu-ngv" class="sbtn hidden ngp">New Game+ as Victory <small>her own story; keeps level, gear, gold</small></button>
+            <button id="menu-ngj" class="sbtn hidden ngp">New Game+ as Jasper <small>keeps level, gear, gold</small></button>
+                        <button id="menu-credits" class="sbtn">Credits</button>
             <button id="menu-restart" class="sbtn danger">Restart story <small>erases all progress</small></button>
           </div>
         </div>
@@ -153,6 +157,8 @@
   <div class="t-foot"><span id="t-build"></span><span class="t-tap">Tap anywhere to start the music</span></div>
 </div>
 
+<div id="offer" class="hidden"></div>
+<div id="revive" class="hidden"><div class="rv-box"><small>YOU FELL</small><b>Revive right here?</b><span>Full HP, same spot, no walking back.</span><button id="rv-ad" class="rv-go"><i>&#9654;</i> WATCH AD TO REVIVE</button><button id="rv-no" class="rv-no">Respawn at the save crystal</button></div></div>
 <div id="touch" class="hidden">
   <div id="stick-zone"><div id="stick-base"><div id="stick-knob"></div></div></div>
   <div id="buttons">
@@ -162,13 +168,11 @@
     <button id="btn-patch" class="btn patch"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M5 3l14 7.5-6 1.6 3.6 6.4-2.4 1.4-3.6-6.4L6.4 17.6z" fill="currentColor"/><path d="M17 3l1 2M21 6l-2 .6M20 2.5l-.8 1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><em>PATCH</em><span class="cd" id="patch-cd"></span></button>
     <button id="btn-dash" class="btn"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 8h9M2 12h8M3 16h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M13 5l8 7-8 7z" fill="currentColor"/></svg><em>DODGE</em></button>
     <button id="btn-block" class="btn small"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z" fill="currentColor"/><path d="M12 6v12M8 10h8" stroke="#0b1020" stroke-width="1.6" stroke-linecap="round"/></svg><em>BLOCK</em></button>
-    <button id="btn-console" class="btn small con hidden"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="2.5" y="4" width="19" height="16" rx="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M6.5 9l3.5 3-3.5 3M12 15.5h5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><em>CONSOLE</em></button>
-    <button id="btn-sword" class="btn small"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M16 2l2 2-8.5 8.5-2-2z M7 11l2 2-1.5 1.5 1 1-1 1-1-1L4 18l-1-1 2.5-2.5-1-1 1-1 1 1z" fill="currentColor"/><path d="M15 15l4 4m0-4v4h-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><em>SWORD</em></button>
     <button id="btn-jump" class="btn small"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3l7 8h-4.5v5h-5v-5H5z" fill="currentColor"/><path d="M7 20h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><em>JUMP</em></button>
   </div>
   <button id="btn-talk" class="btn ctx hidden"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M4 4h16a2 2 0 012 2v9a2 2 0 01-2 2h-8l-5 4v-4H4a2 2 0 01-2-2V6a2 2 0 012-2z" fill="currentColor"/><circle cx="8" cy="10.5" r="1.3" fill="#0b1020"/><circle cx="12" cy="10.5" r="1.3" fill="#0b1020"/><circle cx="16" cy="10.5" r="1.3" fill="#0b1020"/></svg><em id="btn-talk-label">TALK</em></button>
 </div>
 
-<script type="module" src="src/main.js?v=29"></script>
+<script type="module" src="src/main.js?v=30"></script>
 </body>
 </html>

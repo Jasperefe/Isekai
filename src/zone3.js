@@ -1,15 +1,15 @@
 // Zone 3: Capital of Aster. Same shape as zone1.js / zone2.js so the game core can load it.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=29';
-import { World3, Z3, HALL, WORLD3_RADIUS } from './world3.js?v=29';
-import { initKnights, spawnZone3, setZone3Detail } from './enemies3.js?v=29';
-import { SirDuplicate } from './boss3.js?v=29';
-import { NPC } from './npc.js?v=29';
-import { Ally } from './ally.js?v=29';
-import { Shop } from './shop.js?v=29';
-import { Story3 } from './story3.js?v=29';
-import { makeChest } from './loot.js?v=29';
-import { makeItem } from './items.js?v=29';
+import { sfx } from './audio.js?v=30';
+import { World3, Z3, HALL, WORLD3_RADIUS } from './world3.js?v=30';
+import { initKnights, spawnZone3, setZone3Detail } from './enemies3.js?v=30';
+import { SirDuplicate } from './boss3.js?v=30';
+import { NPC } from './npc.js?v=30';
+import { Ally } from './ally.js?v=30';
+import { Shop } from './shop.js?v=30';
+import { Story3 } from './story3.js?v=30';
+import { makeChest } from './loot.js?v=30';
+import { makeItem } from './items.js?v=30';
 
 export const ZONE_ID = 'z3';
 export const ZONE_NAME = 'Capital of Aster';

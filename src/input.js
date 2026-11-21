@@ -90,7 +90,7 @@ export class Input {
     };
     bind('btn-attack', 'attack'); bind('btn-heavy', 'heavy'); bind('btn-dash', 'dash');
     bind('btn-patch', 'patch'); bind('btn-jump', 'jump');
-    bind('btn-block', 'block', true); bind('btn-skill', 'skill'); bind('btn-sword', 'sheathe'); bind('btn-talk', 'talk');
+    bind('btn-block', 'block', true); bind('btn-skill', 'skill'); bind('btn-talk', 'talk');
   }
 
   #moveStick(t, cx, cy, R, knob) {

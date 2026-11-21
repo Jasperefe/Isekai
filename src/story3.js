@@ -1,8 +1,8 @@
 // Zone 3 story: Capital of Aster. Captain Rho's loop, the copies in the city, Princess Victory,
 // Sir Duplicate and Victory's confession. Side quests: Merchant Dot's Price Glitch, ghost houses.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=29';
-import { Z3, HALL } from './world3.js?v=29';
+import { sfx, music } from './audio.js?v=30';
+import { Z3, HALL } from './world3.js?v=30';
 
 const STAGES = [
   { id: 'arrive', title: 'Rescue the Princess', text: 'Walk up the main street to the Market Plaza' },
