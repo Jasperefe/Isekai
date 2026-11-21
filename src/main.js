@@ -2,28 +2,29 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=21';
-import { buildCharacter, captureGrip } from './characters.js?v=21';
-import { Player } from './player.js?v=21';
-import { Guide } from './guide.js?v=21';
-import { Dialogue } from './dialogue.js?v=21';
-import { Effects } from './effects.js?v=21';
-import { Hud } from './hud.js?v=21';
-import { Profile } from './profile.js?v=21';
-import { Loot } from './loot.js?v=21';
-import { Menu } from './menu.js?v=21';
-import { Console } from './console.js?v=21';
-import { Pet } from './pet.js?v=21';
-import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=21';
-import { capturePortrait, systemPortrait } from './portraits.js?v=21';
-import { ZoneMap, MapView, Minimap } from './map.js?v=21';
-import * as Zone1 from './zone1.js?v=21';
-import * as Zone2 from './zone2.js?v=21';
+import { Input, isTouch } from './input.js?v=22';
+import { buildCharacter, captureGrip } from './characters.js?v=22';
+import { Player } from './player.js?v=22';
+import { Guide } from './guide.js?v=22';
+import { Dialogue } from './dialogue.js?v=22';
+import { Effects } from './effects.js?v=22';
+import { Hud } from './hud.js?v=22';
+import { Profile } from './profile.js?v=22';
+import { Loot } from './loot.js?v=22';
+import { Menu } from './menu.js?v=22';
+import { Console } from './console.js?v=22';
+import { Pet } from './pet.js?v=22';
+import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=22';
+import { capturePortrait, systemPortrait } from './portraits.js?v=22';
+import { ZoneMap, MapView, Minimap } from './map.js?v=22';
+import * as Zone1 from './zone1.js?v=22';
+import * as Zone2 from './zone2.js?v=22';
+import * as Zone3 from './zone3.js?v=22';
 
 // Zone registry. Each zone is loaded on its own page load (gates save and reload).
-const ZONES = { z1: Zone1, z2: Zone2 };
-const ZONE_NAMES = { z1: 'Starter Meadow', z2: 'Glitchwood Forest' };
-const ZONE_MUSIC = { z1: 'meadow', z2: 'glitchwood' };
+const ZONES = { z1: Zone1, z2: Zone2, z3: Zone3 };
+const ZONE_NAMES = { z1: 'Starter Meadow', z2: 'Glitchwood Forest', z3: 'Capital of Aster' };
+const ZONE_MUSIC = { z1: 'meadow', z2: 'glitchwood', z3: 'capital' };
 const FAST = new URLSearchParams(location.search).has('fast');
 
 const quality = isTouch
@@ -125,8 +126,8 @@ async function boot() {
   ctx.console = cons;
   const pet = new Pet(scene);
   // Travel through a zone gate: save, then reload into the other zone.
-  const travel = id => {
-    profile.d.zone = id; profile.d.arrive = 'gate'; player.syncProfile?.(); profile.save();
+  const travel = (id, arrive = 'gate') => {
+    profile.d.zone = id; profile.d.arrive = arrive; player.syncProfile?.(); profile.save();
     document.getElementById('load-text').textContent = `Entering ${ZONE_NAMES[id]}...`;
     document.getElementById('load-fill').style.width = '0%';
     document.getElementById('loading').classList.remove('hidden');
@@ -135,7 +136,7 @@ async function boot() {
   };
 
   // Load a zone (Zone 1 for now; the profile remembers which zone you're in).
-  const core = { pet, console: cons, travel, props: propsG, loader, scene, quality, clips, idle, player, hud, effects, profile, guide, dialogue, rig, loot, openForge: () => menu.openForge() };
+  const core = { pet, console: cons, travel, props: propsG, loader, scene, quality, clips, idle, player, hud, effects, profile, guide, dialogue, rig, loot, openForge: () => menu.openForge(), pause: v => menu.core.onPause(v), onKill: e => ctx.onKill(e) };
   zone = await ZONES[profile.d.zone in ZONES ? profile.d.zone : 'z1'].loadZone(core);
   ctx.world = zone.world; ctx.enemies = zone.enemies; ctx.npcs = zone.npcs; rig.world = zone.world;
 
@@ -189,13 +190,14 @@ async function boot() {
   // Portraits for the dialogue box and the HUD, rendered from the models (done between frames).
   const portraitJobs = [];
   const queuePortraits = () => {
-    const color = { JASPER: 0x1d2550, GUIDE: 0x0f2a3a, BRAM: 0x3a2412, NIA: 0x3a1430, TOMM: 0x1c3a14, MIRA: 0x123a3a, 'SLIME KING': 0x163a18, THORNWRAITH: 0x3a0f34 };
+    const color = { JASPER: 0x1d2550, GUIDE: 0x0f2a3a, BRAM: 0x3a2412, NIA: 0x3a1430, TOMM: 0x1c3a14, MIRA: 0x123a3a, 'SLIME KING': 0x163a18, THORNWRAITH: 0x3a0f34, RHO: 0x16244a, DOT: 0x3a1438, VICTORY: 0x3a2c10, 'SIR DUPLICATE': 0x3a2a0c };
     portraitJobs.push(['JASPER', player.group, { bg: color.JASPER }]);
     portraitJobs.push(['GUIDE', guide.group, { bg: color.GUIDE, focus: 0.5, dist: 0.85, side: 0.12, reset: [guide.mesh] }]);
     for (const n of zone.npcs) portraitJobs.push([n.name, n.group, { bg: color[n.name] ?? 0x1d2550 }]);
     if (zone.boss) {
       const b = zone.boss, big = b.name === 'THORNWRAITH';
-      portraitJobs.push([b.name, big ? b.m.root : b.group, { bg: color[b.name] ?? 0x2a1030, focus: big ? 0.72 : 0.6, dist: big ? 2.6 : 4.2, side: 0.2 }]);
+      if (b.portrait) portraitJobs.push([b.name, b.portrait.obj, { bg: color[b.name] ?? 0x2a1030, focus: 'head', dist: 1.45, side: 0.25 }]);
+      else portraitJobs.push([b.name, big ? b.m.root : b.group, { bg: color[b.name] ?? 0x2a1030, focus: big ? 0.72 : 0.6, dist: big ? 2.6 : 4.2, side: 0.2 }]);
     }
     dialogue.setPortrait('SYSTEM', systemPortrait());
   };

@@ -1,8 +1,8 @@
 // Zone 2 enemies: Null Wolves (packs that circle and pounce) and Static Sprites (floating TVs
 // that zap from range and teleport away). Same interface as Zone 1 slimes.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=21';
-import { buildNullWolf, buildStaticSprite, bake } from './monsters2.js?v=21';
+import { sfx } from './audio.js?v=22';
+import { buildNullWolf, buildStaticSprite, bake } from './monsters2.js?v=22';
 
 const CYAN = 0x29e6ff, MAGENTA = 0xff2bd6;
 let DETAIL = true; // false on phones: no outline lines, no real shadows
@@ -10,7 +10,7 @@ const iceMat = new THREE.MeshStandardMaterial({ color: 0x9feeff, transparent: tr
 const starMat = new THREE.MeshBasicMaterial({ color: 0xffe28a });
 const BLOB_GEO = new THREE.CircleGeometry(1, 16), BLOB_MAT = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false });
 
-function makeTag(text, color) {
+export function makeTag(text, color) {
   const c = document.createElement('canvas'); c.width = 256; c.height = 64;
   const g = c.getContext('2d');
   g.font = 'bold 30px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -23,7 +23,7 @@ function makeTag(text, color) {
 }
 
 // Shared behaviour: health, glitch resistance, Patch freeze, parry stun, death and respawn.
-class Enemy2 {
+export class Enemy2 {
   constructor(scene, home, effects, { glitched = false, level = 6, radius = 0.6 } = {}) {
     this.scene = scene; this.home = home.clone(); this.effects = effects;
     this.glitched = glitched; this.level = level; this.radius = radius;

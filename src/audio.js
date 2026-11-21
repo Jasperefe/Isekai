@@ -2,7 +2,7 @@
 // (no sound files needed, so every effect is unique to ISEKAI).
 // Usage: sfx('hit', pos?) · music('meadow') · setVolumes({ music, sfx }) · unlockAudio() on the first tap.
 
-const TRACKS = { title: 'assets/audio/title.mp3', meadow: 'assets/audio/meadow.mp3', glitchwood: 'assets/audio/glitchwood.mp3', boss: 'assets/audio/boss.mp3' };
+const TRACKS = { title: 'assets/audio/title.mp3', meadow: 'assets/audio/meadow.mp3', glitchwood: 'assets/audio/glitchwood.mp3', boss: 'assets/audio/boss.mp3', capital: 'assets/audio/capital.mp3' };
 const KEY = 'isekai_audio';
 
 let ctx = null, master, sfxBus, musicBus, noiseBuf = null, listener = null;

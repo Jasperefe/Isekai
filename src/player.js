@@ -1,8 +1,8 @@
 // Jasper: movement, sword combat, Debug Dash, block/parry, Blade Storm, Patch
 // and the animation state machine.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=21';
-import { heightAt } from './world.js?v=21';
+import { sfx } from './audio.js?v=22';
+import { heightAt } from './world.js?v=22';
 
 const CFG = {
   walk: 2.2, jog: 5.4, sprint: 7.8, accel: 14, turn: 12,
@@ -174,7 +174,7 @@ export class Player {
     if (!this.unlocks.patch) return null;
     let best = null, bestD = this.st.patchRange;
     for (const e of this.ctx.enemies) {
-      if (!e.glitchedActive || !e.alive) continue;
+      if (!(e.glitchedActive || e.patchable) || !e.alive) continue;
       const d = e.pos.distanceTo(this.pos) - (e.radius || 0.5);
       if (d < bestD) { bestD = d; best = e; }
     }
@@ -207,6 +207,13 @@ export class Player {
 
   damage(amount, from, enemy, opts = {}) {
     if (!this.alive || this.invuln > 0) return;
+    // Victory's Barrier: absorbs one hit.
+    if (this.barrier > 0) {
+      this.barrier = 0; this.invuln = 0.4; sfx('parry');
+      this.ctx.hud.float(this.pos.clone().add(new THREE.Vector3(0, 2.1, 0)), 'BARRIER', 'xp');
+      this.ctx.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 18, [2, 0], 5);
+      return;
+    }
     if (this.ctx.console?.god) { this.ctx.hud.float(this.pos.clone().add(new THREE.Vector3(0, 2.1, 0)), 'GOD MODE', 'xp'); return; }
     const fwd = new THREE.Vector3(Math.sin(this.facing), 0, Math.cos(this.facing));
     const toEnemy = from.clone().sub(this.pos).setY(0).normalize();
@@ -348,8 +355,8 @@ export class Player {
       const shatter = frozen && m.shatter;
       if (shatter) base *= 1.25;
       base = Math.round(base);
-      let dmg = e.takeHit(base, this.pos, { pierce: m.pierce });
-      if (st.doubleHit && Math.random() < st.doubleHit && e.alive) dmg += e.takeHit(Math.round(base * 0.5), this.pos, { pierce: m.pierce });
+      let dmg = e.takeHit(base, this.pos, { pierce: m.pierce, heavy: !!m.wide });
+      if (st.doubleHit && Math.random() < st.doubleHit && e.alive) dmg += e.takeHit(Math.round(base * 0.5), this.pos, { pierce: m.pierce, heavy: !!m.wide });
       if (st.lifesteal) this.hp = Math.min(this.maxHp, this.hp + dmg * st.lifesteal);
       if (crit) { critAny = true; this.ctx.hud.float(e.pos.clone().add(new THREE.Vector3(0.4, 1.9, 0)), 'CRIT', 'xp'); }
       if (shatter) {
@@ -513,7 +520,7 @@ export class Player {
         // Area Patch (taught by Old Mira): also fixes every glitched enemy near the target.
         if (this.profile.d.areaPatch && !e.isClone) {
           let n = 0;
-          for (const o of this.ctx.enemies) if (o !== e && o.glitchedActive && !o.isBoss && !o.isClone && o.pos.distanceTo(e.pos) < 6) {
+          for (const o of this.ctx.enemies) if (o !== e && (o.glitchedActive || o.patchable) && !o.isBoss && !o.isClone && o.pos.distanceTo(e.pos) < 6) {
             this.ctx.effects.beam(e.pos.clone().add(new THREE.Vector3(0, 0.6, 0)), o.pos.clone().add(new THREE.Vector3(0, 0.6, 0)));
             o.patch(this.st.freezeBonus); n++;
           }

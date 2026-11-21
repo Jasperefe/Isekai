@@ -1,8 +1,8 @@
 // Zone 2 story: Glitchwood Forest. Old Mira, Area Patch, the Console, the Corrupted Grove,
 // the Lost Pixel Fox side quest and the Thornwraith.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=21';
-import { Z2 } from './world2.js?v=21';
+import { sfx, music } from './audio.js?v=22';
+import { Z2 } from './world2.js?v=22';
 
 const STAGES = [
   { id: 'arrive', title: 'The Spreading Null', text: 'Follow the path into Glitchwood' },
@@ -73,8 +73,10 @@ export class Story2 {
     player.refreshStats(); player.hp = player.maxHp;
     hud.tutorialShown = true; // learned in Zone 1
     this.#applyStage();
-    const fromGate = profile.d.arrive === 'gate'; delete profile.d.arrive;
-    if (fromGate || this.crystal < 0) player.spawnAt(Z2.arrive, Math.PI);
+    const fromCapital = profile.d.arrive === 'capital';
+    const fromGate = profile.d.arrive === 'gate' || fromCapital; delete profile.d.arrive;
+    if (fromCapital) player.spawnAt(new THREE.Vector3(Z2.hollow.x, 0, Z2.hollow.z - Z2.hollowR + 8.5), 0);
+    else if (fromGate || this.crystal < 0) player.spawnAt(Z2.arrive, Math.PI);
     else player.spawnAt(this.respawnPoint(), Math.PI);
     guide.teleport(player.pos);
     if (this.flags.pip === 'asked') pet.stuckAt(Z2.pip, this.ctx.world);
@@ -210,6 +212,16 @@ export class Story2 {
     sfx('gate'); this.ctx.travel('z1');
   }
 
+  // The crypt door in Root Hollow: the road to the Capital of Aster (open after the Thornwraith).
+  async capitalGate() {
+    const first = !this.ctx.profile.d.zones.z3;
+    await this.#say(first ? [
+      { who: 'GUIDE', text: 'The Null signal comes from beyond this door. The road leads to the CAPITAL OF ASTER.' },
+      { who: 'GUIDE', text: 'Everything there will be tougher. If you want, visit Bram first: MAP, then WORLD.' },
+    ] : [{ who: 'GUIDE', text: 'The road to the Capital of Aster. Your progress is saved.' }]);
+    sfx('gate'); this.ctx.travel('z3');
+  }
+
   // ---------- Events ----------
   onKill(e) {
     if (e.isBoss || e.minion) return;
@@ -277,7 +289,7 @@ export class Story2 {
       { who: 'GUIDE', text: 'Jasper... the Null did not start here either. The signal comes from the CAPITAL OF ASTER.' },
       { who: 'JASPER', text: 'Then that\'s where we go next.' },
     ]);
-    hud.zoneComplete({ level: player.level, time: this.playTime, num: 'ZONE 2', title: 'GLITCHWOOD FOREST CLEARED', next: 'Next: <b>Capital of Aster</b> (coming in the next milestone)' });
+    hud.zoneComplete({ level: player.level, time: this.playTime, num: 'ZONE 2', title: 'GLITCHWOOD FOREST CLEARED', next: 'Next: <b>Capital of Aster</b>, through the glowing crypt door in Root Hollow' });
   }
 
   // ---------- Per frame ----------

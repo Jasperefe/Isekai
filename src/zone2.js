@@ -1,17 +1,19 @@
 // Zone 2: Glitchwood Forest. Same shape as zone1.js so the game core can load either.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=21';
-import { World2, Z2, PATHS2, WORLD2_RADIUS } from './world2.js?v=21';
-import { VillageKit } from './village.js?v=21';
-import { spawnZone2 } from './enemies2.js?v=21';
-import { Thornwraith } from './boss2.js?v=21';
-import { NPC } from './npc.js?v=21';
-import { Story2 } from './story2.js?v=21';
-import { makeChest } from './loot.js?v=21';
-import { makeItem } from './items.js?v=21';
+import { sfx, music } from './audio.js?v=22';
+import { World2, Z2, PATHS2, WORLD2_RADIUS } from './world2.js?v=22';
+import { VillageKit } from './village.js?v=22';
+import { spawnZone2 } from './enemies2.js?v=22';
+import { Thornwraith } from './boss2.js?v=22';
+import { NPC } from './npc.js?v=22';
+import { Story2 } from './story2.js?v=22';
+import { makeChest } from './loot.js?v=22';
+import { makeItem } from './items.js?v=22';
 
 export const ZONE_ID = 'z2';
 export const ZONE_NAME = 'Glitchwood Forest';
+// After the Thornwraith falls, the crypt door in Root Hollow opens onto the road to the Capital.
+const CAPITAL_DOOR = new THREE.Vector3(Z2.hollow.x, 0, Z2.hollow.z - Z2.hollowR + 5.2);
 
 const CHESTS = [
   { id: 'c1', pos: [-18, 34], ry: 1.2 },
@@ -70,8 +72,14 @@ export async function loadZone(core) {
     ...npcs.map(n => ({ pos: n.pos, label: `Talk to ${n.name}`, button: 'TALK', act: () => story.talk(n) })),
     ...chests.filter(c => !c.opened).map(c => ({ pos: c.pos3, range: c.secret === 'ledge' ? 2.2 : 2.8, label: 'Open chest', button: 'OPEN', act: () => openChest(c) })),
     { pos: Z2.gate, range: 4.5, label: 'Gate to Starter Meadow', button: 'GATE', act: () => story.gate() },
+    ...(story.stage >= story.idx('done') ? [{ pos: CAPITAL_DOOR, range: 3.6, label: 'Road to the Capital', button: 'GATE', act: () => story.capitalGate() }] : []),
   ];
 
+  // Golden light in the crypt door (only after the boss).
+  const doorMat = new THREE.MeshBasicMaterial({ color: 0xffd36b, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending });
+  const door = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 3.2), doorMat);
+  door.position.set(CAPITAL_DOOR.x, world.groundAt(CAPITAL_DOOR.x, CAPITAL_DOOR.z) + 1.6, CAPITAL_DOOR.z - 1.6); scene.add(door);
+  const doorLight = new THREE.PointLight(0xffc860, 0, 9); doorLight.position.set(CAPITAL_DOOR.x, door.position.y, CAPITAL_DOOR.z); scene.add(doorLight);
   let miraT = 0;
   return {
     id: ZONE_ID, name: ZONE_NAME, world, enemies, npcs, boss, story, chests, interactables,
@@ -91,6 +99,9 @@ export async function loadZone(core) {
       for (const m of miraMats) m.wireframe = flick;
       for (const c of chests) if (c.pos3.distanceTo(player.pos) < 40) c.group.userData.update(dt);
       story.update(dt, t);
+      const open = story.stage >= story.idx('done');
+      door.visible = open; doorLight.intensity = open ? 5 + Math.sin(t * 3) : 0;
+      if (open) doorMat.opacity = 0.4 + Math.sin(t * 2.5) * 0.12;
     },
     map: {
       radius: WORLD2_RADIUS, paths: PATHS2, riverX: null,
@@ -100,7 +111,7 @@ export async function loadZone(core) {
         { name: 'Corrupted Grove', p: Z2.grove, r: Z2.groveR, color: '#8a4dc2' },
         { name: 'Root Hollow', p: Z2.hollow, r: Z2.hollowR, color: '#6b4a35' },
       ],
-      gates: [{ name: 'To Starter Meadow', p: Z2.gate, color: '#3cd6ff' }],
+      gates: [{ name: 'To Starter Meadow', p: Z2.gate, color: '#3cd6ff' }, ...(story.stage >= story.idx('done') ? [{ name: 'To the Capital', p: CAPITAL_DOOR, color: '#ffd36b' }] : [])],
       lair: Z2.hollow,
       // Boss lair state for the map: sealed until every Null enemy is defeated.
       lock: () => {
