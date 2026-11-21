@@ -2,24 +2,24 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=23';
-import { buildCharacter, captureGrip } from './characters.js?v=23';
-import { Player } from './player.js?v=23';
-import { Guide } from './guide.js?v=23';
-import { Dialogue } from './dialogue.js?v=23';
-import { Effects } from './effects.js?v=23';
-import { Hud } from './hud.js?v=23';
-import { Profile } from './profile.js?v=23';
-import { Loot } from './loot.js?v=23';
-import { Menu } from './menu.js?v=23';
-import { Console } from './console.js?v=23';
-import { Pet } from './pet.js?v=23';
-import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=23';
-import { capturePortrait, systemPortrait } from './portraits.js?v=23';
-import { ZoneMap, MapView, Minimap } from './map.js?v=23';
-import * as Zone1 from './zone1.js?v=23';
-import * as Zone2 from './zone2.js?v=23';
-import * as Zone3 from './zone3.js?v=23';
+import { Input, isTouch } from './input.js?v=24';
+import { buildCharacter, captureGrip } from './characters.js?v=24';
+import { Player } from './player.js?v=24';
+import { Guide } from './guide.js?v=24';
+import { Dialogue } from './dialogue.js?v=24';
+import { Effects } from './effects.js?v=24';
+import { Hud } from './hud.js?v=24';
+import { Profile } from './profile.js?v=24';
+import { Loot } from './loot.js?v=24';
+import { Menu } from './menu.js?v=24';
+import { Console } from './console.js?v=24';
+import { Pet } from './pet.js?v=24';
+import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=24';
+import { capturePortrait, systemPortrait } from './portraits.js?v=24';
+import { ZoneMap, MapView, Minimap } from './map.js?v=24';
+import * as Zone1 from './zone1.js?v=24';
+import * as Zone2 from './zone2.js?v=24';
+import * as Zone3 from './zone3.js?v=24';
 
 // Zone registry. Each zone is loaded on its own page load (gates save and reload).
 const ZONES = { z1: Zone1, z2: Zone2, z3: Zone3 };
@@ -144,6 +144,10 @@ async function boot() {
   document.getElementById('loading').classList.add('hidden');
   hud.wallet(profile.d);
   rig.yaw = 0;
+  // Every spawn (arriving through a gate, respawning, entering the throne room) puts the camera
+  // straight behind Jasper, so he never starts out facing the camera.
+  const spawnAt = player.spawnAt.bind(player);
+  player.spawnAt = (p, facing) => { spawnAt(p, facing); rig.yaw = player.facing + Math.PI; rig.camK = 1; };
   setListener(player.pos);
   const $ = id => document.getElementById(id);
   // Landscape only: in portrait a "rotate your device" screen covers the game and time stops.

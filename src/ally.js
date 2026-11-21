@@ -5,8 +5,8 @@
 // - BARRIER: a bubble that absorbs one hit (cast in boss fights).
 import * as THREE from 'three';
 import { clone as skClone } from 'three/addons/utils/SkeletonUtils.js';
-import { buildCharacter } from './characters.js?v=23';
-import { sfx } from './audio.js?v=23';
+import { buildCharacter } from './characters.js?v=24';
+import { sfx } from './audio.js?v=24';
 
 const GOLD = 0xffd36b, MAGENTA = 0xff2bd6;
 

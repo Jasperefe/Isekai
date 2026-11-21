@@ -1,15 +1,15 @@
 // Zone 1: Starter Meadow. Builds the map, villagers, enemies, boss, chests and story.
 // Every zone module exports the same shape so the game core can load zones one after another.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=23';
-import { World, Z1, riverX, PATHS, WORLD_RADIUS } from './world.js?v=23';
-import { VillageKit } from './village.js?v=23';
-import { spawnSlimes, setSlimeLevel } from './enemies.js?v=23';
-import { SlimeKing } from './boss.js?v=23';
-import { NPC } from './npc.js?v=23';
-import { Story } from './story.js?v=23';
-import { makeChest } from './loot.js?v=23';
-import { makeItem } from './items.js?v=23';
+import { sfx, music } from './audio.js?v=24';
+import { World, Z1, riverX, PATHS, WORLD_RADIUS } from './world.js?v=24';
+import { VillageKit } from './village.js?v=24';
+import { spawnSlimes, setSlimeLevel } from './enemies.js?v=24';
+import { SlimeKing } from './boss.js?v=24';
+import { NPC } from './npc.js?v=24';
+import { Story } from './story.js?v=24';
+import { makeChest } from './loot.js?v=24';
+import { makeItem } from './items.js?v=24';
 
 export const ZONE_ID = 'z1';
 export const ZONE_NAME = 'Starter Meadow';
