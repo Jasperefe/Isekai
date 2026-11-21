@@ -2,29 +2,31 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=27';
-import { buildCharacter, captureGrip } from './characters.js?v=27';
-import { Player } from './player.js?v=27';
-import { Guide } from './guide.js?v=27';
-import { Dialogue } from './dialogue.js?v=27';
-import { Effects } from './effects.js?v=27';
-import { Hud } from './hud.js?v=27';
-import { Profile } from './profile.js?v=27';
-import { Loot } from './loot.js?v=27';
-import { Menu } from './menu.js?v=27';
-import { Console } from './console.js?v=27';
-import { Pet } from './pet.js?v=27';
-import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=27';
-import { capturePortrait, systemPortrait } from './portraits.js?v=27';
-import { ZoneMap, MapView, Minimap } from './map.js?v=27';
-import * as Zone1 from './zone1.js?v=27';
-import * as Zone2 from './zone2.js?v=27';
-import * as Zone3 from './zone3.js?v=27';
+import { Input, isTouch } from './input.js?v=28';
+import { buildCharacter, captureGrip } from './characters.js?v=28';
+import { Player } from './player.js?v=28';
+import { Guide } from './guide.js?v=28';
+import { Dialogue } from './dialogue.js?v=28';
+import { Effects } from './effects.js?v=28';
+import { Hud } from './hud.js?v=28';
+import { Profile } from './profile.js?v=28';
+import { Loot } from './loot.js?v=28';
+import { Menu } from './menu.js?v=28';
+import { Console } from './console.js?v=28';
+import { Pet } from './pet.js?v=28';
+import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=28';
+import { capturePortrait, systemPortrait } from './portraits.js?v=28';
+import { ZoneMap, MapView, Minimap } from './map.js?v=28';
+import * as Zone1 from './zone1.js?v=28';
+import * as Zone2 from './zone2.js?v=28';
+import * as Zone3 from './zone3.js?v=28';
+import * as Zone4 from './zone4.js?v=28';
+import { Endings } from './endings.js?v=28';
 
 // Zone registry. Each zone is loaded on its own page load (gates save and reload).
-const ZONES = { z1: Zone1, z2: Zone2, z3: Zone3 };
-const ZONE_NAMES = { z1: 'Starter Meadow', z2: 'Glitchwood Forest', z3: 'Capital of Aster' };
-const ZONE_MUSIC = { z1: 'meadow', z2: 'glitchwood', z3: 'capital' };
+const ZONES = { z1: Zone1, z2: Zone2, z3: Zone3, z4: Zone4 };
+const ZONE_NAMES = { z1: 'Starter Meadow', z2: 'Glitchwood Forest', z3: 'Capital of Aster', z4: 'The Unfinished Zone' };
+const ZONE_MUSIC = { z1: 'meadow', z2: 'glitchwood', z3: 'capital', z4: 'glitchwood' };
 const FAST = new URLSearchParams(location.search).has('fast');
 
 const quality = isTouch
@@ -101,6 +103,9 @@ async function boot() {
   const idle = clips.find(c => c.name === 'Idle_Loop');
 
   const profile = Profile.load();
+  // New Game+ as Victory: she becomes the player (with the Debug Blade) and Jasper becomes the ally.
+  const heroV = profile.d.hero === 'victory';
+  const heroG = heroV ? await loader.loadAsync('assets/models/victory.glb') : jasperG;
   if (profile.d.zone !== 'z1' && ZONES[profile.d.zone]) loadText.textContent = `Entering ${ZONE_NAMES[profile.d.zone]}...`;
   const effects = new Effects(scene);
   const rig = new CameraRig(camera, null);
@@ -115,11 +120,12 @@ async function boot() {
     respawnPoint: () => zone.respawnPoint(),
   };
   Object.defineProperty(ctx, 'patchables', { get: () => zone?.story.ctx.patchables || [] });
-  const jasper = buildCharacter(jasperG, 'jasper', idle);
+  const jasper = buildCharacter(heroG, 'jasper', idle, heroV ? { hair: 0xe9c27a, hero: 'victory' } : {});
   jasper.grip = captureGrip(jasper.root, clips.find(c => c.name === 'Sword_Idle'));
   const player = new Player(jasper, clips, scene, ctx);
   const guide = new Guide(scene);
   const dialogue = new Dialogue();
+  dialogue.swap = heroV; hud.swap = heroV;
   const loot = new Loot(scene, { player, profile, hud, effects, get world() { return ctx.world; } }, propsG);
   const menu = new Menu({ profile, player, hud, onPause: v => { paused = v; }, zone: () => zone });
   const cons = new Console({ profile, hud, player, effects, paused: () => paused });
@@ -136,7 +142,7 @@ async function boot() {
   };
 
   // Load a zone (Zone 1 for now; the profile remembers which zone you're in).
-  const core = { pet, console: cons, travel, props: propsG, loader, scene, quality, clips, idle, player, hud, effects, profile, guide, dialogue, rig, loot, openForge: () => menu.openForge(), pause: v => menu.core.onPause(v), onKill: e => ctx.onKill(e) };
+  const core = { allyModel: heroV ? jasperG : null, allyOpts: heroV ? { name: 'JASPER', kind: 'jasper', color: '#29e6ff' } : null, pet, console: cons, travel, props: propsG, loader, scene, quality, clips, idle, player, hud, effects, profile, guide, dialogue, rig, loot, openForge: () => menu.openForge(), pause: v => menu.core.onPause(v), onKill: e => ctx.onKill(e) };
   zone = await ZONES[profile.d.zone in ZONES ? profile.d.zone : 'z1'].loadZone(core);
   ctx.world = zone.world; ctx.enemies = zone.enemies; ctx.npcs = zone.npcs; rig.world = zone.world;
 
@@ -181,6 +187,10 @@ async function boot() {
     profile.d.zones[zone.id] = zone.replayData();
     profile.save(); autostart(); location.reload();
   });
+  // New Game+ (after any ending).
+  if (heroV) $('pp-hero').textContent = 'VICTORY';
+  $('menu-ngplus').classList.toggle('hidden', !(profile.d.endings || []).length);
+  $('menu-ngplus').addEventListener('click', () => { menu.hide(); new Endings({ profile, player }).newGamePlus(); });
   // TESTING ONLY (remove before release): jump straight to the next zone.
   const ZONE_ORDER = Object.keys(ZONES);
   $('menu-next').addEventListener('click', () => {
@@ -207,13 +217,14 @@ async function boot() {
   // Portraits for the dialogue box and the HUD, rendered from the models (done between frames).
   const portraitJobs = [];
   const queuePortraits = () => {
-    const color = { JASPER: 0x1d2550, GUIDE: 0x0f2a3a, BRAM: 0x3a2412, NIA: 0x3a1430, TOMM: 0x1c3a14, MIRA: 0x123a3a, 'SLIME KING': 0x163a18, THORNWRAITH: 0x3a0f34, RHO: 0x16244a, DOT: 0x3a1438, VICTORY: 0x3a2c10, 'SIR DUPLICATE': 0x3a2a0c };
-    portraitJobs.push(['JASPER', player.group, { bg: color.JASPER }]);
+    const color = { JASPER: 0x1d2550, GUIDE: 0x0f2a3a, BRAM: 0x3a2412, NIA: 0x3a1430, TOMM: 0x1c3a14, MIRA: 0x123a3a, 'SLIME KING': 0x163a18, THORNWRAITH: 0x3a0f34, RHO: 0x16244a, DOT: 0x3a1438, VICTORY: 0x3a2c10, 'SIR DUPLICATE': 0x3a2a0c, NOVA: 0x2a0a30 };
+    const heroName = heroV ? 'VICTORY' : 'JASPER';
+    portraitJobs.push([heroName, player.group, { bg: color[heroName] }]);
     portraitJobs.push(['GUIDE', guide.group, { bg: color.GUIDE, focus: 0.5, dist: 0.85, side: 0.12, reset: [guide.mesh] }]);
     for (const n of zone.npcs) portraitJobs.push([n.name, n.group, { bg: color[n.name] ?? 0x1d2550 }]);
     if (zone.boss) {
       const b = zone.boss, big = b.name === 'THORNWRAITH';
-      if (b.portrait) portraitJobs.push([b.name, b.portrait.obj, { bg: color[b.name] ?? 0x2a1030, focus: 'head', dist: 1.45, side: 0.25 }]);
+      if (b.portrait) portraitJobs.push([b.name, b.portrait.obj, { bg: color[b.name] ?? 0x2a1030, focus: b.portrait.focus ?? 'head', dist: b.portrait.dist ?? 1.45, side: b.portrait.side ?? 0.25 }]);
       else portraitJobs.push([b.name, big ? b.m.root : b.group, { bg: color[b.name] ?? 0x2a1030, focus: big ? 0.72 : 0.6, dist: big ? 2.6 : 4.2, side: 0.2 }]);
     }
     dialogue.setPortrait('SYSTEM', systemPortrait());
@@ -222,7 +233,7 @@ async function boot() {
   const runPortraits = () => {
     while (portraitJobs.length) {
       const [name, obj, opts] = portraitJobs.shift();
-      try { const url = capturePortrait(renderer, obj, opts); dialogue.setPortrait(name, url); if (name === 'JASPER') hud.setPortrait(url); }
+      try { const url = capturePortrait(renderer, obj, opts); dialogue.setPortrait(name, url); if (obj === player.group) hud.setPortrait(url); }
       catch (e) { console.warn('portrait failed', name, e); }
     }
   };
@@ -335,7 +346,7 @@ async function boot() {
       let d = player.facing + Math.PI - rig.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
       rig.yaw += d * Math.min(1, dt * 1.6 * Math.max(0.35, Math.abs(Math.sin(d)))) * (Math.abs(d) > 2.6 ? 0 : 1);
     }
-    rig.update(dt, input, player.pos, boss.alive ? 1.45 : 1, dialogue.active && story.talkNpc ? story.talkNpc.pos : null);
+    rig.update(dt, input, player.pos, boss.alive ? (world.inHall?.(player.pos) ? 1.12 : 1.45) : 1, dialogue.active && story.talkNpc ? story.talkNpc.pos : null);
     // Fade enemies that get between the camera and Jasper.
     for (const e of enemies) {
       const near2 = camera.position.distanceTo(e.group.position) < 3.2 + (e.radius || 0);

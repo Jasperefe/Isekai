@@ -3,10 +3,10 @@
 import * as THREE from 'three';
 import { clone as skClone } from 'three/addons/utils/SkeletonUtils.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { sfx } from './audio.js?v=27';
-import { buildCharacter } from './characters.js?v=27';
-import { Enemy2, makeTag } from './enemies2.js?v=27';
-import { bake } from './monsters2.js?v=27';
+import { sfx } from './audio.js?v=28';
+import { buildCharacter } from './characters.js?v=28';
+import { Enemy2, makeTag } from './enemies2.js?v=28';
+import { bake } from './monsters2.js?v=28';
 
 const MAGENTA = 0xff2bd6, CYAN = 0x29e6ff;
 let DETAIL = true;
@@ -95,7 +95,7 @@ function makeKnight(gltf, kind) {
     // Royal cape.
     const sp = wp('spine_03');
     const capeG = new THREE.PlaneGeometry(0.7, 1.25, 1, 4); capeG.translate(0, -0.62, 0);
-    const p = capeG.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, -Math.pow(-p.getY(i), 1.4) * 0.18);
+    const p = capeG.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, -Math.pow(Math.max(0, -p.getY(i)), 1.4) * 0.18);
     const cape = new THREE.Mesh(capeG, new THREE.MeshStandardMaterial({ color: 0x9e1f2c, roughness: 0.9, side: THREE.DoubleSide }));
     cape.castShadow = DETAIL;
     attachWorld(root, cape, 'spine_03', new THREE.Vector3(sp.x, sp.y + 0.22, sp.z - 0.16));

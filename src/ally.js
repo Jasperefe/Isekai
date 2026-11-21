@@ -5,8 +5,8 @@
 // - BARRIER: a bubble that absorbs one hit (cast in boss fights).
 import * as THREE from 'three';
 import { clone as skClone } from 'three/addons/utils/SkeletonUtils.js';
-import { buildCharacter } from './characters.js?v=27';
-import { sfx } from './audio.js?v=27';
+import { buildCharacter } from './characters.js?v=28';
+import { sfx } from './audio.js?v=28';
 
 const GOLD = 0xffd36b, MAGENTA = 0xff2bd6;
 
@@ -26,13 +26,15 @@ export class Ally {
   // ctx: { player, effects, hud, world, enemies: () => [], onKill(e) }
   constructor(scene, gltf, clips, idle, ctx, cagePos) {
     this.ctx = ctx; this.scene = scene;
-    this.name = 'VICTORY'; this.opts = { color: '#ffd36b', anim: 'Idle_Loop' }; this.talkAnim = 'Idle_Talking_Loop';
-    const ch = buildCharacter({ scene: skClone(gltf.scene) }, 'victory', idle);
+    // New Game+ as Victory: the ally is Jasper (ctx.name / ctx.kind / ctx.color).
+    this.name = ctx.name || 'VICTORY'; this.opts = { color: ctx.color || '#ffd36b', anim: 'Idle_Loop' }; this.talkAnim = 'Idle_Talking_Loop';
+    const ch = buildCharacter({ scene: skClone(gltf.scene) }, ctx.kind || 'victory', idle);
+    if (ch.sheathe) ch.sheathe();
     this.root = ch.root;
     this.group = new THREE.Group(); this.group.add(this.root); scene.add(this.group);
     this.mixer = new THREE.AnimationMixer(this.root);
     this.clips = Object.fromEntries(clips.map(c => [c.name, c]));
-    this.tag = nameTag('VICTORY', '#ffd36b'); this.tag.position.y = 2.15; this.group.add(this.tag);
+    this.tag = nameTag(this.name, this.opts.color); this.tag.position.y = 2.15; this.group.add(this.tag);
     this.pos = cagePos.clone(); this.cagePos = cagePos.clone(); this.vel = new THREE.Vector3(); this.facing = 0;
     this.mode = 'caged';
     this.starCd = 2; this.healCd = 0; this.barrierCd = 0; this.t = 0;

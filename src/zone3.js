@@ -1,15 +1,15 @@
 // Zone 3: Capital of Aster. Same shape as zone1.js / zone2.js so the game core can load it.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=27';
-import { World3, Z3, HALL, WORLD3_RADIUS } from './world3.js?v=27';
-import { initKnights, spawnZone3, setZone3Detail } from './enemies3.js?v=27';
-import { SirDuplicate } from './boss3.js?v=27';
-import { NPC } from './npc.js?v=27';
-import { Ally } from './ally.js?v=27';
-import { Shop } from './shop.js?v=27';
-import { Story3 } from './story3.js?v=27';
-import { makeChest } from './loot.js?v=27';
-import { makeItem } from './items.js?v=27';
+import { sfx } from './audio.js?v=28';
+import { World3, Z3, HALL, WORLD3_RADIUS } from './world3.js?v=28';
+import { initKnights, spawnZone3, setZone3Detail } from './enemies3.js?v=28';
+import { SirDuplicate } from './boss3.js?v=28';
+import { NPC } from './npc.js?v=28';
+import { Ally } from './ally.js?v=28';
+import { Shop } from './shop.js?v=28';
+import { Story3 } from './story3.js?v=28';
+import { makeChest } from './loot.js?v=28';
+import { makeItem } from './items.js?v=28';
 
 export const ZONE_ID = 'z3';
 export const ZONE_NAME = 'Capital of Aster';
@@ -48,8 +48,9 @@ export async function loadZone(core) {
   const zdata = profile.zone(ZONE_ID);
   zdata.flags ||= {}; zdata.flags.chests ||= []; zdata.flags.ghosts ||= [];
   let story = null;
-  const victory = new Ally(scene, victoryG, clips, idle, {
+  const victory = new Ally(scene, core.allyModel || victoryG, clips, idle, {
     player, effects, hud, world, enemies: () => enemies, onKill: e => core.onKill?.(e), busy: () => dialogue.active || story?.busy,
+    ...(core.allyOpts || {}),
   }, Z3.cage);
   const npcs = [rho, dot, victory];
   const shop = new Shop({ profile, hud, player, pause: v => core.pause(v) });
@@ -89,6 +90,15 @@ export async function loadZone(core) {
 
   story = new Story3({ player, guide, dialogue, hud, world, npcs, boss, enemies, effects, scene, rig, profile, pet, victory, shop, travel: core.travel, fade, console: core.console, onGhostFixed });
 
+  // The glitch rift to the Unfinished Zone (opens in the throne room once Sir Duplicate falls).
+  const rift = new THREE.Group();
+  {
+    const mk = (c, r, o) => { const m = new THREE.Mesh(new THREE.CircleGeometry(r, 40), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending })); m.position.y = 1.9; return m; };
+    rift.add(mk(0xff2bd6, 1.5, 0.55), mk(0x29e6ff, 1.05, 0.5), mk(0xffffff, 0.45, 0.6));
+    for (let i = 0; i < 14; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.22), new THREE.MeshBasicMaterial({ color: i % 2 ? 0xff2bd6 : 0x29e6ff })); b.userData.a = i / 14 * Math.PI * 2; b.userData.r = 1.7 + (i % 3) * 0.2; rift.add(b); }
+    rift.add(new THREE.PointLight(0xff2bd6, 14, 10));
+    rift.position.copy(Z3.rift); scene.add(rift);
+  }
   const interactables = () => {
     const inHall = world.inHall(player.pos), list = [];
     for (const n of npcs) {
@@ -98,6 +108,7 @@ export async function loadZone(core) {
     for (const c of chests) if (!c.opened && !c.hidden) list.push({ pos: c.pos3, label: 'Open chest', button: 'OPEN', act: () => openChest(c) });
     if (!inHall) list.push({ pos: Z3.gate, range: 4.5, label: 'Gate to Glitchwood', button: 'GATE', act: () => story.gate() });
     if (!inHall && story.stage >= story.idx('throne')) list.push({ pos: Z3.keepDoor, range: 3.2, label: 'Enter the throne room', button: 'ENTER', act: () => story.enterHall() });
+    if (inHall && story.stage >= story.idx('done')) list.push({ pos: Z3.rift, range: 3, label: 'Enter the rift: The Unfinished Zone', button: 'ENTER', act: () => story.toRift() });
     if (inHall && story.id !== 'boss') list.push({ pos: Z3.hallExit, range: 3.4, label: 'Leave the throne room', button: 'EXIT', act: () => story.leaveHall() });
     return list;
   };
@@ -119,6 +130,13 @@ export async function loadZone(core) {
         if (c.dropT > 0) { c.dropT = Math.max(0, c.dropT - dt); c.group.position.y = c.dropT * c.dropT * 12; }
         if (!c.hidden && c.pos3.distanceTo(player.pos) < 40) c.group.userData.update(dt);
       }
+      rift.visible = story.stage >= story.idx('done');
+      if (rift.visible) {
+        rift.rotation.y = Math.PI; rift.children.forEach((c, i) => {
+          if (c.userData.a != null) { const a = c.userData.a + t * 1.4; c.position.set(Math.cos(a) * c.userData.r, 1.9 + Math.sin(a) * c.userData.r, 0); c.rotation.set(t * 2, t * 3, 0); }
+          else if (c.isMesh) { c.scale.setScalar(1 + Math.sin(t * 3 + i) * 0.06); c.rotation.z = t * (i % 2 ? 1 : -1); }
+        });
+      }
       story.update(dt, t);
     },
     map: {
@@ -130,7 +148,7 @@ export async function loadZone(core) {
         { name: 'Castle', p: new THREE.Vector3(0, 0, -30), r: 11, color: '#b9c3d6' },
         { name: "Victory's Tower", p: Z3.tower, r: 4, color: '#ffd36b' },
       ],
-      gates: [{ name: 'To Glitchwood', p: Z3.gate, color: '#a35ae6' }],
+      get gates() { return [{ name: 'To Glitchwood', p: Z3.gate, color: '#a35ae6' }, ...(story.stage >= story.idx('done') ? [{ name: 'Rift to the Unfinished Zone', p: Z3.keepDoor, color: '#ff2bd6' }] : [])]; },
       lair: Z3.keepDoor,
       lock: () => {
         if (story.stage >= story.idx('done')) return { state: 'defeated' };

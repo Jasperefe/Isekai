@@ -1,7 +1,7 @@
 // Maps: a top-down picture of the real zone (rendered once from the 3D world), fog of war,
 // the full Map screen (zone + World of Aster) and the round minimap on the HUD.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=27';
+import { sfx } from './audio.js?v=28';
 
 const $ = id => document.getElementById(id);
 const FOG_N = 64;          // fog grid cells per side
@@ -23,7 +23,7 @@ export function zoneStatus(profile, id) {
   const z = profile.d.zones[id];
   const reached = id === 'z1' || !!z;
   let cleared = false;
-  if (z) cleared = id === 'z1' ? z.stage >= 9 : z.stageId ? z.stageId === 'done' : z.stage >= 5;
+  if (z) cleared = id === 'z1' ? z.stage >= 9 : z.stageId ? (z.stageId === 'done' || (id === 'z4' && z.stageId === 'choice')) : z.stage >= 5;
   return { reached, cleared };
 }
 

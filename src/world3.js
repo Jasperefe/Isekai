@@ -22,6 +22,7 @@ export const Z3 = {
   rho: new THREE.Vector3(6.5, 0, -13), dot: new THREE.Vector3(-12.5, 0, 9),
   hallEntry: new THREE.Vector3(HALL.x, 0, HALL.z + 16), hallExit: new THREE.Vector3(HALL.x, 0, HALL.z + 19),
   bossHome: new THREE.Vector3(HALL.x, 0, HALL.z - 6),
+  rift: new THREE.Vector3(HALL.x, 0, HALL.z - 11), // after Sir Duplicate: the way to the Unfinished Zone
 };
 // Ghost houses: NOVA's copy-paste glitches. Patch one and a chest drops out of it.
 export const GHOSTS = [
@@ -333,6 +334,7 @@ export class World3 {
       put('d_pillar_decorated', x, 0, 10 - j * 6.5);
       put('d_torch_mounted', x + (x < 0 ? 0.8 : -0.8), 2.4, 10 - j * 6.5, x < 0 ? Math.PI / 2 : -Math.PI / 2);
       this.colliders.push({ x: H.x + x * DS, z: H.z + (10 - j * 6.5) * DS, r: 1.0 });
+      (this.hallPillars ||= []).push({ x: H.x + x * DS, z: H.z + (10 - j * 6.5) * DS });
     }
     for (const x of [-6, -2, 2, 6]) put(x === -2 || x === 2 ? 'd_banner_patternA_blue' : 'd_banner_shield_blue', x, 1.5, -15.4);
     for (const [x, z, k] of [[-8, -12, 'd_barrel_large'], [8.2, -12.5, 'd_crates_stacked'], [-8.5, 12, 'd_box_stacked'], [8.4, 12, 'd_keg_decorated'], [-8.4, -4, 'd_candle_triple'], [8.4, 3, 'd_candle_triple'], [-8.5, 5, 'd_sword_shield'], [8.5, -6, 'd_rubble_large']]) put(k, x, 0, z, 0);
@@ -428,6 +430,8 @@ export class World3 {
       // Keep the camera inside the throne room (under the ceiling, inside the walls).
       if (y > 6) return true;
       if (Math.abs(x - HALL.x) > 11.6 || z > HALL.z + 19.4 || z < HALL.z - 15.2) return true;
+      // Pillars block the view too (the camera slides in front of them).
+      for (const p of this.hallPillars || []) if (Math.hypot(x - p.x, z - p.z) < 1.25) return true;
     }
     return false;
   }

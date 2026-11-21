@@ -1,8 +1,8 @@
 // Zone 3 story: Capital of Aster. Captain Rho's loop, the copies in the city, Princess Victory,
 // Sir Duplicate and Victory's confession. Side quests: Merchant Dot's Price Glitch, ghost houses.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=27';
-import { Z3, HALL } from './world3.js?v=27';
+import { sfx, music } from './audio.js?v=28';
+import { Z3, HALL } from './world3.js?v=28';
 
 const STAGES = [
   { id: 'arrive', title: 'Rescue the Princess', text: 'Walk up the main street to the Market Plaza' },
@@ -12,7 +12,7 @@ const STAGES = [
   { id: 'tower', title: 'Rescue the Princess', text: 'Go NORTH through the castle gate and PATCH the cage of light' },
   { id: 'throne', title: 'Copy, Paste, Fight', text: 'Go NORTH into the castle: the keep door is at the back of the courtyard' },
   { id: 'boss', title: 'Copy, Paste, Fight', text: 'Defeat Sir Duplicate' },
-  { id: 'done', title: 'Capital Cleared', text: 'Explore the Capital with Victory' },
+  { id: 'done', title: 'The Glitch Rift', text: 'Step into the glitch rift in the throne room (behind where Sir Duplicate stood)' },
 ];
 
 export class Story3 {
@@ -80,8 +80,9 @@ export class Story3 {
     player.refreshStats(); player.hp = player.maxHp;
     hud.tutorialShown = true;
     this.#applyStage();
-    const fromGate = profile.d.arrive === 'gate'; delete profile.d.arrive;
-    if (fromGate || this.crystal < 0) player.spawnAt(Z3.arrive, Math.PI); else player.spawnAt(this.respawnPoint(), Math.PI);
+    const fromGate = profile.d.arrive === 'gate', fromRift = profile.d.arrive === 'rift'; delete profile.d.arrive;
+    if (fromRift) player.spawnAt(Z3.rift.clone().add(new THREE.Vector3(0, 0, 3)), 0);
+    else if (fromGate || this.crystal < 0) player.spawnAt(Z3.arrive, Math.PI); else player.spawnAt(this.respawnPoint(), Math.PI);
     guide.teleport(player.pos);
     if (this.stage >= this.idx('throne')) { victory.follow(); victory.teleportTo(player.pos.clone().add(new THREE.Vector3(1.5, 0, 1.5))); }
     if (profile.d.pet === 'pip') pet.follow(player);
@@ -136,6 +137,11 @@ export class Story3 {
   }
 
   objectivePos() {
+    if (this.id === 'done') {
+      const z4 = this.ctx.profile.d.zones.z4?.stageId;
+      if (z4 === 'choice' || z4 === 'done') return null;
+      return this.inHall ? Z3.rift : Z3.keepDoor;
+    }
     if (this.inHall) return null;
     switch (this.id) {
       case 'arrive': return Z3.plaza;
@@ -223,6 +229,10 @@ export class Story3 {
     await fade(() => { player.spawnAt(Z3.hallEntry, Math.PI); guide.teleport(player.pos); victory.teleportTo(Z3.hallEntry.clone().add(new THREE.Vector3(-1.6, 0, 1))); if (this.ctx.pet.mode === 'follow') this.ctx.pet.follow(player); });
     if (this.id === 'throne') this.#startBoss();
   }
+  async toRift() {
+    await this.#say([{ who: 'GUIDE', text: 'Beyond this rift is the part of Aster nobody finished. Your progress is saved. Ready?' }]);
+    sfx('glitchBig'); this.ctx.travel('z4');
+  }
   async leaveHall() {
     const { player, victory, fade, guide } = this.ctx;
     await fade(() => { player.spawnAt(Z3.keepDoor.clone().add(new THREE.Vector3(0, 0, 2)), 0); guide.teleport(player.pos); victory.teleportTo(player.pos.clone().add(new THREE.Vector3(1.5, 0, 1))); if (this.ctx.pet.mode === 'follow') this.ctx.pet.follow(player); });
@@ -302,8 +312,9 @@ export class Story3 {
       { who: 'VICTORY', text: 'I hid it because I wanted you to choose for yourself. Not because a princess asked you to.' },
       { who: 'GUIDE', text: '...I was not given a line for this. I do not have a line for this. Jasper, I think I am talking without a script.' },
       { who: 'VICTORY', text: 'The Null comes from the edge of the map: the UNFINISHED ZONE. Whatever we decide, the answer is there.' },
+      { who: 'GUIDE', text: 'Look behind the throne: a GLITCH RIFT just tore open. That is the way to the Unfinished Zone. Step into it when you are ready.' },
     ]);
-    hud.zoneComplete({ level: player.level, time: this.playTime, num: 'ZONE 3', title: 'CAPITAL OF ASTER CLEARED', next: 'Next: <b>The Unfinished Zone</b> (coming in the next milestone)' });
+    hud.zoneComplete({ level: player.level, time: this.playTime, num: 'ZONE 3', title: 'CAPITAL OF ASTER CLEARED', next: 'Next: <b>The Unfinished Zone</b>, through the glitch rift behind the throne' });
   }
 
   // ---------- Per frame ----------

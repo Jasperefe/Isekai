@@ -1,8 +1,8 @@
 // Jasper: movement, sword combat, Debug Dash, block/parry, Blade Storm, Patch
 // and the animation state machine.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=27';
-import { heightAt } from './world.js?v=27';
+import { sfx } from './audio.js?v=28';
+import { heightAt } from './world.js?v=28';
 
 const CFG = {
   walk: 2.2, jog: 5.4, sprint: 7.8, accel: 14, turn: 12,
@@ -540,7 +540,9 @@ export class Player {
     world.resolve(this.pos, 0.45, !!this.ctx.console?.noclip);
 
     // --- Vertical ---
-    const gy = world.groundAt(this.pos.x, this.pos.z);
+    const gy = world.groundAt(this.pos.x, this.pos.z, this.pos.y);
+    // Walked off a ledge (floating tiles, the void): start falling.
+    if (this.onGround && gy < this.pos.y - 0.5) { this.onGround = false; this.velY = 0; if (this.state === 'move') this.play('Jump_Loop', 0.15); }
     if (!this.onGround) {
       this.velY -= CFG.gravity * (this.state === 'air' ? 2.2 : 1) * dt; this.pos.y += this.velY * dt;
       if (this.pos.y <= gy) {

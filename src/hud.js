@@ -1,6 +1,7 @@
 // DOM-based HUD: bars, floating numbers, system messages and death screen.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=27';
+import { sfx } from './audio.js?v=28';
+import { swapNames } from './dialogue.js?v=28';
 
 const $ = id => document.getElementById(id);
 
@@ -38,6 +39,7 @@ export class Hud {
   }
 
   system(text, time = 2.4) {
+    if (this.swap) text = swapNames(text);
     const m = $('system-msg'); m.textContent = text; m.classList.add('show'); this.msgTimer = time;
   }
 
@@ -71,6 +73,7 @@ export class Hud {
   objective(text) { this.quest('', text); }
 
   quest(title, text, dist) {
+    if (this.swap) { title = swapNames(title || ''); text = swapNames(text || ''); }
     const key = title + '|' + text + '|' + dist;
     if (key === this.qKey) return; this.qKey = key;
     $('quest-title').textContent = title || '';
@@ -83,6 +86,7 @@ export class Hud {
   newAbility(name, text) { this.toast('NEW ABILITY', name, text, 4.5); sfx('ability'); }
 
   toast(kicker, title, text, time) {
+    if (this.swap) { title = swapNames(title); text = swapNames(text); }
     $('toast-kicker').textContent = kicker; $('toast-title').textContent = title; $('toast-text').textContent = text;
     const el = $('toast'); el.classList.remove('hidden'); el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
     clearTimeout(this.toastTO); this.toastTO = setTimeout(() => el.classList.add('hidden'), time * 1000);

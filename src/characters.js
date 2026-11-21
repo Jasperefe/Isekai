@@ -58,7 +58,7 @@ export const MAT = {
   gem: new THREE.MeshStandardMaterial({ color: 0x8fd3ff, emissive: 0x5ab8ff, emissiveIntensity: 1.2 }),
 };
 
-function jasperExtras(root) {
+function jasperExtras(root, opts = {}) {
   const wp = n => findBone(root, n).getWorldPosition(new THREE.Vector3());
   // Headphones worn over the hood.
   const head = wp('Head');
@@ -72,7 +72,8 @@ function jasperExtras(root) {
     ring.rotation.y = Math.PI / 2; ring.position.set(sx * (R + 0.019), 0, 0); hp.add(ring);
   }
   hp.scale.y = 0.86;
-  attachAt(root, hp, 'Head', new THREE.Vector3(head.x, head.y + 0.085, head.z - 0.01), new THREE.Euler(-0.12, 0, 0));
+  if (opts.hero === 'victory') victoryExtras(root); // New Game+: Victory carries the Debug Blade, keeps her circlet
+  else attachAt(root, hp, 'Head', new THREE.Vector3(head.x, head.y + 0.085, head.z - 0.01), new THREE.Euler(-0.12, 0, 0));
 
   // Debug Blade, built in hand-bone space: the grip runs along +Z (pinky -> index side),
   // the cutting edge points along +Y (knuckles), palm faces -X.
@@ -153,7 +154,7 @@ export function buildCharacter(gltf, kind, idleClip, opts = {}) {
   const mixer = new THREE.AnimationMixer(root);
   mixer.clipAction(idleClip).play(); mixer.update(0.6);
   root.updateMatrixWorld(true);
-  const extras = kind === 'jasper' ? jasperExtras(root) : kind === 'victory' ? victoryExtras(root) : {};
+  const extras = kind === 'jasper' ? jasperExtras(root, opts) : kind === 'victory' ? victoryExtras(root) : {};
   mixer.stopAllAction(); mixer.uncacheRoot(root);
   return { root, skeleton, ...extras };
 }
