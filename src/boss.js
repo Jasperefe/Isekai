@@ -69,10 +69,10 @@ export class SlimeKing {
   stun(t) { if (!this.unscaled && this.alive) { this.stunned = Math.max(this.stunned, t * 0.6); } }
 
   // PATCH: fix the scale bug.
-  patch() {
+  patch(bonus = 0) {
     if (!this.unscaled) return false;
     this.unscaled = false; this.targetScale = 1.6;
-    this.frozen = 5; this.stunned = 5; this.state = 'stunned'; this.stateT = 0; this.ring.visible = false;
+    this.frozen = 5 + bonus; this.stunned = 5 + bonus; this.state = 'stunned'; this.stateT = 0; this.ring.visible = false;
     this.shards.forEach(s => (s.visible = false));
     this.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 2, 0)), 30, [0, 2], 6);
     this.onPatched?.();

@@ -1,7 +1,7 @@
 // Jasper: movement, sword combat, Debug Dash, block/parry, Blade Storm, Patch
 // and the animation state machine.
 import * as THREE from 'three';
-import { heightAt } from './world.js?v=8';
+import { heightAt } from './world.js?v=9';
 
 const CFG = {
   walk: 2.2, jog: 5.4, sprint: 7.8, accel: 14, turn: 12,
@@ -50,7 +50,8 @@ export class Player {
     const loops = ['Idle_Loop', 'Sword_Idle', 'Walk_Loop', 'Jog_Fwd_Loop', 'Sprint_Loop', 'Jump_Loop'];
     for (const [n, a] of Object.entries(this.actions)) if (!loops.includes(n)) { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; }
 
-    this.maxHp = 100; this.hp = 100; this.stamina = 100; this.level = 1; this.xp = 0;
+    this.profile = ctx.profile;
+    this.refreshStats(); this.hp = this.maxHp; this.stamina = 100;
     this.pos = new THREE.Vector3(0, heightAt(0, 0), 0);
     this.vel = new THREE.Vector3(); this.velY = 0; this.onGround = true;
     this.facing = Math.PI; this.state = 'move'; this.stateT = 0;
@@ -62,6 +63,16 @@ export class Player {
   }
 
   get alive() { return this.state !== 'dead'; }
+  get level() { return this.profile.d.level; }
+  get xp() { return this.profile.d.xp; }
+
+  // Recompute combat stats from level, gear, sword upgrades and skills.
+  refreshStats() {
+    this.st = this.profile.stats();
+    this.maxHp = this.st.maxHp;
+    this.hp = Math.min(this.hp ?? this.maxHp, this.maxHp);
+    this.patchCdMax = CFG.patchCooldown * this.st.patchCdMul;
+  }
 
   play(name, fade = 0.15, timeScale = 1, from = 0) {
     const next = this.actions[name];
@@ -99,13 +110,13 @@ export class Player {
     if (key === 'heavy' && this.stamina < CFG.heavyCost) return this.ctx.hud.flash('st');
     if (key === 'skill') {
       if (this.skillCd > 0) return;
-      if (this.stamina < CFG.skillCost) return this.ctx.hud.flash('st');
-      this.stamina -= CFG.skillCost; this.skillCd = CFG.skillCooldown;
+      if (this.stamina < this.st.skillCost) return this.ctx.hud.flash('st');
+      this.stamina -= this.st.skillCost; this.skillCd = CFG.skillCooldown;
       this.ctx.hud.system('> BLADE STORM.exe', 1.2);
     }
     if (key === 'heavy') this.stamina -= CFG.heavyCost;
     if (key === 'breaker' || key === 'bash') { if (this.stamina < 12) return this.ctx.hud.flash('st'); this.stamina -= 12; }
-    if (key === 'slide') { if (this.stamina < CFG.dashCost) return this.ctx.hud.flash('st'); this.stamina -= CFG.dashCost; }
+    if (key === 'slide') { if (this.stamina < this.st.dashCost) return this.ctx.hud.flash('st'); this.stamina -= this.st.dashCost; }
     if (key === 'throw') {
       if (this.throwCd > 0) return;
       if (this.stamina < 10) return this.ctx.hud.flash('st');
@@ -135,11 +146,11 @@ export class Player {
   }
 
   #startDash(input, camYaw) {
-    if (this.stamina < CFG.dashCost) return this.ctx.hud.flash('st');
-    this.stamina -= CFG.dashCost;
+    if (this.stamina < this.st.dashCost) return this.ctx.hud.flash('st');
+    this.stamina -= this.st.dashCost;
     const mv = this.#moveDir(input, camYaw);
     if (mv.lengthSq() > 0.01) this.facing = Math.atan2(mv.x, mv.z);
-    this.state = 'dash'; this.stateT = 0; this.invuln = 0.45;
+    this.state = 'dash'; this.stateT = 0; this.invuln = this.st.iframe;
     this.play('Roll', 0.06, 1.45);
     this.dashDur = Math.min(0.6, this.current.getClip().duration / 1.45);
     this.ctx.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 8, [0, 1], 3);
@@ -160,7 +171,7 @@ export class Player {
   // Patch has one job: fix a GLITCHED (purple) enemy. Fixed enemies freeze and take double damage.
   patchTarget() {
     if (!this.unlocks.patch) return null;
-    let best = null, bestD = CFG.patchRange;
+    let best = null, bestD = this.st.patchRange;
     for (const e of this.ctx.enemies) {
       if (!e.glitchedActive || !e.alive) continue;
       const d = e.pos.distanceTo(this.pos) - (e.radius || 0.5);
@@ -179,7 +190,7 @@ export class Player {
     const best = this.patchTarget();
     if (!best) { this.ctx.hud.system('Nothing glitched nearby to patch'); return; }
     this.facing = Math.atan2(best.pos.x - this.pos.x, best.pos.z - this.pos.z);
-    this.state = 'cast'; this.stateT = 0; this.patchCd = CFG.patchCooldown;
+    this.state = 'cast'; this.stateT = 0; this.patchCd = this.patchCdMax;
     this.play('Spell_Simple_Shoot', 0.08, 1.5);
     this.patchTarget_ = best; this.patchFired = false;
   }
@@ -227,6 +238,7 @@ export class Player {
     }
     this.combatT = 4;
     const armor = this.state === 'act' && this.move?.armor;
+    amount = Math.max(1, Math.round(amount * (1 - (this.st.def || 0))));
     const dmg = armor ? Math.ceil(amount * 0.5) : amount;
     this.hp = Math.max(0, this.hp - dmg);
     this.invuln = 0.6;
@@ -280,11 +292,13 @@ export class Player {
   }
 
   gainXp(n) {
-    this.xp += n;
-    while (this.xp >= this.level * 100) {
-      this.xp -= this.level * 100; this.level++;
-      this.maxHp += 10; this.hp = this.maxHp;
-      this.ctx.hud.system(`> LEVEL UP: LV ${this.level}\n> MAX HP +10`);
+    const d = this.profile.d;
+    n = Math.round(n * this.st.xpMul);
+    d.xp += n;
+    while (d.xp >= d.level * 100) {
+      d.xp -= d.level * 100; d.level++; d.skillPoints++;
+      this.refreshStats(); this.hp = this.maxHp;
+      this.ctx.hud.system(`> LEVEL UP: LV ${d.level}\n> +1 SKILL POINT (open the menu)`, 3);
       this.ctx.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 1, 0)), 24, [0, 2, 3], 5);
     }
   }
@@ -303,7 +317,7 @@ export class Player {
 
   respawn() {
     const sp = this.ctx.respawnPoint ? this.ctx.respawnPoint() : new THREE.Vector3();
-    this.hp = this.maxHp; this.stamina = 100; this.spawnAt(sp);
+    this.refreshStats(); this.hp = this.maxHp; this.stamina = 100; this.spawnAt(sp);
     this.state = 'move'; this.invuln = 1.5; this.ctx.hud.death(false);
     this.current?.stop(); this.current = null; this.#disarm(); this.play('Idle_Loop', 0);
     this.ctx.hud.system('> RESPAWN: save crystal restored');
@@ -322,10 +336,18 @@ export class Player {
       if (d > m.reach) continue;
       if (m.arc < 6 && d > 0.4 && Math.acos(THREE.MathUtils.clamp(to.normalize().dot(fwd), -1, 1)) > m.arc / 2) continue;
       const frozen = e.frozen > 0;
-      let base = m.dmg + Math.floor(Math.random() * 4) + (this.level - 1) * 2;
+      const st = this.st;
+      let base = (m.dmg + Math.floor(Math.random() * 4) + (m.punch ? 0 : st.flatAtk)) * st.atkMult;
+      if (m.wide && (m.shatter || m.shock)) base *= st.finisherMul;
+      const crit = Math.random() < st.crit;
+      if (crit) base *= st.critMult;
       const shatter = frozen && m.shatter;
-      if (shatter) base = Math.round(base * 1.25);
-      const dmg = e.takeHit(base, this.pos, { pierce: m.pierce });
+      if (shatter) base *= 1.25;
+      base = Math.round(base);
+      let dmg = e.takeHit(base, this.pos, { pierce: m.pierce });
+      if (st.doubleHit && Math.random() < st.doubleHit && e.alive) dmg += e.takeHit(Math.round(base * 0.5), this.pos, { pierce: m.pierce });
+      if (st.lifesteal) this.hp = Math.min(this.maxHp, this.hp + dmg * st.lifesteal);
+      if (crit) this.ctx.hud.float(e.pos.clone().add(new THREE.Vector3(0.4, 1.9, 0)), 'CRIT', 'xp');
       if (shatter) {
         // SHATTER: break the ice, splash damage around the target.
         if (!e.isBoss) { e.frozen = 0; if (e.ice) e.ice.visible = false; if (e.tagFixed) e.tagFixed.visible = false; }
@@ -333,7 +355,7 @@ export class Player {
         this.ctx.effects.burst(e.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 26, [0, 2], 6);
         this.ctx.hud.float(e.pos.clone().add(new THREE.Vector3(0, 2.0, 0)), 'SHATTER!', 'crit');
         for (const o of this.ctx.enemies) if (o !== e && o.alive && o.pos.distanceTo(e.pos) < 3.2) {
-          const sd = o.takeHit(14, e.pos); this.ctx.hud.float(o.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), String(sd), '');
+          const sd = o.takeHit(Math.round(14 * this.st.shatterMul), e.pos); this.ctx.hud.float(o.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), String(sd), '');
         }
       }
       if (m.stun && e.alive) e.stun(m.stun, this.pos);
@@ -376,7 +398,7 @@ export class Player {
     this.riposteT = Math.max(0, this.riposteT - dt);
     this.#updateProjectiles(dt);
     const regen = this.state === 'move' ? 1 : this.state === 'block' ? 0.25 : 0.45;
-    if (this.state !== 'dash') this.stamina = Math.min(100, this.stamina + CFG.staminaRegen * dt * regen);
+    if (this.state !== 'dash') this.stamina = Math.min(100, this.stamina + CFG.staminaRegen * this.st.staminaRegenMul * dt * regen);
 
     if (this.state === 'cut') {
       if (this.stateT >= this.cutDur) this.#toMove();
@@ -473,7 +495,7 @@ export class Player {
         const e = this.patchTarget_;
         const from = this.char.cursor ? this.char.cursor.getWorldPosition(new THREE.Vector3()) : this.pos.clone().add(new THREE.Vector3(0, 1.3, 0));
         this.ctx.effects.beam(from, e.pos.clone().add(new THREE.Vector3(0, 0.6, 0)));
-        e.patch();
+        e.patch(this.st.freezeBonus);
         this.ctx.effects.burst(e.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 18, [0, 2], 4);
         this.ctx.hud.system(e.patchMsg || (e.isBoss ? 'SCALE BUG FIXED!\nHe is stunned - x2 DAMAGE!' : 'BUG FIXED!\nx2 DAMAGE for 3s - attack!'), 2.4);
       }

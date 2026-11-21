@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>ISEKAI</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Cpath d=%22M6 3v24l6-6 4 9 4-2-4-9h9z%22 fill=%22%2329e6ff%22/%3E%3C/svg%3E">
-<link rel="stylesheet" href="src/style.css?v=8">
+<link rel="stylesheet" href="src/style.css?v=9">
 <script type="importmap">
 { "imports": { "three": "./lib/three.module.min.js", "three/addons/": "./lib/addons/" } }
 </script>
@@ -25,10 +25,41 @@
     <div class="bar hp"><div id="hp-fill"></div><span id="hp-text">100 / 100</span></div>
     <div class="bar st"><div id="st-fill"></div></div>
     <div class="bar xp"><div id="xp-fill"></div></div>
+    <div id="wallet"><span class="g">&#9679; <b id="w-gold">0</b></span><span class="s">&#9670; <b id="w-shards">0</b></span></div>
   </div>
   <div id="quest"><div class="qt" id="quest-title"></div><div class="qx" id="quest-text"></div></div>
   <button id="menu-btn" aria-label="Menu">&#9776;</button>
-  <div id="menu" class="hidden"><div class="mbox"><b>PAUSED</b><small id="menu-fps">measuring FPS...</small><small id="build">build 8</small><button id="menu-gfx">Graphics: Auto</button><button id="menu-resume">Resume</button><button id="menu-restart">Restart story</button></div></div>
+  <div id="menu" class="hidden">
+    <div class="mwin">
+      <div class="mtabs">
+        <button data-tab="gear" class="on">GEAR</button><button data-tab="skills">SKILLS <span id="sp-badge"></span></button><button data-tab="map">MAP</button><button data-tab="settings">SETTINGS</button>
+        <button id="menu-close" class="mclose">&#10005;</button>
+      </div>
+      <div class="mbody">
+        <section data-tab="gear" class="on">
+          <div class="gear-left">
+            <div class="slots" id="slots"></div>
+            <div class="statsbox" id="statsbox"></div>
+          </div>
+          <div class="gear-right">
+            <div class="bagtitle">BAG <small id="bag-count"></small></div>
+            <div class="bag" id="bag"></div>
+            <div class="detail" id="detail"></div>
+          </div>
+        </section>
+        <section data-tab="skills"><div class="sp-line">Skill points: <b id="sp-count">0</b> <small>(+1 every level)</small></div><div class="tree" id="tree"></div></section>
+        <section data-tab="map"><canvas id="mapcv" width="420" height="420"></canvas><div class="maplegend" id="maplegend"></div></section>
+        <section data-tab="settings">
+          <div class="setlist">
+            <button id="menu-gfx">Graphics: Auto</button>
+            <small id="menu-fps">measuring FPS...</small><small id="build">build 9</small>
+            <button id="menu-restart" class="danger">Restart story (erases progress)</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+  <div id="forge" class="hidden"><div class="fbox"><small>BRAM'S FORGE</small><h2 id="forge-title"></h2><p id="forge-text"></p><div class="fbtns"><button id="forge-up">Upgrade</button><button id="forge-close">Close</button></div></div></div>
   <div id="toast" class="hidden"><small id="toast-kicker"></small><b id="toast-title"></b><span id="toast-text"></span></div>
   <div id="subtitle" class="hidden"></div>
   <div id="bossbar" class="hidden"><div class="bname" id="boss-name">SLIME KING</div><div class="bbar"><div id="boss-fill"></div></div></div>
@@ -62,6 +93,6 @@
   </div>
 </div>
 
-<script type="module" src="src/main.js?v=8"></script>
+<script type="module" src="src/main.js?v=9"></script>
 </body>
 </html>

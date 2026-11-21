@@ -2,19 +2,20 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=8';
-import { World, Z1 } from './world.js?v=8';
-import { VillageKit } from './village.js?v=8';
-import { buildCharacter, captureGrip } from './characters.js?v=8';
-import { Player } from './player.js?v=8';
-import { spawnSlimes } from './enemies.js?v=8';
-import { SlimeKing } from './boss.js?v=8';
-import { NPC } from './npc.js?v=8';
-import { Guide } from './guide.js?v=8';
-import { Dialogue } from './dialogue.js?v=8';
-import { Story } from './story.js?v=8';
-import { Effects } from './effects.js?v=8';
-import { Hud } from './hud.js?v=8';
+import { Input, isTouch } from './input.js?v=9';
+import { buildCharacter, captureGrip } from './characters.js?v=9';
+import { Player } from './player.js?v=9';
+import { Guide } from './guide.js?v=9';
+import { Dialogue } from './dialogue.js?v=9';
+import { Effects } from './effects.js?v=9';
+import { Hud } from './hud.js?v=9';
+import { Profile } from './profile.js?v=9';
+import { Loot } from './loot.js?v=9';
+import { Menu } from './menu.js?v=9';
+import * as Zone1 from './zone1.js?v=9';
+
+// Zone registry: add Glitchwood etc. here as they are built.
+const ZONES = { z1: Zone1 };
 
 const quality = isTouch
   ? { pixelRatio: Math.min(devicePixelRatio, 1.5), shadows: true, shadowSize: 1024, dense: false }
@@ -85,60 +86,46 @@ const loader = new GLTFLoader(manager);
 loader.setMeshoptDecoder(MeshoptDecoder);
 
 async function boot() {
-  const files = ['jasper', 'anims1', 'anims2', 'nature', 'village', 'bram', 'villager_f', 'villager_m'];
-  const [jasperG, a1, a2, natureG, villageG, bramG, vfG, vmG] = await Promise.all(files.map(f => loader.loadAsync(`assets/models/${f}.glb`)));
-  loadText.textContent = 'Player One detected...';
+  const [jasperG, a1, a2, propsG] = await Promise.all(['jasper', 'anims1', 'anims2', 'props'].map(f => loader.loadAsync(`assets/models/${f}.glb`)));
   const clips = [...a1.animations, ...a2.animations];
   const idle = clips.find(c => c.name === 'Idle_Loop');
 
-  const world = new World(scene, natureG, new VillageKit(villageG), quality);
+  const profile = Profile.load();
   const effects = new Effects(scene);
-  const rig = new CameraRig(camera, world);
+  const rig = new CameraRig(camera, null);
   const hud = new Hud(camera);
-  const enemies = spawnSlimes(scene, Z1.field);
-  const boss = new SlimeKing(scene, Z1.arena.clone().add(new THREE.Vector3(-4, 0, 0)), world, effects);
-  enemies.push(boss);
-  let hitStop = 0;
+  let hitStop = 0, zone = null, paused = false;
+  // Shared context used by the player; zone-specific parts are filled in when a zone loads.
   const ctx = {
-    world, effects, hud, enemies, camera: rig, scene, boss,
+    effects, hud, camera: rig, scene, profile,
+    enemies: [], npcs: [], world: null,
     hitStop: t => { hitStop = Math.max(hitStop, t); },
-    onKill: e => story.onKill(e),
-    respawnPoint: () => story.respawnPoint(),
+    onKill: e => { profile.d.totals.kills++; loot.enemyDrop(e); zone?.onKill(e); },
+    respawnPoint: () => zone.respawnPoint(),
   };
+  Object.defineProperty(ctx, 'patchables', { get: () => zone?.story.ctx.patchables || [] });
   const jasper = buildCharacter(jasperG, 'jasper', idle);
   jasper.grip = captureGrip(jasper.root, clips.find(c => c.name === 'Sword_Idle'));
   const player = new Player(jasper, clips, scene, ctx);
-
-  // Villagers.
-  const npcs = [
-    new NPC(scene, bramG, clips, idle, { name: 'BRAM', color: '#ffb35a', pos: Z1.forge.clone().add(new THREE.Vector3(1.2, 0, 1.4)), ry: -2.4, anim: 'Idle_FoldArms_Loop', hair: 0x6b3a1e, bugged: { anim: 'Idle_Talking_Loop' } }, world),
-    new NPC(scene, vfG, clips, idle, { name: 'NIA', color: '#ff8ae8', pos: new THREE.Vector3(-11.4, 0, -8.6), ry: 0.9, anim: 'Idle_Loop', hair: 0x2a1a12, tint: 0xd9c4ff, bugged: { anim: 'Idle_No_Loop' } }, world),
-    new NPC(scene, vmG, clips, idle, { name: 'TOMM', color: '#9cff5a', pos: new THREE.Vector3(9, 0, 3), ry: -1.2, anim: 'Farm_Watering', hair: 0xc89a5a, tint: 0xb8ffb0 }, world),
-  ];
-  // NIA is half inside a wall: sink her into the house corner while bugged.
-  npcs[1].root.position.set(0, -0.35, 0);
-  ctx.npcs = npcs;
-
   const guide = new Guide(scene);
   const dialogue = new Dialogue();
-  const story = new Story({ player, guide, dialogue, hud, world, npcs, boss, enemies, effects, scene, rig });
-  ctx.patchables = story.ctx.patchables;
-  Object.defineProperty(ctx, 'patchables', { get: () => story.ctx.patchables });
+  const loot = new Loot(scene, { player, profile, hud, effects, get world() { return ctx.world; } }, propsG);
+  const menu = new Menu({ profile, player, hud, onPause: v => { paused = v; }, zone: () => zone });
+
+  // Load a zone (Zone 1 for now; the profile remembers which zone you're in).
+  const core = { props: propsG, loader, scene, quality, clips, idle, player, hud, effects, profile, guide, dialogue, rig, loot, openForge: () => menu.openForge() };
+  zone = await ZONES[profile.d.zone in ZONES ? profile.d.zone : 'z1'].loadZone(core);
+  ctx.world = zone.world; ctx.enemies = zone.enemies; ctx.npcs = zone.npcs; rig.world = zone.world;
 
   const input = new Input(canvas);
   document.getElementById('loading').classList.add('hidden');
-  hud.show();
-  rig.yaw = Math.PI * 0; // camera behind Jasper (he faces -Z, toward the village)
+  hud.show(); hud.wallet(profile.d);
+  rig.yaw = 0;
+  document.getElementById('menu-restart').addEventListener('click', () => { if (confirm('Erase all progress and restart?')) { Profile.clear(); location.reload(); } });
 
-  // Menu.
-  const menu = document.getElementById('menu');
-  let paused = false;
-  document.getElementById('menu-btn').addEventListener('click', () => { paused = true; menu.classList.remove('hidden'); document.exitPointerLock?.(); });
-  document.getElementById('menu-resume').addEventListener('click', () => { paused = false; menu.classList.add('hidden'); });
-  document.getElementById('menu-restart').addEventListener('click', () => { Story.clearSave(); location.reload(); });
-
-  story.start();
+  zone.start();
   if (!isTouch) setTimeout(() => hud.system('> Click the screen to look around', 2.5), 9000);
+  setInterval(() => { if (!paused) { profile.d.totals.playTime += 5; } }, 5000);
 
   const clock = new THREE.Clock();
   let t = 0;
@@ -148,18 +135,19 @@ async function boot() {
     t += dt;
     input.update();
     if (hitStop > 0) { hitStop -= dt; dt *= 0.08; }
+    const { story, enemies, boss, world } = zone;
 
-    // Talking: F / TALK near a villager starts dialogue; otherwise F jumps.
+    // Using things: F / TALK near a villager, chest or gate; otherwise F jumps.
     const talking = dialogue.active || story.busy;
     let near = null;
     if (!talking && player.state === 'move') {
-      let bd = 2.8;
-      for (const n of npcs) { const d = n.pos.distanceTo(player.pos); if (d < bd) { bd = d; near = n; } }
+      let bd = 99;
+      for (const it of zone.interactables()) { const d = it.pos.distanceTo(player.pos) - (it.range || 2.8); if (d < 0 && d < bd) { bd = d; near = it; } }
     }
-    hud.talkPrompt(near ? near.name : null);
+    hud.talkPrompt(near ? near.label : null, near?.button);
     if (!talking && input.pressed.has('talk')) {
       input.pressed.delete('talk');
-      if (near) story.talk(near); else input.pressed.add('jump');
+      if (near) near.act(); else input.pressed.add('jump');
     }
     dialogue.update(dt, input);
     const pIn = dialogue.active || story.busy ? NO_INPUT : input;
@@ -181,13 +169,13 @@ async function boot() {
         if (e.frozen <= 0 && !e.isBoss) { e.pos.x -= nx * push; e.pos.z -= nz * push; } else { player.pos.x += nx * push; player.pos.z += nz * push; }
       }
     }
-    for (const n of npcs) n.update(dt, camera);
+    zone.update(dt, t);
+    loot.update(dt, t);
     guide.update(dt, t, player.pos, player.facing, camera);
     effects.update(dt);
     world.update(dt, t, player.pos);
-    story.update(dt, t);
     rig.update(dt, input, player.pos, boss.alive ? 1.45 : 1, dialogue.active && story.talkNpc ? story.talkNpc.pos : null);
-    // Fade slimes that get between the camera and Jasper.
+    // Fade enemies that get between the camera and Jasper.
     for (const e of enemies) {
       const near2 = camera.position.distanceTo(e.group.position) < 3.2 + (e.radius || 0);
       e.mat.opacity += ((near2 ? 0.25 : 0.92) - e.mat.opacity) * Math.min(1, dt * 10);
@@ -236,7 +224,7 @@ async function boot() {
   };
   renderer.setAnimationLoop(() => { const d = clock.getDelta(); adapt(d); frame(d); });
   window.__step = (dt, n = 1) => { for (let i = 0; i < n; i++) frame(dt, false); }; // test hook
-  window.__game = { player, enemies, rig, scene, renderer, story, npcs, world, boss, dialogue, hud, guide, input, ctx };
+  window.__game = { player, get enemies() { return zone.enemies; }, rig, scene, renderer, get story() { return zone.story; }, get npcs() { return zone.npcs; }, get world() { return zone.world; }, get boss() { return zone.boss; }, dialogue, hud, guide, input, ctx, profile, loot, menu, get zone() { return zone; } };
 }
 
 boot().catch(err => {

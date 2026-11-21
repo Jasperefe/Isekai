@@ -1,9 +1,8 @@
 // Zone 1 story: quests, cutscenes, objective markers, unlocks and save/load.
 import * as THREE from 'three';
-import { Z1 } from './world.js?v=8';
-import { Slime } from './enemies.js?v=8';
+import { Z1 } from './world.js?v=9';
+import { Slime } from './enemies.js?v=9';
 
-const SAVE_KEY = 'isekai_save_v1';
 
 // Quest stages in order.
 const STAGES = [
@@ -40,19 +39,19 @@ export class Story {
   idx(id) { return STAGES.findIndex(s => s.id === id); }
   get id() { return STAGES[this.stage].id; }
 
-  // ---------- Save / load ----------
+  // ---------- Save / load (inside the shared profile) ----------
   save() {
-    const p = this.ctx.player;
+    const p = this.ctx.player, prof = this.ctx.profile;
     this.flags.tutorial = this.flags.tutorial || !!this.ctx.hud.tutorialShown;
-    const data = { stage: this.stage, kills: this.kills, crystal: this.crystal, level: p.level, xp: p.xp, maxHp: p.maxHp, flags: this.flags };
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch (e) { /* storage unavailable */ }
+    Object.assign(prof.zone('z1'), { stage: this.stage, kills: this.kills, crystal: this.crystal, flags: this.flags });
+    p.syncProfile?.();
+    prof.save();
   }
 
   load() {
-    try { return JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { return null; }
+    const z = this.ctx.profile.zone('z1');
+    return z && z.stage > 0 ? z : null;
   }
-
-  static clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ } }
 
   respawnPoint() {
     const c = this.ctx.world.crystals[this.crystal];
@@ -67,7 +66,7 @@ export class Story {
     if (data && data.stage > 0) {
       this.stage = data.stage; this.kills = data.kills || 0; this.crystal = data.crystal ?? -1; this.flags = data.flags || {};
       this.ctx.hud.tutorialShown = !!this.flags.tutorial || this.stage > this.idx('slimes');
-      player.level = data.level || 1; player.xp = data.xp || 0; player.maxHp = data.maxHp || 100; player.hp = player.maxHp;
+      player.refreshStats(); player.hp = player.maxHp;
       this.#applyStage(true);
       player.spawnAt(this.respawnPoint(), Math.PI);
       guide.teleport(player.pos);
@@ -75,6 +74,7 @@ export class Story {
       return;
     }
     // New game: intro cutscene.
+    this.flags = this.ctx.profile.zone('z1').flags || {};
     this.stage = 0; this.#applyStage();
     player.spawnAt(Z1.wake, Math.PI);
     guide.teleport(player.pos.clone().add(new THREE.Vector3(0, 0, -3)));
@@ -133,7 +133,7 @@ export class Story {
     this.markerObj = g; this.ctx.scene.add(g);
   }
 
-  #objectivePos() {
+  objectivePos() {
     const { npcs, world } = this.ctx;
     switch (this.id) {
       case 'village': return Z1.village;
@@ -181,7 +181,8 @@ export class Story {
       return;
     }
     if (this.id === 'patchBram' || !this.flags.bramThanked) return;
-    await this.#say([{ who: 'BRAM', text: this.id === 'done' ? 'You beat the Slime King? Ha! I knew that blade was in good hands.' : 'Keep that blade sharp, friend. The slimes have been nasty since the "glitch" started.' }]);
+    await this.#say([{ who: 'BRAM', text: this.id === 'done' ? 'You beat the Slime King? Ha! Let\'s make that blade even sharper.' : 'Bring me gold and glitch shards and I\'ll sharpen that blade for you.' }]);
+    this.ctx.openForge?.();
   }
 
   async #onBramFixed() {
@@ -227,6 +228,17 @@ export class Story {
     if (this.tommCount === 2) lines.push({ who: 'GUIDE', text: 'He only has one line. Not a bug. Just... budget.' });
     if (this.tommCount >= 4) lines.push({ who: 'TOMM', text: '...Nice weather today?' });
     await this.#say(lines);
+  }
+
+  async gate() {
+    if (this.id !== 'done') {
+      await this.#say([{ who: 'GUIDE', text: 'A gate to another area... it is sealed by glitch data. Let\'s fix the slime problem first!' }]);
+      return;
+    }
+    await this.#say([
+      { who: 'GUIDE', text: 'Beyond this gate is GLITCHWOOD FOREST. The corruption is stronger there.' },
+      { who: 'SYSTEM', text: 'Glitchwood Forest opens in the next update. Your level, gear and skills will carry over!' },
+    ]);
   }
 
   // ---------- Events ----------
@@ -289,12 +301,12 @@ export class Story {
     world.setBarrier(false);
     for (const e of enemies) if (e.minion && e.alive) e.takeHit(999, e.pos);
     player.gainXp(150);
-    this.flags.debugPoints = (this.flags.debugPoints || 0) + 1;
+    this.ctx.profile.d.debugPoints++;
     this.#setStage('done');
     await wait(1500);
     await this.#say([
       { who: 'SLIME KING', text: 'Blorp... my... crown... it was never... meant to... scale...', glitch: true },
-      { who: 'SYSTEM', text: '+150 XP. You found a DEBUG POINT (used for Console Commands later).' },
+      { who: 'SYSTEM', text: '+150 XP and a DEBUG POINT (used for Console Commands later). The King dropped loot: grab it!' },
       { who: 'GUIDE', text: 'Jasper... I scanned his data. The glitch was not HIS fault. Something is corrupting this world from far away.' },
       { who: 'GUIDE', text: 'And the only way home for you is to finish the FINAL QUEST... but the final quest was never finished.' },
       { who: 'JASPER', text: 'Then I guess I\'ll have to finish it myself.' },
@@ -307,7 +319,7 @@ export class Story {
     const { player, hud, world, guide } = this.ctx;
     this.playTime = (this.playTime || 0) + dt;
     // Objective marker + tracker.
-    const target = this.#objectivePos();
+    const target = this.objectivePos();
     this.markerObj.visible = !!target && !this.ctx.dialogue.active;
     if (target) {
       this.markerObj.position.set(target.x, world.groundAt(target.x, target.z), target.z);

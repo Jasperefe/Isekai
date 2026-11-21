@@ -20,7 +20,7 @@ export class Hud {
     $('st-fill').style.width = p.stamina + '%';
     $('xp-fill').style.width = (p.xp / (p.level * 100) * 100) + '%';
     $('lvl').textContent = 'LV ' + p.level;
-    const cd = $('patch-cd'); if (cd) cd.style.height = (p.patchCd / 8 * 100) + '%';
+    const cd = $('patch-cd'); if (cd) cd.style.height = (p.patchCd / (p.patchCdMax || 8) * 100) + '%';
     const sc = $('skill-cd'); if (sc) sc.style.height = (p.skillCd / 6 * 100) + '%';
     const cp = $('chip-patch'), cs = $('chip-skill');
     const target = p.patchTarget(), ready = !!target && p.patchCd <= 0;
@@ -37,6 +37,17 @@ export class Hud {
 
   system(text, time = 2.4) {
     const m = $('system-msg'); m.textContent = text; m.classList.add('show'); this.msgTimer = time;
+  }
+
+  wallet(d) {
+    $('w-gold').textContent = d.gold; $('w-shards').textContent = d.shards;
+    $('menu-btn').classList.toggle('alert', d.skillPoints > 0);
+  }
+
+  itemToast(item) {
+    const c = { common: '#d8dde6', rare: '#4fa3ff', epic: '#b46bff', glitched: '#ff2bd6' }[item.rarity];
+    this.toast(`${item.rarity.toUpperCase()} ${item.slot.toUpperCase()}`, item.name, item.lines.join(' · ') + ' (equip it in the menu)', 3.5);
+    $('toast').style.borderColor = c; setTimeout(() => ($('toast').style.borderColor = ''), 3600);
   }
 
   tutorial() {
@@ -87,9 +98,9 @@ export class Hud {
     show('chip-patch', u.patch); show('chip-skill', u.skill);
   }
 
-  talkPrompt(name) {
+  talkPrompt(label, button = 'TALK') {
     const p = $('talk-prompt'), b = $('btn-talk');
-    if (name) { p.innerHTML = `<b>F</b> Talk to ${name}`; p.classList.remove('hidden'); b.classList.remove('hidden'); }
+    if (label) { p.innerHTML = `<b>F</b> ${label}`; b.textContent = button; p.classList.remove('hidden'); b.classList.remove('hidden'); }
     else { p.classList.add('hidden'); b.classList.add('hidden'); }
   }
 

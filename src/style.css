@@ -83,7 +83,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1020; fon
 #btn-jump   { right: 10px; bottom: 162px; width: 50px; height: 50px; }
 #btn-sword  { right: 86px; bottom: 146px; width: 50px; height: 50px; }
 .btn:active { background: #29e6ff90; }
-#chips { position: absolute; top: 72px; left: 14px; display: flex; gap: 6px; font-size: 11px; font-weight: 800; letter-spacing: 1px; }
+#chips { position: absolute; top: 98px; left: 14px; display: flex; gap: 6px; font-size: 11px; font-weight: 800; letter-spacing: 1px; }
 #chips span { background: #00000070; border: 1px solid #29e6ff; color: #29e6ff; padding: 3px 7px; border-radius: 3px; }
 #chips span.cool { border-color: #ffffff40; color: #ffffff70; }
 #chip-skill { border-color: #ff2bd6 !important; color: #ff2bd6 !important; }
@@ -111,3 +111,63 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1020; fon
 #btn-talk { position: absolute; right: calc(260px + env(safe-area-inset-right)); bottom: 24px; width: 70px; height: 70px; font-size: 13px; border-color: #29e6ff; background: #29e6ffcc; color: #0b1020; pointer-events: auto; animation: pulse 1s infinite; }
 @media (pointer: coarse) { #talk-prompt { display: none !important; } #quest { max-width: 34vw; font-size: 12px; } #dialogue .dtext { font-size: 14px; } }
 @media (pointer: fine) { #btn-talk { display: none !important; } }
+
+#wallet { display: flex; gap: 12px; font-size: 13px; font-weight: 800; margin-top: 2px; text-shadow: 0 1px 3px #000; }
+#wallet .g { color: #f5c542; } #wallet .s { color: #ff7ae8; }
+.float.gold { color: #f5c542; font-size: 15px; } .float.shard { color: #ff7ae8; font-size: 15px; }
+#menu-btn.alert { border-color: #ffe28a; box-shadow: 0 0 12px #ffe28a; animation: pulse 1s infinite; }
+
+/* ---- Menu ---- */
+#menu { position: absolute; inset: 0; background: #000b; display: flex; align-items: center; justify-content: center; pointer-events: auto; z-index: 30; }
+.mwin { width: min(860px, 96vw); height: min(560px, 92vh); background: #0b1020f5; border: 2px solid #29e6ff; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+.mtabs { display: flex; gap: 4px; padding: 6px; border-bottom: 1px solid #29e6ff55; }
+.mtabs button { flex: 1; padding: 8px 4px; background: #10183a; border: 1px solid #ffffff22; color: #fff9; font-weight: 800; letter-spacing: 1px; font-size: 12px; border-radius: 6px; }
+.mtabs button.on { background: #29e6ff; color: #0b1020; }
+.mtabs .mclose { flex: 0 0 44px; }
+#sp-badge:not(:empty) { background: #ffe28a; color: #0b1020; border-radius: 8px; padding: 0 5px; }
+.mbody { flex: 1; overflow: hidden; position: relative; }
+.mbody section { display: none; height: 100%; overflow: auto; padding: 10px; }
+.mbody section.on { display: flex; gap: 10px; }
+section[data-tab="skills"].on, section[data-tab="settings"].on { flex-direction: column; }
+.gear-left { flex: 0 0 38%; display: flex; flex-direction: column; gap: 8px; }
+.gear-right { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.slots { display: flex; gap: 6px; }
+.slot { flex: 1; background: #10183a; border: 2px solid #ffffff22; border-radius: 8px; padding: 6px; text-align: center; font-size: 10px; min-height: 92px; }
+.slot .ic { width: 34px; height: 34px; margin: 2px auto; opacity: .9; }
+.slot .nm { font-weight: 700; font-size: 11px; }
+.slot.empty { opacity: .5; }
+.statsbox { background: #10183a; border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.55; columns: 2; }
+.statsbox b { color: #29e6ff; }
+.bagtitle { font-weight: 800; letter-spacing: 2px; font-size: 12px; }
+.bag { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 5px; }
+.bag .cell { aspect-ratio: 1; background: #10183a; border: 2px solid #ffffff22; border-radius: 6px; padding: 5px; }
+.bag .cell.sel { box-shadow: 0 0 0 2px #fff; }
+.detail { background: #10183a; border-radius: 8px; padding: 8px 10px; font-size: 12px; min-height: 70px; }
+.detail h4 { margin: 0 0 3px; font-size: 14px; }
+.detail .lines { opacity: .9; }
+.detail .cmp { margin-top: 3px; font-size: 11px; opacity: .75; }
+.detail button, .fbtns button { margin-top: 6px; margin-right: 6px; padding: 7px 12px; border-radius: 6px; border: 1px solid #29e6ff; background: #10183a; color: #fff; font-weight: 700; }
+.detail button.primary, .fbtns button:first-child { background: #29e6ff; color: #0b1020; }
+.sp-line { font-size: 14px; } .sp-line b { color: #ffe28a; font-size: 18px; }
+.tree { display: flex; gap: 10px; flex: 1; }
+.branch { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.branch h5 { margin: 0; letter-spacing: 3px; font-size: 13px; text-align: center; }
+.node { background: #10183a; border: 2px solid #ffffff22; border-radius: 8px; padding: 7px; font-size: 11px; text-align: left; color: #fffa; }
+.node b { display: block; font-size: 12px; color: #fff; }
+.node.can { border-color: #ffe28a; color: #fff; animation: glow 1.2s infinite; }
+.node.have { border-color: var(--c); background: #1a2550; color: #fff; }
+.node.have b::after { content: ' \2713'; color: var(--c); }
+@keyframes glow { 50% { box-shadow: 0 0 10px #ffe28a88; } }
+section[data-tab="map"].on { align-items: center; justify-content: center; }
+#mapcv { height: 100%; max-height: 440px; aspect-ratio: 1; background: #0e1a12; border-radius: 10px; }
+.maplegend { font-size: 12px; line-height: 1.8; }
+.setlist { display: flex; flex-direction: column; gap: 10px; max-width: 360px; }
+.setlist button { padding: 12px; border-radius: 8px; border: 1px solid #29e6ff; background: #10183a; color: #fff; font-weight: 700; font-size: 14px; }
+.setlist .danger { border-color: #ff5b6b; color: #ff8b95; }
+#forge { position: absolute; inset: 0; background: #000a; display: flex; align-items: center; justify-content: center; pointer-events: auto; z-index: 31; }
+.fbox { background: #0b1020; border: 2px solid #ffb35a; border-radius: 10px; padding: 16px 22px; text-align: center; max-width: 360px; }
+.fbox small { color: #ffb35a; letter-spacing: 3px; font-weight: 800; }
+.fbox h2 { margin: 6px 0; } .fbox p { font-size: 13px; line-height: 1.5; }
+@media (max-height: 430px) { .statsbox { font-size: 11px; line-height: 1.4; } .slot { min-height: 78px; } .mtabs button { padding: 6px 3px; } }
+
+body.paused #touch, body.paused #hint { display: none !important; }

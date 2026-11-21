@@ -13,13 +13,16 @@ export const Z1 = {
   bridgeZ: -4, bridgeHalfW: 1.8,
   arena: new THREE.Vector3(-56, 0, -4), arenaR: 15,
   forge: new THREE.Vector3(-8, 0, 4),
+  gate: new THREE.Vector3(12, 0, -54),
 };
 export const riverX = z => -29 + Math.sin(z * 0.045) * 3;
 const PATH = [
   [[0, 34], [0, 22], [1, 12], [0, 0]],
   [[0, 0], [12, 2], [24, 4], [36, 4]],
   [[0, 0], [-12, -3], [-22, -4], [-36, -4], [-46, -4], [-56, -4]],
+  [[0, 0], [5, -8], [5, -22], [10, -38], [12, -52]],
 ];
+export const PATHS = PATH;
 
 const smooth = (e0, e1, x) => { const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); };
 function distToPath(x, z) {
@@ -41,6 +44,7 @@ export function heightAt(x, z) {
   flatten(Z1.wake.x, Z1.wake.z, 6);
   flatten(Z1.arena.x, Z1.arena.z, Z1.arenaR + 1);
   flatten(Z1.field.x, Z1.field.z, 8);
+  flatten(Z1.gate.x, Z1.gate.z, 6);
   flat = Math.min(flat, smooth(3, 9, distToPath(x, z)) * 0.7 + 0.3);
   h *= flat;
   // Banks near the bridge are level with the deck.
@@ -68,6 +72,7 @@ export class World {
     this.#village(villageKit);
     this.#bridge(villageKit);
     this.#arena();
+    this.#gate();
     this.crystals = [new THREE.Vector3(5, 0, -5), new THREE.Vector3(-40, 0, -9)].map(p => this.#crystal(p));
     this.#props(quality);
   }
@@ -286,6 +291,25 @@ export class World {
     this.barrierMesh = b;
   }
 
+  // ---- Zone gate (to Glitchwood Forest) ----
+  #gate() {
+    const g = new THREE.Group();
+    const stone = new THREE.MeshStandardMaterial({ color: 0x7d8290, roughness: 0.9, flatShading: true });
+    for (const sx of [-1, 1]) {
+      const pillar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 6, 1.2), stone); pillar.position.set(sx * 3, 3, 0); g.add(pillar);
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.5, 1.6), stone); cap.position.set(sx * 3, 6.2, 0); g.add(cap);
+    }
+    const lintel = new THREE.Mesh(new THREE.BoxGeometry(7.6, 1, 1.4), stone); lintel.position.y = 6.8; g.add(lintel);
+    this.portalMat = new THREE.MeshBasicMaterial({ color: 0x7a3cff, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false });
+    const portal = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 6, 12, 12), this.portalMat); portal.position.y = 3; g.add(portal);
+    const grid = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 6, 10, 12), new THREE.MeshBasicMaterial({ color: 0xff2bd6, wireframe: true, transparent: true, opacity: 0.5 })); grid.position.set(0, 3, 0.02); g.add(grid);
+    this.portal = portal;
+    g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    g.position.set(Z1.gate.x, heightAt(Z1.gate.x, Z1.gate.z), Z1.gate.z); g.rotation.y = 0.15;
+    this.scene.add(g);
+    this.colliders.push({ box: true, x: Z1.gate.x, z: Z1.gate.z, hx: 3.6, hz: 0.7, ry: 0.15 });
+  }
+
   setBarrier(on) { this.barrier = on; this.barrierMesh.visible = on; }
 
   // ---- Save crystals ----
@@ -352,6 +376,7 @@ export class World {
   #blocked(x, z, pad) {
     if (Math.hypot(x - Z1.village.x, z - Z1.village.z) < Z1.villageR + 4 + pad) return true;
     if (Math.hypot(x - Z1.wake.x, z - Z1.wake.z) < 7 + pad) return true;
+    if (Math.hypot(x - Z1.gate.x, z - Z1.gate.z) < 9 + pad) return true;
     if (Math.hypot(x - Z1.field.x, z - Z1.field.z) < Z1.fieldR - 2 + pad) return true;
     if (Math.hypot(x - Z1.arena.x, z - Z1.arena.z) < Z1.arenaR + 1 + pad) return true;
     if (Math.abs(x - riverX(z)) < 6.5 + pad) return true;
@@ -468,6 +493,7 @@ export class World {
     if (this.fireLight) this.fireLight.intensity = 5 + Math.sin(t * 13) * 1.2 + Math.sin(t * 7.3);
     if (this.bridgeGlitch?.visible) { this.bridgeGlitch.rotation.x = Math.sin(t * 9) * 0.03; this.bridgeGlitch.material.opacity = 0.25 + (Math.sin(t * 23) > 0.6 ? 0.3 : 0); }
     if (this.barrierMesh.visible) this.barrierMesh.rotation.y += dt * 0.2;
+    if (this.portalMat) this.portalMat.opacity = 0.45 + Math.sin(t * 3) * 0.12 + (Math.sin(t * 29) > 0.8 ? 0.2 : 0);
     if (this.dropping) {
       let busy = false;
       for (const p of this.missing) {

@@ -1,7 +1,7 @@
 // Placeholder enemies for the prototype: normal slimes and "glitched" slimes.
 // Glitched slimes take reduced damage until Jasper patches them.
 import * as THREE from 'three';
-import { heightAt } from './world.js?v=8';
+import { heightAt } from './world.js?v=9';
 
 const SLIME_GEO = new THREE.SphereGeometry(0.55, 24, 16);
 SLIME_GEO.translate(0, 0.55, 0);
@@ -93,9 +93,9 @@ export class Slime {
   }
 
   // Fix the glitch: no more resistance, frozen for 3s, double damage while frozen.
-  patch() {
+  patch(bonus = 0) {
     if (this.dead || !this.glitchedActive) return false;
-    this.patched = true; this.frozen = 3; this.patchMult = 2; this.windup = 0;
+    this.patched = true; this.frozen = 3 + bonus; this.patchMult = 2; this.windup = 0;
     this.mat.color.set(0x5fd35a);
     if (this.shards) this.shards.forEach(s => (s.visible = false));
     if (this.ice) this.ice.visible = true;
