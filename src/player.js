@@ -1,7 +1,7 @@
 // Jasper: movement, sword combat, Debug Dash, block/parry, Blade Storm, Patch
 // and the animation state machine.
 import * as THREE from 'three';
-import { heightAt } from './world.js?v=6';
+import { heightAt } from './world.js?v=7';
 
 const CFG = {
   walk: 2.2, jog: 5.4, sprint: 7.8, accel: 14, turn: 12,
@@ -73,7 +73,7 @@ export class Player {
     return next;
   }
 
-  #toMove() { this.state = 'move'; this.stateT = 0; this.queued = false; this.move = null; this.ctx.hud.combo(0); this.#locomotion(); }
+  #toMove() { this.state = 'move'; this.stateT = 0; this.queued = false; this.move = null; this.#locomotion(); }
 
   #moveDir(input, camYaw) {
     const f = new THREE.Vector3(-Math.sin(camYaw), 0, -Math.cos(camYaw));
@@ -117,7 +117,6 @@ export class Player {
     if (m.invuln) this.invuln = 0.6;
     this.state = 'act'; this.move = m; this.moveKey = key; this.stateT = 0; this.queued = false; this.queuedBranch = false; this.hitIdx = 0;
     this.action = this.play(m.clip, 0.07, m.ts, m.from || 0);
-    if (m.step) { this.comboCount = m.step; this.ctx.hud.combo(m.step); }
     this.#arm();
   }
 
@@ -351,7 +350,12 @@ export class Player {
         this.ctx.onKill?.(e);
       }
     }
-    if (landed) { this.ctx.camera.shake(m.wide ? 0.22 : 0.12); this.ctx.hitStop(m.wide ? 0.07 : 0.045); }
+    if (landed) {
+      this.ctx.camera.shake(m.wide ? 0.22 : 0.12); this.ctx.hitStop(m.wide ? 0.07 : 0.045);
+      // Hit counter: only hits that land count; it resets after 2 s without one.
+      this.hitChain = (this.hitChainT > 0 ? this.hitChain : 0) + 1; this.hitChainT = 2;
+      this.ctx.hud.combo(this.hitChain, m.name === 'FINISHER!');
+    }
   }
 
   update(dt, input, camYaw) {
@@ -361,6 +365,7 @@ export class Player {
     this.patchCd = Math.max(0, this.patchCd - dt);
     this.skillCd = Math.max(0, this.skillCd - dt);
     this.throwCd = Math.max(0, this.throwCd - dt);
+    this.hitChainT = Math.max(0, (this.hitChainT || 0) - dt);
     if (this.armed && this.state === 'move') {
       // Auto-sheathe 4s after the last attack, unless a slime is right next to Jasper.
       const close = this.ctx.enemies.some(e => e.alive && e.pos.distanceTo(this.pos) < 3.5);

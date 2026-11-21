@@ -48,10 +48,10 @@ export class Hud {
     el.classList.remove('hidden'); this.tutT = 7;
   }
 
-  combo(n) {
+  combo(n, finisher = false) {
     const el = $('combo');
     if (!n || n < 2) { el.classList.remove('show'); return; }
-    el.innerHTML = `<b>${n}</b> HIT${n >= 8 ? '<small>FINISHER</small>' : ''}`;
+    el.innerHTML = `<b>${n}</b> HITS${finisher ? '<small>FINISHER</small>' : ''}`;
     el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
   }
 
