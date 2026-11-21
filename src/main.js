@@ -2,17 +2,17 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=10';
-import { buildCharacter, captureGrip } from './characters.js?v=10';
-import { Player } from './player.js?v=10';
-import { Guide } from './guide.js?v=10';
-import { Dialogue } from './dialogue.js?v=10';
-import { Effects } from './effects.js?v=10';
-import { Hud } from './hud.js?v=10';
-import { Profile } from './profile.js?v=10';
-import { Loot } from './loot.js?v=10';
-import { Menu } from './menu.js?v=10';
-import * as Zone1 from './zone1.js?v=10';
+import { Input, isTouch } from './input.js?v=11';
+import { buildCharacter, captureGrip } from './characters.js?v=11';
+import { Player } from './player.js?v=11';
+import { Guide } from './guide.js?v=11';
+import { Dialogue } from './dialogue.js?v=11';
+import { Effects } from './effects.js?v=11';
+import { Hud } from './hud.js?v=11';
+import { Profile } from './profile.js?v=11';
+import { Loot } from './loot.js?v=11';
+import { Menu } from './menu.js?v=11';
+import * as Zone1 from './zone1.js?v=11';
 
 // Zone registry: add Glitchwood etc. here as they are built.
 const ZONES = { z1: Zone1 };

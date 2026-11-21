@@ -1,14 +1,14 @@
 // Zone 1: Starter Meadow. Builds the map, villagers, enemies, boss, chests and story.
 // Every zone module exports the same shape so the game core can load zones one after another.
 import * as THREE from 'three';
-import { World, Z1, riverX, PATHS, WORLD_RADIUS } from './world.js?v=10';
-import { VillageKit } from './village.js?v=10';
-import { spawnSlimes } from './enemies.js?v=10';
-import { SlimeKing } from './boss.js?v=10';
-import { NPC } from './npc.js?v=10';
-import { Story } from './story.js?v=10';
-import { makeChest } from './loot.js?v=10';
-import { makeItem } from './items.js?v=10';
+import { World, Z1, riverX, PATHS, WORLD_RADIUS } from './world.js?v=11';
+import { VillageKit } from './village.js?v=11';
+import { spawnSlimes } from './enemies.js?v=11';
+import { SlimeKing } from './boss.js?v=11';
+import { NPC } from './npc.js?v=11';
+import { Story } from './story.js?v=11';
+import { makeChest } from './loot.js?v=11';
+import { makeItem } from './items.js?v=11';
 
 export const ZONE_ID = 'z1';
 export const ZONE_NAME = 'Starter Meadow';
@@ -93,6 +93,7 @@ export async function loadZone(core) {
         { name: 'Slime Field', p: Z1.field, r: 14, color: '#7cc35a' },
         { name: 'Slime Pond', p: Z1.arena, r: Z1.arenaR, color: '#8a5ac2' },
         { name: 'Glitchwood Gate', p: Z1.gate, r: 3, color: '#ff2bd6' },
+        { name: "Bram's Forge", p: Z1.forge, r: 2.5, color: '#ffb35a' },
       ],
       crystals: () => world.crystals.map(c => c.pos),
       chests: () => chests.map(c => ({ p: c.pos3, opened: c.opened })),
