@@ -1,6 +1,6 @@
 // Pause menu: Gear (equip/scrap), Skills (tree), Map, Settings. Plus Bram's forge window.
-import { RARITY, itemIcon } from './items.js?v=9';
-import { SKILLS, BRANCHES } from './skills.js?v=9';
+import { RARITY, itemIcon } from './items.js?v=10';
+import { SKILLS, BRANCHES } from './skills.js?v=10';
 
 const $ = id => document.getElementById(id);
 const SLOT_NAMES = { weapon: 'Weapon', armor: 'Armor', charm: 'Charm' };
@@ -72,7 +72,7 @@ export class Menu {
     box.innerHTML = `<h4 style="color:${c}">${it.name}</h4><div style="font-size:11px;opacity:.7">${RARITY[it.rarity].name} ${SLOT_NAMES[it.slot]}</div>
       <div class="lines">${it.lines.join('<br>')}</div>
       ${!equipped && cur ? `<div class="cmp">Equipped now: ${cur.name} (${cur.lines.join(', ')})</div>` : ''}
-      ${equipped ? '<button id="d-unequip">Unequip</button>' : `<button id="d-equip" class="primary">Equip</button><button id="d-scrap">Scrap (+${it.scrap} shards)</button>`}`;
+      ${equipped ? '<button id="d-unequip">Unequip</button>' : `<button id="d-equip" class="primary">Equip</button><button id="d-scrap">Scrap (+${it.scrap} shard${it.scrap > 1 ? 's' : ''})</button>`}`;
     $('d-equip')?.addEventListener('click', () => { profile.equip(it.uid); this.sel = null; player.refreshStats(); this.#renderGear(); });
     $('d-scrap')?.addEventListener('click', () => { profile.scrap(it.uid); this.sel = null; hud.wallet(d); this.#renderGear(); });
     $('d-unequip')?.addEventListener('click', () => { profile.unequip(it.slot); this.sel = null; player.refreshStats(); this.#renderGear(); });

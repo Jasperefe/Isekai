@@ -171,3 +171,12 @@ section[data-tab="map"].on { align-items: center; justify-content: center; }
 @media (max-height: 430px) { .statsbox { font-size: 11px; line-height: 1.4; } .slot { min-height: 78px; } .mtabs button { padding: 6px 3px; } }
 
 body.paused #touch, body.paused #hint { display: none !important; }
+
+/* iPhone: keep the menu inside the visible area (Safari bars, notch, home bar). */
+#menu, #forge { position: fixed; box-sizing: border-box;
+  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
+@supports (height: 100dvh) { #menu, #forge { inset: auto; top: 0; left: 0; width: 100vw; height: 100dvh; } }
+.mwin { height: 100%; max-height: 560px; }
+.mbody section { padding-bottom: 18px; box-sizing: border-box; }
+section[data-tab="skills"].on .tree { flex: none; }
+@media (max-height: 430px) { .node { padding: 5px 7px; } .tree { gap: 6px; } .branch { gap: 4px; } .sp-line { font-size: 13px; } }
