@@ -2,24 +2,24 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=24';
-import { buildCharacter, captureGrip } from './characters.js?v=24';
-import { Player } from './player.js?v=24';
-import { Guide } from './guide.js?v=24';
-import { Dialogue } from './dialogue.js?v=24';
-import { Effects } from './effects.js?v=24';
-import { Hud } from './hud.js?v=24';
-import { Profile } from './profile.js?v=24';
-import { Loot } from './loot.js?v=24';
-import { Menu } from './menu.js?v=24';
-import { Console } from './console.js?v=24';
-import { Pet } from './pet.js?v=24';
-import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=24';
-import { capturePortrait, systemPortrait } from './portraits.js?v=24';
-import { ZoneMap, MapView, Minimap } from './map.js?v=24';
-import * as Zone1 from './zone1.js?v=24';
-import * as Zone2 from './zone2.js?v=24';
-import * as Zone3 from './zone3.js?v=24';
+import { Input, isTouch } from './input.js?v=25';
+import { buildCharacter, captureGrip } from './characters.js?v=25';
+import { Player } from './player.js?v=25';
+import { Guide } from './guide.js?v=25';
+import { Dialogue } from './dialogue.js?v=25';
+import { Effects } from './effects.js?v=25';
+import { Hud } from './hud.js?v=25';
+import { Profile } from './profile.js?v=25';
+import { Loot } from './loot.js?v=25';
+import { Menu } from './menu.js?v=25';
+import { Console } from './console.js?v=25';
+import { Pet } from './pet.js?v=25';
+import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=25';
+import { capturePortrait, systemPortrait } from './portraits.js?v=25';
+import { ZoneMap, MapView, Minimap } from './map.js?v=25';
+import * as Zone1 from './zone1.js?v=25';
+import * as Zone2 from './zone2.js?v=25';
+import * as Zone3 from './zone3.js?v=25';
 
 // Zone registry. Each zone is loaded on its own page load (gates save and reload).
 const ZONES = { z1: Zone1, z2: Zone2, z3: Zone3 };
@@ -285,7 +285,8 @@ async function boot() {
     let near = null;
     if (!talking && player.state === 'move') {
       let bd = 99;
-      for (const it of zone.interactables()) { const d = it.pos.distanceTo(player.pos) - (it.range || 2.8); if (d < 0 && d < bd) { bd = d; near = it; } }
+      // Doors, gates and chests win over low-priority things (talking to an ally who follows you).
+      for (const it of zone.interactables()) { const d = it.pos.distanceTo(player.pos) - (it.range || 2.8) + (it.low ? 100 : 0); if (d < (it.low ? 100 : 0) && d < bd) { bd = d; near = it; } }
     }
     hud.talkPrompt(near ? near.label : null, near?.button);
     if (!talking && input.pressed.has('talk')) {

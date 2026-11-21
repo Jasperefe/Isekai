@@ -1,8 +1,8 @@
 // Jasper: movement, sword combat, Debug Dash, block/parry, Blade Storm, Patch
 // and the animation state machine.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=24';
-import { heightAt } from './world.js?v=24';
+import { sfx } from './audio.js?v=25';
+import { heightAt } from './world.js?v=25';
 
 const CFG = {
   walk: 2.2, jog: 5.4, sprint: 7.8, accel: 14, turn: 12,

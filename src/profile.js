@@ -1,6 +1,6 @@
 // Player profile: everything that travels with Jasper from zone to zone
 // (level, gold, gear, skills, upgrades), plus each zone's own story progress.
-import { SKILLS } from './skills.js?v=24';
+import { SKILLS } from './skills.js?v=25';
 
 const KEY = 'isekai_save_v2';
 const OLD_KEY = 'isekai_save_v1';

@@ -1,15 +1,15 @@
 // Zone 3: Capital of Aster. Same shape as zone1.js / zone2.js so the game core can load it.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=24';
-import { World3, Z3, HALL, WORLD3_RADIUS } from './world3.js?v=24';
-import { initKnights, spawnZone3, setZone3Detail } from './enemies3.js?v=24';
-import { SirDuplicate } from './boss3.js?v=24';
-import { NPC } from './npc.js?v=24';
-import { Ally } from './ally.js?v=24';
-import { Shop } from './shop.js?v=24';
-import { Story3 } from './story3.js?v=24';
-import { makeChest } from './loot.js?v=24';
-import { makeItem } from './items.js?v=24';
+import { sfx } from './audio.js?v=25';
+import { World3, Z3, HALL, WORLD3_RADIUS } from './world3.js?v=25';
+import { initKnights, spawnZone3, setZone3Detail } from './enemies3.js?v=25';
+import { SirDuplicate } from './boss3.js?v=25';
+import { NPC } from './npc.js?v=25';
+import { Ally } from './ally.js?v=25';
+import { Shop } from './shop.js?v=25';
+import { Story3 } from './story3.js?v=25';
+import { makeChest } from './loot.js?v=25';
+import { makeItem } from './items.js?v=25';
 
 export const ZONE_ID = 'z3';
 export const ZONE_NAME = 'Capital of Aster';
@@ -93,7 +93,7 @@ export async function loadZone(core) {
     const inHall = world.inHall(player.pos), list = [];
     for (const n of npcs) {
       if (n === victory && (victory.mode !== 'follow' || story.id === 'boss')) continue;
-      list.push({ pos: n.pos, label: n === dot ? 'Shop with DOT' : `Talk to ${n.name}`, button: n === dot ? 'SHOP' : 'TALK', act: () => story.talk(n) });
+      list.push({ pos: n.pos, label: n === dot ? 'Shop with DOT' : `Talk to ${n.name}`, button: n === dot ? 'SHOP' : 'TALK', act: () => story.talk(n), low: n === victory, range: n === victory ? 2.2 : undefined });
     }
     for (const c of chests) if (!c.opened && !c.hidden) list.push({ pos: c.pos3, label: 'Open chest', button: 'OPEN', act: () => openChest(c) });
     if (!inHall) list.push({ pos: Z3.gate, range: 4.5, label: 'Gate to Glitchwood', button: 'GATE', act: () => story.gate() });
