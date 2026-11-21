@@ -6,9 +6,9 @@
 // After each attack cycle NOVA sinks to the floor to "reload": that is the moment to hit its eye.
 // When the eye flickers (GLITCHED) PATCH it: stunned, x2 damage. Below 33% it is ENRAGED.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=30';
-import { label } from './world4.js?v=30';
-import { Placeholder } from './enemies4.js?v=30';
+import { sfx } from './audio.js?v=31';
+import { label } from './world4.js?v=31';
+import { Placeholder } from './enemies4.js?v=31';
 
 const MAGENTA = 0xff2bd6, CYAN = 0x29e6ff;
 

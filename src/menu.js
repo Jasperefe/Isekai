@@ -1,7 +1,7 @@
-import { sfx } from './audio.js?v=30';
+import { sfx } from './audio.js?v=31';
 // Pause menu: Gear (equip/scrap), Skills (tree), Map, Settings. Plus Bram's forge window.
-import { RARITY, itemIcon } from './items.js?v=30';
-import { SKILLS, BRANCHES } from './skills.js?v=30';
+import { RARITY, itemIcon } from './items.js?v=31';
+import { SKILLS, BRANCHES } from './skills.js?v=31';
 
 const $ = id => document.getElementById(id);
 const SLOT_NAMES = { weapon: 'Weapon', armor: 'Armor', charm: 'Charm' };

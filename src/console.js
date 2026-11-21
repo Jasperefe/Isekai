@@ -1,5 +1,5 @@
-import { sfx } from './audio.js?v=30';
-// CONSOLE: Jasper's cheat menu (taught by Old Mira). Opens a radial menu and slows time.
+import { sfx } from './audio.js?v=31';
+// CONSOLE: the cheat menu (taught by Old Mira). Opens a list panel and slows time.
 // Commands are unlocked with Debug Points and each has a cooldown.
 const $ = id => document.getElementById(id);
 
@@ -38,12 +38,12 @@ export class Console {
   hide() { if (this.open) sfx('close'); this.open = false; this.el.classList.add('hidden'); document.body.classList.remove('console'); }
 
   render() {
+    // A clean list: one row per command (name + what it does on the left, its state on the right).
     const wrap = $('console-cmds'); wrap.innerHTML = ''; this.btns = [];
-    COMMANDS.forEach((c, i) => {
-      const a = -Math.PI / 2 + i / COMMANDS.length * Math.PI * 2;
+    COMMANDS.forEach(c => {
       const b = document.createElement('button');
-      b.className = 'cmd'; b.style.left = `calc(50% + ${Math.cos(a) * 178}px)`; b.style.top = `calc(50% + ${Math.sin(a) * 104}px)`;
-      b.innerHTML = `<b>${c.name}</b><small>${c.text}</small><i></i>`;
+      b.className = 'cmd';
+      b.innerHTML = `<span><b>${c.name}</b><small>${c.text}</small></span><i></i>`;
       b.addEventListener('click', () => this.#pick(c));
       wrap.appendChild(b); this.btns.push(b);
     });
@@ -58,13 +58,13 @@ export class Console {
       let state, cls;
       if (!this.has(c.id)) {
         const need = c.cost - this.d.debugPoints;
-        if (need > 0) { state = `LOCKED · NEED ${need} MORE PT${need > 1 ? 'S' : ''}`; cls = 'locked'; }
-        else { state = `TAP TO UNLOCK · ${c.cost} PT${c.cost > 1 ? 'S' : ''}`; cls = 'ready'; }
+        if (need > 0) { state = `LOCKED · ${c.cost} PT${c.cost > 1 ? 'S' : ''}`; cls = 'locked'; }
+        else { state = `UNLOCK · ${c.cost} PT${c.cost > 1 ? 'S' : ''}`; cls = 'ready'; }
       }
       else if (c.passive) { state = 'ALWAYS ON'; cls = 'on'; }
       else if (this.active[c.id] > 0) { state = `ACTIVE ${Math.ceil(this.active[c.id])}s`; cls = 'on'; }
       else if (this.cd[c.id] > 0) { state = `READY IN ${Math.ceil(this.cd[c.id])}s`; cls = 'wait'; }
-      else { state = 'TAP TO RUN'; cls = 'ready'; }
+      else { state = 'RUN'; cls = 'ready'; }
       b.className = 'cmd ' + cls; b.querySelector('i').textContent = state;
     });
   }
