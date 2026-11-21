@@ -213,6 +213,8 @@ export class World {
     for (const [x, z] of [[-4, -8], [-3.2, -8.6], [8, -5], [-10, 1]]) { prop('Prop_Crate', x, z, x); this.colliders.push({ x, z, r: 0.7 }); }
     // Fence along the slime field.
     for (let i = 0; i < 8; i++) prop('Prop_WoodenFence_Single', 22 + i * 2.05, -6.5, 0);
+    // Solid fence: one thin box along its whole length (each piece is ~2.06 m wide).
+    this.colliders.push({ box: true, x: 22 + 3.5 * 2.05, z: -6.5, hx: 4 * 2.05 + 0.05, hz: 0.2, ry: 0 });
     // Well in the plaza (code-built).
     const well = new THREE.Group();
     const stone = new THREE.MeshStandardMaterial({ color: 0x9a9890, roughness: 0.9 });
