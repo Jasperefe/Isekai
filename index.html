@@ -2,10 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="screen-orientation" content="landscape">
+<meta name="x5-orientation" content="landscape">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>ISEKAI</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Cpath d=%22M6 3v24l6-6 4 9 4-2-4-9h9z%22 fill=%22%2329e6ff%22/%3E%3C/svg%3E">
-<link rel="stylesheet" href="src/style.css?v=18">
+<link rel="stylesheet" href="src/style.css?v=19">
 <script type="importmap">
 { "imports": { "three": "./lib/three.module.min.js", "three/addons/": "./lib/addons/" } }
 </script>
@@ -88,7 +91,7 @@
             <h5>GRAPHICS</h5>
             <div class="seg" id="gfx-seg"><button data-gfx="auto">Auto</button><button data-gfx="high">High</button><button data-gfx="medium">Med</button><button data-gfx="low">Low</button></div>
             <label class="tgl"><span>Minimap</span><button id="mm-toggle" class="sw on" aria-label="Minimap on or off"><i></i></button></label>
-            <div class="setinfo"><span id="menu-fps">measuring FPS...</span><span id="build">build 18</span></div>
+            <div class="setinfo"><span id="menu-fps">measuring FPS...</span><span id="build">build 19</span></div>
             <button id="menu-gfx" class="hidden"></button>
           </div>
           <div class="setcard wide">
@@ -103,6 +106,11 @@
   </div>
 </div>
 <div id="forge" class="hidden"><div class="fbox"><small>BRAM'S FORGE</small><h2 id="forge-title"></h2><p id="forge-text"></p><div class="fbtns"><button id="forge-up">Upgrade</button><button id="forge-close">Close</button></div></div></div>
+  <div id="rotate"><div class="r-box">
+    <div class="r-phone"><i></i></div>
+    <h3>ROTATE YOUR DEVICE</h3>
+    <p>ISEKAI is played in landscape.<br>Turn your phone sideways to continue.</p>
+  </div></div>
   <div id="credits" class="hidden">
   <div class="c-box">
     <h3>CREDITS</h3>
@@ -157,6 +165,6 @@
   <button id="btn-talk" class="btn ctx hidden"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M4 4h16a2 2 0 012 2v9a2 2 0 01-2 2h-8l-5 4v-4H4a2 2 0 01-2-2V6a2 2 0 012-2z" fill="currentColor"/><circle cx="8" cy="10.5" r="1.3" fill="#0b1020"/><circle cx="12" cy="10.5" r="1.3" fill="#0b1020"/><circle cx="16" cy="10.5" r="1.3" fill="#0b1020"/></svg><em id="btn-talk-label">TALK</em></button>
 </div>
 
-<script type="module" src="src/main.js?v=18"></script>
+<script type="module" src="src/main.js?v=19"></script>
 </body>
 </html>

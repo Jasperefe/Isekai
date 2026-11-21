@@ -1,8 +1,8 @@
 // Zone 2 story: Glitchwood Forest. Old Mira, Area Patch, the Console, the Corrupted Grove,
 // the Lost Pixel Fox side quest and the Thornwraith.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=18';
-import { Z2 } from './world2.js?v=18';
+import { sfx, music } from './audio.js?v=19';
+import { Z2 } from './world2.js?v=19';
 
 const STAGES = [
   { id: 'arrive', title: 'The Spreading Null', text: 'Follow the path into Glitchwood' },
@@ -65,6 +65,8 @@ export class Story2 {
     // Saves from build 12/13 stored the stage number before 'purge' existed.
     this.stage = z.stageId ? Math.max(0, this.idx(z.stageId)) : (z.stage >= 3 ? z.stage + 1 : z.stage || 0);
     this.kills = z.kills || 0; this.crystal = z.crystal ?? -1; this.flags = z.flags || {};
+    // Saved in the middle of the boss fight: go back one step so the fight starts again on entering the hollow.
+    if (this.id === 'boss') this.stage = this.idx('hollow');
     // Enemies already defeated stay defeated (until the Thornwraith falls).
     for (const i of this.flags.cleared || []) { const e = this.guards[i]; if (e) { e.dead = true; e.deathT = 1; e.respawnT = 1e9; e.group.visible = false; } }
     player.refreshStats(); player.hp = player.maxHp;

@@ -4,7 +4,7 @@
 // - Every so often his bug kicks in: he grows HUGE ("Unscaled") and takes almost no damage.
 //   PATCH shrinks him back and leaves him stunned and taking double damage.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=18';
+import { sfx } from './audio.js?v=19';
 
 export class SlimeKing {
   constructor(scene, home, world, effects) {

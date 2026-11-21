@@ -1,7 +1,7 @@
 // Maps: a top-down picture of the real zone (rendered once from the 3D world), fog of war,
 // the full Map screen (zone + World of Aster) and the round minimap on the HUD.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=18';
+import { sfx } from './audio.js?v=19';
 
 const $ = id => document.getElementById(id);
 const FOG_N = 64;          // fog grid cells per side
@@ -580,8 +580,20 @@ export class Minimap {
     this.on = on; this.el.classList.toggle('hidden', !on); document.body.classList.toggle('mm-off', !on);
     try { localStorage.setItem('isekai_minimap', on ? '1' : '0'); } catch (e) { /* ignore */ }
   }
+  // Shrink the minimap if it would touch the Jump button (short screens, Safari bars).
+  layout() {
+    if (!this.on) return;
+    const jump = $('btn-jump'), jr = jump?.getBoundingClientRect();
+    if (!jr || !jr.height) return;
+    const mr = this.el.getBoundingClientRect(), top = mr.top || 8;
+    let size = 84;
+    if (jr.right > mr.left - 4 && jr.left < mr.left + 92) size = Math.max(52, Math.min(84, Math.floor(jr.top - top - 8)));
+    if (size !== this.size) { this.size = size; document.documentElement.style.setProperty('--mm', size + 'px'); }
+  }
   update(dt) {
     this.t += dt; this.acc += dt;
+    this.layoutT = (this.layoutT || 0) - dt;
+    if (this.layoutT <= 0) { this.layoutT = 1; this.layout(); }
     if (!this.on || this.acc < 1 / 15) return;
     this.acc = 0; this.draw();
   }

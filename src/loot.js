@@ -1,7 +1,7 @@
 // Loot: gold coins and glitch shards that fly to Jasper, item drops, and treasure chests.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=18';
-import { makeItem, rollRarity, RARITY } from './items.js?v=18';
+import { sfx } from './audio.js?v=19';
+import { makeItem, rollRarity, RARITY } from './items.js?v=19';
 import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
 
 const COIN_GEO = new THREE.CylinderGeometry(0.16, 0.16, 0.05, 14);

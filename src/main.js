@@ -2,23 +2,23 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=18';
-import { buildCharacter, captureGrip } from './characters.js?v=18';
-import { Player } from './player.js?v=18';
-import { Guide } from './guide.js?v=18';
-import { Dialogue } from './dialogue.js?v=18';
-import { Effects } from './effects.js?v=18';
-import { Hud } from './hud.js?v=18';
-import { Profile } from './profile.js?v=18';
-import { Loot } from './loot.js?v=18';
-import { Menu } from './menu.js?v=18';
-import { Console } from './console.js?v=18';
-import { Pet } from './pet.js?v=18';
-import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=18';
-import { capturePortrait, systemPortrait } from './portraits.js?v=18';
-import { ZoneMap, MapView, Minimap } from './map.js?v=18';
-import * as Zone1 from './zone1.js?v=18';
-import * as Zone2 from './zone2.js?v=18';
+import { Input, isTouch } from './input.js?v=19';
+import { buildCharacter, captureGrip } from './characters.js?v=19';
+import { Player } from './player.js?v=19';
+import { Guide } from './guide.js?v=19';
+import { Dialogue } from './dialogue.js?v=19';
+import { Effects } from './effects.js?v=19';
+import { Hud } from './hud.js?v=19';
+import { Profile } from './profile.js?v=19';
+import { Loot } from './loot.js?v=19';
+import { Menu } from './menu.js?v=19';
+import { Console } from './console.js?v=19';
+import { Pet } from './pet.js?v=19';
+import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=19';
+import { capturePortrait, systemPortrait } from './portraits.js?v=19';
+import { ZoneMap, MapView, Minimap } from './map.js?v=19';
+import * as Zone1 from './zone1.js?v=19';
+import * as Zone2 from './zone2.js?v=19';
 
 // Zone registry. Each zone is loaded on its own page load (gates save and reload).
 const ZONES = { z1: Zone1, z2: Zone2 };
@@ -145,6 +145,13 @@ async function boot() {
   rig.yaw = 0;
   setListener(player.pos);
   const $ = id => document.getElementById(id);
+  // Landscape only: in portrait a "rotate your device" screen covers the game and time stops.
+  const portraitMQ = matchMedia('(orientation: portrait)');
+  let portrait = portraitMQ.matches;
+  portraitMQ.addEventListener?.('change', e => { portrait = e.matches; if (portrait) input.endFrame?.(); });
+  const lockLandscape = () => { try { screen.orientation?.lock?.('landscape').catch(() => {}); } catch (e) { /* not supported (iPhone) */ } };
+  addEventListener('pointerdown', lockLandscape, { once: true });
+
   // Maps: the zone picture is rendered from the 3D world on the first frame.
   const zmap = new ZoneMap({
     renderer, scene, zone, profile, player,
@@ -252,7 +259,7 @@ async function boot() {
       if (doRender) renderer.render(scene, camera);
       return;
     }
-    if (paused) { if (doRender) renderer.render(scene, camera); return; }
+    if (paused || portrait) { if (doRender) renderer.render(scene, camera); return; }
     cons.update(dt);
     if (cons.open) dt *= 0.12; // the Console slows time while open
     t += dt;

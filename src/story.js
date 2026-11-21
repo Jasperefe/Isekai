@@ -1,8 +1,8 @@
 // Zone 1 story: quests, cutscenes, objective markers, unlocks and save/load.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=18';
-import { Z1 } from './world.js?v=18';
-import { Slime } from './enemies.js?v=18';
+import { sfx, music } from './audio.js?v=19';
+import { Z1 } from './world.js?v=19';
+import { Slime } from './enemies.js?v=19';
 
 
 // Quest stages in order.
@@ -70,6 +70,8 @@ export class Story {
     const { player, guide, world } = this.ctx;
     if (data && data.stage > 0) {
       this.stage = data.stage; this.kills = data.kills || 0; this.crystal = data.crystal ?? -1; this.flags = data.flags || {};
+      // Saved in the middle of the boss fight: go back one step so the fight starts again on entering the arena.
+      if (this.id === 'boss') this.stage = this.idx('pond');
       this.ctx.hud.tutorialShown = !!this.flags.tutorial || this.stage > this.idx('slimes');
       if (this.stage === this.idx('slimes')) for (const i of this.flags.cleared || []) { const e = this.guards[i]; if (e) { e.dead = true; e.deathT = 1; e.respawnT = 1e9; e.group.visible = false; } }
       player.refreshStats(); player.hp = player.maxHp;
