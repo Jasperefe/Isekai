@@ -1,14 +1,14 @@
 // Zone 1: Starter Meadow. Builds the map, villagers, enemies, boss, chests and story.
 // Every zone module exports the same shape so the game core can load zones one after another.
 import * as THREE from 'three';
-import { World, Z1, riverX, PATHS, WORLD_RADIUS } from './world.js?v=14';
-import { VillageKit } from './village.js?v=14';
-import { spawnSlimes } from './enemies.js?v=14';
-import { SlimeKing } from './boss.js?v=14';
-import { NPC } from './npc.js?v=14';
-import { Story } from './story.js?v=14';
-import { makeChest } from './loot.js?v=14';
-import { makeItem } from './items.js?v=14';
+import { World, Z1, riverX, PATHS, WORLD_RADIUS } from './world.js?v=15';
+import { VillageKit } from './village.js?v=15';
+import { spawnSlimes } from './enemies.js?v=15';
+import { SlimeKing } from './boss.js?v=15';
+import { NPC } from './npc.js?v=15';
+import { Story } from './story.js?v=15';
+import { makeChest } from './loot.js?v=15';
+import { makeItem } from './items.js?v=15';
 
 export const ZONE_ID = 'z1';
 export const ZONE_NAME = 'Starter Meadow';
@@ -78,6 +78,11 @@ export async function loadZone(core) {
   return {
     id: ZONE_ID, name: ZONE_NAME, world, enemies, npcs, boss, story, chests, interactables,
     respawnPoint: () => story.respawnPoint(),
+    // Replay: back to the slime field (Bram stays fixed, opened chests stay opened).
+    replayData: () => {
+      const f = zdata.flags || {};
+      return { stage: story.idx('slimes'), kills: 0, crystal: -1, flags: { tutorial: true, bramThanked: true, nia: f.nia, gateSeen: f.gateSeen, chests: f.chests || [] } };
+    },
     onKill: e => story.onKill(e),
     start: async () => {
       await story.start();

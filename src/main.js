@@ -2,20 +2,20 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=14';
-import { buildCharacter, captureGrip } from './characters.js?v=14';
-import { Player } from './player.js?v=14';
-import { Guide } from './guide.js?v=14';
-import { Dialogue } from './dialogue.js?v=14';
-import { Effects } from './effects.js?v=14';
-import { Hud } from './hud.js?v=14';
-import { Profile } from './profile.js?v=14';
-import { Loot } from './loot.js?v=14';
-import { Menu } from './menu.js?v=14';
-import { Console } from './console.js?v=14';
-import { Pet } from './pet.js?v=14';
-import * as Zone1 from './zone1.js?v=14';
-import * as Zone2 from './zone2.js?v=14';
+import { Input, isTouch } from './input.js?v=15';
+import { buildCharacter, captureGrip } from './characters.js?v=15';
+import { Player } from './player.js?v=15';
+import { Guide } from './guide.js?v=15';
+import { Dialogue } from './dialogue.js?v=15';
+import { Effects } from './effects.js?v=15';
+import { Hud } from './hud.js?v=15';
+import { Profile } from './profile.js?v=15';
+import { Loot } from './loot.js?v=15';
+import { Menu } from './menu.js?v=15';
+import { Console } from './console.js?v=15';
+import { Pet } from './pet.js?v=15';
+import * as Zone1 from './zone1.js?v=15';
+import * as Zone2 from './zone2.js?v=15';
 
 // Zone registry. Each zone is loaded on its own page load (gates save and reload).
 const ZONES = { z1: Zone1, z2: Zone2 };
@@ -138,6 +138,12 @@ async function boot() {
   hud.show(); hud.wallet(profile.d);
   rig.yaw = 0;
   document.getElementById('menu-restart').addEventListener('click', () => { if (confirm('Erase all progress and restart?')) { Profile.clear(); location.reload(); } });
+  document.getElementById('menu-replay').addEventListener('click', () => {
+    if (!confirm(`Replay ${ZONE_NAMES[zone.id]}? Enemies, quests and the boss reset. Your level, gear, skills, gold and Pip stay.`)) return;
+    player.syncProfile?.();
+    profile.d.zones[zone.id] = zone.replayData();
+    profile.save(); location.reload();
+  });
 
   zone.start();
   if (profile.d.pet === 'pip') pet.follow(player);
