@@ -1,0 +1,93 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>ISEKAI - Zone 2 enemy designs</title>
+<script type="importmap">{ "imports": { "three": "../lib/three.module.min.js", "three/addons/": "../lib/addons/" } }</script>
+<style>
+  body { margin: 0; background: #fff; font-family: system-ui, sans-serif; color: #151826; width: 1800px; }
+  header { padding: 28px 40px 8px; }
+  header h1 { margin: 0; font-size: 34px; letter-spacing: 1px; }
+  header p { margin: 6px 0 0; color: #666; font-size: 17px; }
+  .row { display: flex; align-items: stretch; padding: 14px 40px; border-top: 1px solid #eee; gap: 18px; }
+  .info { width: 330px; flex: none; }
+  .info h2 { margin: 6px 0 4px; font-size: 28px; }
+  .info .tag { display: inline-block; font-size: 13px; font-weight: 800; letter-spacing: 2px; padding: 3px 8px; border-radius: 4px; color: #fff; }
+  .info ul { padding-left: 18px; margin: 10px 0 0; font-size: 15px; line-height: 1.5; }
+  .views { display: flex; gap: 12px; }
+  figure { margin: 0; text-align: center; }
+  figure img { width: 420px; height: 420px; display: block; border-radius: 8px; background: #fafafa; }
+  figcaption { font-size: 13px; color: #888; margin-top: 4px; letter-spacing: 1px; }
+  .lineup img { width: 1720px; height: 520px; }
+</style></head>
+<body>
+<header><h1>ISEKAI · Zone 2: Glitchwood Forest · Enemy designs</h1><p>Real in-game 3D models built for ISEKAI, rendered in the game engine.</p></header>
+<div id="rows"></div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { buildNullWolf, buildStaticSprite, buildThornwraith } from '../src/monsters2.js';
+import { buildCharacter } from '../src/characters.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+function stage() {
+  const s = new THREE.Scene(); s.background = new THREE.Color(0xffffff);
+  s.add(new THREE.HemisphereLight(0xffffff, 0xb9b2a0, 1.5));
+  const d = new THREE.DirectionalLight(0xffffff, 2.4); d.position.set(4, 8, 6); d.castShadow = true;
+  d.shadow.mapSize.set(2048, 2048); Object.assign(d.shadow.camera, { left: -6, right: 6, top: 7, bottom: -2, near: 0.5, far: 30 }); d.shadow.bias = -0.0005; s.add(d);
+  const fill = new THREE.DirectionalLight(0xdfe8ff, 0.7); fill.position.set(-5, 3, -4); s.add(fill);
+  const g = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ opacity: 0.16 })); g.rotation.x = -Math.PI / 2; g.receiveShadow = true; s.add(g);
+  return s;
+}
+
+// Render objects from a viewing angle, framed to fit; returns a PNG data URL.
+function shot(objs, yaw, w = 420, h = 420, pitch = 0.12, pad = 1.08) {
+  renderer.setSize(w, h);
+  const s = stage(); for (const o of objs) s.add(o);
+  const box = new THREE.Box3(); for (const o of objs) box.expandByObject(o);
+  const c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
+  const cam = new THREE.PerspectiveCamera(26, w / h, 0.1, 100);
+  const fovV = cam.fov * Math.PI / 180, fovH = 2 * Math.atan(Math.tan(fovV / 2) * cam.aspect);
+  const radH = Math.max(size.x, size.z) * 0.55, radV = size.y * 0.55;
+  const dist = Math.max(radV / Math.tan(fovV / 2), radH / Math.tan(fovH / 2)) * pad + Math.max(size.x, size.z) * 0.3;
+  cam.position.set(c.x + Math.sin(yaw) * dist * Math.cos(pitch), c.y + dist * Math.sin(pitch), c.z + Math.cos(yaw) * dist * Math.cos(pitch));
+  cam.lookAt(c);
+  renderer.render(s, cam);
+  for (const o of objs) s.remove(o);
+  return renderer.domElement.toDataURL('image/png');
+}
+
+const MONSTERS = [
+  { name: 'Null Wolf', tag: 'PACK HUNTER', color: '#5a5f86', build: buildNullWolf, views: [[0.75, 'idle', '3/4 VIEW'], [Math.PI / 2, 'idle', 'SIDE'], [0.6, 'attack', 'POUNCE']],
+    lines: ['Wolves made of dark blocks, with code pieces falling off their bodies', 'Hunt in packs of 2 to 3 and circle Jasper', 'Pounce attack with a short wind-up', 'Glitched ones flicker; Patch freezes the whole pack link'] },
+  { name: 'Static Sprite', tag: 'CASTER', color: '#1aa7c4', build: buildStaticSprite, views: [[0.6, 'idle', '3/4 VIEW'], [Math.PI / 2, 'idle', 'SIDE'], [0.35, 'attack', 'STATIC ZAP']],
+    lines: ['A haunted old CRT TV with a cracked static screen and rabbit-ear antenna', 'Floats out of sword reach and teleports when you get close', 'Shoots static zaps that drain stamina', 'Patch fixes its signal: it drops to the ground, stunned'] },
+  { name: 'Thornwraith', tag: 'ZONE 2 BOSS', color: '#c21f9d', build: buildThornwraith, views: [[0.55, 'idle', '3/4 VIEW'], [0, 'idle', 'FRONT'], [0.4, 'attack', 'ROOT SLAM']],
+    lines: ['Forest guardian the developers never finished', 'Right arm is still untextured wireframe: a missing asset', 'Glitch heart glows in its chest: the weak point', 'Patch "finishes" the arm for a moment and exposes the heart'] },
+];
+
+const rows = document.getElementById('rows');
+for (const m of MONSTERS) {
+  const row = document.createElement('div'); row.className = 'row';
+  const imgs = m.views.map(([yaw, pose, cap]) => `<figure><img src="${shot([m.build({ pose }).root], yaw)}"><figcaption>${cap}</figcaption></figure>`).join('');
+  row.innerHTML = `<div class="info"><span class="tag" style="background:${m.color}">${m.tag}</span><h2>${m.name}</h2><ul>${m.lines.map(l => `<li>${l}</li>`).join('')}</ul></div><div class="views">${imgs}</div>`;
+  rows.appendChild(row);
+}
+
+// Size lineup with Jasper.
+const loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder);
+const [jg, a1] = await Promise.all(['jasper', 'anims1'].map(f => loader.loadAsync(`../assets/models/${f}.glb`)));
+const idle = a1.animations.find(c => c.name === 'Idle_Loop');
+const jasper = buildCharacter(jg, 'jasper', idle);
+const jr = jasper.root;
+const jm = new THREE.AnimationMixer(jr); jm.clipAction(idle).play(); jm.update(0.6); jr.position.set(-2.6, 0, 0); jr.rotation.y = 0.3;
+const w = buildNullWolf().root; w.position.set(-1.0, 0, 0.2); w.rotation.y = 1.1;
+const sp = buildStaticSprite().root; sp.position.set(0.5, 0, 0.3); sp.rotation.y = 0.2;
+const tw = buildThornwraith().root; tw.position.set(3.2, 0, -0.4); tw.rotation.y = -0.25;
+const lrow = document.createElement('div'); lrow.className = 'row lineup';
+lrow.innerHTML = `<figure><img src="${shot([jr, w, sp, tw], 0, 1720, 520, 0.06, 1.0)}"><figcaption>SIZE CHECK: JASPER · NULL WOLF · STATIC SPRITE · THORNWRAITH</figcaption></figure>`;
+rows.appendChild(lrow);
+window.__done = true;
+</script>
+</body></html>
