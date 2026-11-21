@@ -1,7 +1,7 @@
 // Maps: a top-down picture of the real zone (rendered once from the 3D world), fog of war,
 // the full Map screen (zone + World of Aster) and the round minimap on the HUD.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=20';
+import { sfx } from './audio.js?v=21';
 
 const $ = id => document.getElementById(id);
 const FOG_N = 64;          // fog grid cells per side
@@ -12,7 +12,7 @@ const BG = '#060914';
 
 // The four zones of Aster, placed on the World map (0..1 of the map box).
 export const WORLD_ZONES = [
-  { id: 'z1', num: 1, name: 'Starter Meadow', x: 0.27, y: 0.70, color: '#7cc35a' },
+  { id: 'z1', num: 1, name: 'Starter Meadow', x: 0.27, y: 0.70, color: '#7cc35a', forge: true },
   { id: 'z2', num: 2, name: 'Glitchwood Forest', x: 0.31, y: 0.29, color: '#a35ae6' },
   { id: 'z3', num: 3, name: 'Capital of Aster', x: 0.63, y: 0.52, color: '#ffcc4d' },
   { id: 'z4', num: 4, name: 'The Unfinished Zone', x: 0.84, y: 0.24, color: '#ff2bd6' },
@@ -266,6 +266,14 @@ const ICON = {
     g.beginPath(); g.moveTo(0, -9 * u); g.lineTo(6.5 * u, 7 * u); g.lineTo(0, 3.5 * u); g.lineTo(-6.5 * u, 7 * u); g.closePath(); g.fill(); g.shadowBlur = 0; g.stroke();
     g.restore();
   },
+  anvil(g, x, y, u) {
+    g.fillStyle = 'rgba(10,14,30,0.92)'; g.strokeStyle = '#ffb35a'; g.lineWidth = 2 * u;
+    g.beginPath(); g.arc(x, y, 9 * u, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.fillStyle = '#ffb35a';
+    g.beginPath(); g.moveTo(x - 6 * u, y - 3 * u); g.lineTo(x + 5 * u, y - 3 * u); g.lineTo(x + 6.5 * u, y - 1.5 * u); g.lineTo(x + 3 * u, y - 0.5 * u);
+    g.lineTo(x + 2 * u, y + 1.5 * u); g.lineTo(x - 2 * u, y + 1.5 * u); g.lineTo(x - 3 * u, y - 0.5 * u); g.lineTo(x - 6 * u, y - 1 * u); g.closePath(); g.fill();
+    g.fillRect(x - 4 * u, y + 2.5 * u, 8 * u, 2 * u);
+  },
   objective(g, x, y, u, t) {
     const p = (Math.sin(t * 4) + 1) / 2;
     g.strokeStyle = '#ffcc4d'; g.lineWidth = 2.5 * u; g.shadowColor = '#ffcc4d'; g.shadowBlur = 8 * u;
@@ -399,6 +407,10 @@ export class MapView {
     // Icons.
     const lock = m.lock();
     const lair = m.lair; if (lair && ex(lair)) { const [x, y] = toS(lair.x, lair.z); ICON.lair(g, x, y, u, lock.state); boxes.push(box(x, y, 12 * u)); }
+    if (m.forge && ex(m.forge)) {
+      const [x, y] = toS(m.forge.x, m.forge.z); ICON.anvil(g, x, y, u); boxes.push(box(x, y, 10 * u));
+      labels.push({ text: "Bram's Forge", x, y, off: 11 * u, color: '#ffb35a', prio: 1 });
+    }
     for (const c of m.chests()) if (ex(c.p)) { const [x, y] = toS(c.p.x, c.p.z); ICON.chest(g, x, y, u, c.opened); boxes.push(box(x, y, 7 * u)); }
     for (const c of m.crystals()) if (ex(c)) { const [x, y] = toS(c.x, c.z); ICON.crystal(g, x, y, u); boxes.push(box(x, y, 6 * u)); }
     for (const gt of m.gates) if (ex(gt.p)) {
@@ -483,6 +495,7 @@ export class MapView {
           g.fillStyle = '#7dff9a'; g.beginPath(); g.arc(x + r * 0.75, y - r * 0.75, 6 * u, 0, Math.PI * 2); g.fill();
           g.strokeStyle = '#0a1a10'; g.lineWidth = 1.8 * u; g.beginPath(); g.moveTo(x + r * 0.75 - 3 * u, y - r * 0.75); g.lineTo(x + r * 0.75 - 0.8 * u, y - r * 0.75 + 2.4 * u); g.lineTo(x + r * 0.75 + 3.2 * u, y - r * 0.75 - 2.4 * u); g.stroke();
         }
+        if (z.forge) { ICON.anvil(g, x - r * 0.85, y - r * 0.75, u * 0.75); }
         if (here) {
           const k = (t % 1.4) / 1.4; g.strokeStyle = `rgba(41,230,255,${1 - k})`; g.lineWidth = 2 * u;
           g.beginPath(); g.arc(x, y, r + k * 14 * u, 0, Math.PI * 2); g.stroke();
@@ -490,7 +503,7 @@ export class MapView {
       }
       // Name tag below.
       g.font = `800 ${11 * u}px system-ui, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
-      const name = st.reached ? z.name : z.id === 'z4' ? '? ? ?' : z.name, sub = here ? 'YOU ARE HERE' : !st.reached ? 'LOCKED' : st.cleared ? 'CLEARED' : 'IN PROGRESS';
+      const name = st.reached ? z.name : z.id === 'z4' ? '? ? ?' : z.name, sub = (here ? 'YOU ARE HERE' : !st.reached ? 'LOCKED' : st.cleared ? 'CLEARED' : 'IN PROGRESS') + (z.forge && st.reached ? ' · FORGE' : '');
       const tw = Math.max(g.measureText(name).width, 60 * u) + 16 * u;
       g.fillStyle = 'rgba(6,10,24,0.85)'; rrect(g, x - tw / 2, y + r + 5 * u, tw, 30 * u, 7 * u); g.fill();
       g.fillStyle = st.reached ? '#fff' : '#8a93b0'; g.fillText(name, x, y + r + 18 * u);
@@ -518,9 +531,9 @@ export class MapView {
       el.innerHTML = `<small class="ms-kick">THE WORLD OF</small><h4>ASTER</h4>
         <div class="ms-list">${WORLD_ZONES.map(z => {
           const st = zoneStatus(prof, z.id), here = zone.id === z.id;
-          return `<div class="ms-zone ${st.reached ? '' : 'locked'}" style="--c:${z.color}"><b>${z.num}</b><span>${st.reached || z.id !== 'z4' ? z.name : '? ? ?'}</span><em class="${here ? 'here' : st.cleared ? 'ok' : st.reached ? 'go' : ''}">${here ? 'HERE' : st.cleared ? 'CLEARED' : st.reached ? 'OPEN' : 'LOCKED'}</em></div>`;
+          return `<div class="ms-zone ${st.reached ? '' : 'locked'}" style="--c:${z.color}"><b>${z.num}</b><span>${st.reached || z.id !== 'z4' ? z.name : '? ? ?'}${z.forge ? ' <small class="ms-forge">FORGE</small>' : ''}</span><em class="${here ? 'here' : st.cleared ? 'ok' : st.reached ? 'go' : ''}">${here ? 'HERE' : st.cleared ? 'CLEARED' : st.reached ? 'OPEN' : 'LOCKED'}</em></div>`;
         }).join('')}</div>
-        <p class="ms-note" id="map-msg">Tap a zone you've reached to travel there.</p>`;
+        <p class="ms-note" id="map-msg">Tap a zone you've reached to travel there. Upgrade your sword at Bram's forge in Starter Meadow.</p>`;
       return;
     }
     const lock = m.lock(), chests = m.chests(), opened = chests.filter(c => c.opened).length;

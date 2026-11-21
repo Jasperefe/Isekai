@@ -1,8 +1,8 @@
 // Zone 2 story: Glitchwood Forest. Old Mira, Area Patch, the Console, the Corrupted Grove,
 // the Lost Pixel Fox side quest and the Thornwraith.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=20';
-import { Z2 } from './world2.js?v=20';
+import { sfx, music } from './audio.js?v=21';
+import { Z2 } from './world2.js?v=21';
 
 const STAGES = [
   { id: 'arrive', title: 'The Spreading Null', text: 'Follow the path into Glitchwood' },
@@ -243,6 +243,7 @@ export class Story2 {
     await this.#say([
       { who: 'GUIDE', text: 'That was the last one! The seal on Root Hollow is breaking!' },
       { who: 'JASPER', text: 'Then let\'s see what\'s been hiding down there.' },
+      ...(this.ctx.profile.canUpgradeSword() ? [{ who: 'GUIDE', text: "You've got enough gold and shards for a sword upgrade at Bram's forge. Might be worth it before the Thornwraith!" }] : []),
     ]);
   }
 
@@ -304,6 +305,11 @@ export class Story2 {
     });
     if (this.busy) return;
     // One-time hints near the Console secrets.
+    if (!this.flags.hintForge && this.playTime > 6) {
+      this.flags.hintForge = true; this.save();
+      this.#say([{ who: 'GUIDE', text: "Your blade won't get stronger on its own. Bram's forge is back in Starter Meadow. Open MAP, then WORLD, to travel there any time." }]);
+      return;
+    }
     if (!this.flags.hintWall && player.pos.distanceTo(world.glitchWallPos) < 8) {
       this.flags.hintWall = true; this.save();
       this.#say([{ who: 'GUIDE', text: 'A wall of corrupted data. It is solid... unless you run /noclip from the CONSOLE.' }]);
@@ -323,7 +329,7 @@ export class Story2 {
       world.setBarrier(false); hud.bossBar(false); music('glitchwood', 2);
       boss.reset();
       this.stage = this.idx('hollow'); this.save();
-      hud.system('The Thornwraith was too strong...\nTry again: PATCH its arm when it glitches!', 3.5);
+      hud.system('The Thornwraith was too strong...\nTry again: PATCH its arm when it glitches!' + (this.ctx.profile.d.swordLevel < 5 ? "\nTip: upgrade your sword at Bram's forge in Starter Meadow" : ''), 4.5);
     }
   }
 }

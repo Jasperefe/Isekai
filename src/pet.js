@@ -1,7 +1,7 @@
 // Pip: a small glitched pixel fox. Before the side quest he is stuck glitching in the
 // Corrupted Grove (Patch fixes him); after it he follows Jasper in every zone and fetches loot.
 import * as THREE from 'three';
-import { buildNullWolf, bake } from './monsters2.js?v=20';
+import { buildNullWolf, bake } from './monsters2.js?v=21';
 
 export class Pet {
   constructor(scene) {

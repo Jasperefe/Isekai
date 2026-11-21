@@ -283,6 +283,7 @@ em.ok { color: #7dff9a; } em.go { color: var(--gold); } em.bad { color: #ff8a9c;
 .ms-zone { display: flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.04); border-left: 3px solid var(--c); border-radius: 8px; padding: 7px 9px; font-weight: 800; }
 .ms-zone b { color: var(--c); width: 10px; }
 .ms-zone.locked { opacity: 0.55; border-left-color: #5a6280; } .ms-zone.locked b { color: #8a93b0; }
+.ms-forge { color: #ffb35a; font-size: 9px; font-weight: 900; letter-spacing: 0.12em; margin-left: 4px; }
 .ms-note { margin: 2px 0 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
 @media (max-width: 700px) { .mapside { flex-basis: 170px; } .mapside h4 { font-size: 15px; } }
 /* Settings switch */

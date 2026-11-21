@@ -1,8 +1,8 @@
 // Zone 1 story: quests, cutscenes, objective markers, unlocks and save/load.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=20';
-import { Z1 } from './world.js?v=20';
-import { Slime } from './enemies.js?v=20';
+import { sfx, music } from './audio.js?v=21';
+import { Z1 } from './world.js?v=21';
+import { Slime } from './enemies.js?v=21';
 
 
 // Quest stages in order.
@@ -371,7 +371,7 @@ export class Story {
       boss.reset();
       for (const e of enemies) if (e.minion) { e.dead = true; e.noRespawn = true; e.group.visible = false; e.gone = true; }
       this.stage = this.idx('pond'); this.save();
-      hud.system('The Slime King was too strong...\nTry again: PATCH him when he grows!', 3.5);
+      hud.system('The Slime King was too strong...\nTry again: PATCH him when he grows!' + (this.ctx.profile.d.swordLevel < 5 ? "\nTip: upgrade your sword at Bram's forge in the village" : ''), 4.5);
     }
   }
 }

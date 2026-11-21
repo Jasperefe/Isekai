@@ -1,15 +1,15 @@
 // Zone 1: Starter Meadow. Builds the map, villagers, enemies, boss, chests and story.
 // Every zone module exports the same shape so the game core can load zones one after another.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=20';
-import { World, Z1, riverX, PATHS, WORLD_RADIUS } from './world.js?v=20';
-import { VillageKit } from './village.js?v=20';
-import { spawnSlimes, setSlimeLevel } from './enemies.js?v=20';
-import { SlimeKing } from './boss.js?v=20';
-import { NPC } from './npc.js?v=20';
-import { Story } from './story.js?v=20';
-import { makeChest } from './loot.js?v=20';
-import { makeItem } from './items.js?v=20';
+import { sfx, music } from './audio.js?v=21';
+import { World, Z1, riverX, PATHS, WORLD_RADIUS } from './world.js?v=21';
+import { VillageKit } from './village.js?v=21';
+import { spawnSlimes, setSlimeLevel } from './enemies.js?v=21';
+import { SlimeKing } from './boss.js?v=21';
+import { NPC } from './npc.js?v=21';
+import { Story } from './story.js?v=21';
+import { makeChest } from './loot.js?v=21';
+import { makeItem } from './items.js?v=21';
 
 export const ZONE_ID = 'z1';
 export const ZONE_NAME = 'Starter Meadow';
@@ -110,6 +110,7 @@ export async function loadZone(core) {
       ],
       gates: [{ name: 'To Glitchwood', p: Z1.gate, color: '#ff2bd6' }],
       lair: Z1.arena,
+      forge: Z1.forge,
       // Boss lair state for the map: locked until the field is clear and the bridge is fixed.
       lock: () => {
         if (story.stage >= story.idx('done')) return { state: 'defeated' };
