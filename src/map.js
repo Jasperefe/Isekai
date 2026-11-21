@@ -1,7 +1,7 @@
 // Maps: a top-down picture of the real zone (rendered once from the 3D world), fog of war,
 // the full Map screen (zone + World of Aster) and the round minimap on the HUD.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=22';
+import { sfx } from './audio.js?v=23';
 
 const $ = id => document.getElementById(id);
 const FOG_N = 64;          // fog grid cells per side
@@ -411,7 +411,10 @@ export class MapView {
       const [x, y] = toS(m.forge.x, m.forge.z); ICON.anvil(g, x, y, u); boxes.push(box(x, y, 10 * u));
       labels.push({ text: "Bram's Forge", x, y, off: 11 * u, color: '#ffb35a', prio: 1 });
     }
-    for (const c of m.chests()) if (ex(c.p)) { const [x, y] = toS(c.p.x, c.p.z); ICON.chest(g, x, y, u, c.opened); boxes.push(box(x, y, 7 * u)); }
+    for (const c of m.chests()) if (ex(c.p)) {
+      const [x, y] = toS(c.p.x, c.p.z); ICON.chest(g, x, y, u, c.opened); boxes.push(box(x, y, 7 * u));
+      if (c.need && !c.opened) labels.push({ text: c.need, x, y, off: 9 * u, color: '#ffcc4d', prio: 0, small: true });
+    }
     for (const c of m.crystals()) if (ex(c)) { const [x, y] = toS(c.x, c.z); ICON.crystal(g, x, y, u); boxes.push(box(x, y, 6 * u)); }
     for (const gt of m.gates) if (ex(gt.p)) {
       const [x, y] = toS(gt.p.x, gt.p.z); ICON.gate(g, x, y, u, gt.color, t); boxes.push(box(x, y, 8 * u));

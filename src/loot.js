@@ -1,7 +1,7 @@
 // Loot: gold coins and glitch shards that fly to Jasper, item drops, and treasure chests.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=22';
-import { makeItem, rollRarity, RARITY } from './items.js?v=22';
+import { sfx } from './audio.js?v=23';
+import { makeItem, rollRarity, RARITY } from './items.js?v=23';
 import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
 
 const COIN_GEO = new THREE.CylinderGeometry(0.16, 0.16, 0.05, 14);
@@ -32,6 +32,10 @@ export class Loot {
       this.spawn(pos, 'shards', Math.round(12 * luck));
       this.spawnItem(pos, makeItem(3, Math.random() < 0.3 ? 'glitched' : 'epic', 'weapon'));
       return;
+    }
+    if (e.glitched && !e.minion && Math.random() < 0.05) {
+      this.ctx.profile.d.debugPoints++; this.ctx.profile.save(); sfx('unlock');
+      this.ctx.hud.system('+1 DEBUG POINT!\nGlitched enemies sometimes drop them.\nSpend them in the CONSOLE', 3);
     }
     this.spawn(pos, 'gold', Math.round((3 + Math.random() * 4) * luck));
     if (e.glitched || Math.random() < 0.3 * luck) this.spawn(pos, 'shards', e.glitched ? 2 : 1);
@@ -77,7 +81,11 @@ export class Loot {
     if (it.kind === 'gold') { profile.d.gold += it.value; hud.float(at, `+${it.value} gold`, 'gold'); sfx('coin'); }
     else if (it.kind === 'shards') { profile.d.shards += it.value; hud.float(at, `+${it.value} shard${it.value > 1 ? 's' : ''}`, 'shard'); sfx('shard'); }
     else if (it.kind === 'item') {
-      if (!profile.addItem(it.item)) { hud.system('Bag full! Scrap something in the menu.', 2); return false; }
+      if (!profile.addItem(it.item)) {
+        const now = performance.now();
+        if (!(this.bagMsgT > now)) { this.bagMsgT = now + 6000; hud.system('BAG FULL (24/24)! The item waits here on the ground.\nOpen MENU > GEAR, tap old items and SCRAP them,\nthen walk back to pick it up', 5); }
+        return false;
+      }
       hud.itemToast(it.item); sfx('item');
     }
     hud.wallet(profile.d);

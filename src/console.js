@@ -1,4 +1,4 @@
-import { sfx } from './audio.js?v=22';
+import { sfx } from './audio.js?v=23';
 // CONSOLE: Jasper's cheat menu (taught by Old Mira). Opens a radial menu and slows time.
 // Commands are unlocked with Debug Points and each has a cooldown.
 const $ = id => document.getElementById(id);
@@ -56,7 +56,11 @@ export class Console {
     COMMANDS.forEach((c, i) => {
       const b = this.btns?.[i]; if (!b) return;
       let state, cls;
-      if (!this.has(c.id)) { state = `LOCKED · ${c.cost} DEBUG PT${c.cost > 1 ? 'S' : ''}`; cls = 'locked'; }
+      if (!this.has(c.id)) {
+        const need = c.cost - this.d.debugPoints;
+        if (need > 0) { state = `LOCKED · NEED ${need} MORE PT${need > 1 ? 'S' : ''}`; cls = 'locked'; }
+        else { state = `TAP TO UNLOCK · ${c.cost} PT${c.cost > 1 ? 'S' : ''}`; cls = 'ready'; }
+      }
       else if (c.passive) { state = 'ALWAYS ON'; cls = 'on'; }
       else if (this.active[c.id] > 0) { state = `ACTIVE ${Math.ceil(this.active[c.id])}s`; cls = 'on'; }
       else if (this.cd[c.id] > 0) { state = `READY IN ${Math.ceil(this.cd[c.id])}s`; cls = 'wait'; }
@@ -68,9 +72,9 @@ export class Console {
   #pick(c) {
     const { hud, profile } = this.core;
     if (!this.has(c.id)) {
-      if (this.d.debugPoints < c.cost) { sfx('error'); hud.system(`Need ${c.cost} DEBUG POINT${c.cost > 1 ? 'S' : ''}\n(find them in hidden spots and from bosses)`, 2.2); return; }
+      if (this.d.debugPoints < c.cost) { sfx('error'); hud.system(`${c.name} needs ${c.cost} DEBUG POINT${c.cost > 1 ? 'S' : ''}. You have ${this.d.debugPoints}.\nGet them from BOSSES, special CHESTS\nand sometimes GLITCHED enemies`, 3.5); return; }
       this.d.debugPoints -= c.cost; (this.d.console ||= {})[c.id] = true; profile.save();
-      hud.system(`> ${c.name} UNLOCKED`, 1.8); sfx('unlock');
+      hud.system(c.passive ? `> ${c.name} UNLOCKED\nIt is always on now` : `> ${c.name} UNLOCKED\nTap it again to RUN it`, 2.4); sfx('unlock');
       this.#states(); return;
     }
     if (c.passive || this.cd[c.id] > 0) return;

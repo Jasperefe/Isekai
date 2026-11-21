@@ -2,24 +2,24 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=22';
-import { buildCharacter, captureGrip } from './characters.js?v=22';
-import { Player } from './player.js?v=22';
-import { Guide } from './guide.js?v=22';
-import { Dialogue } from './dialogue.js?v=22';
-import { Effects } from './effects.js?v=22';
-import { Hud } from './hud.js?v=22';
-import { Profile } from './profile.js?v=22';
-import { Loot } from './loot.js?v=22';
-import { Menu } from './menu.js?v=22';
-import { Console } from './console.js?v=22';
-import { Pet } from './pet.js?v=22';
-import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=22';
-import { capturePortrait, systemPortrait } from './portraits.js?v=22';
-import { ZoneMap, MapView, Minimap } from './map.js?v=22';
-import * as Zone1 from './zone1.js?v=22';
-import * as Zone2 from './zone2.js?v=22';
-import * as Zone3 from './zone3.js?v=22';
+import { Input, isTouch } from './input.js?v=23';
+import { buildCharacter, captureGrip } from './characters.js?v=23';
+import { Player } from './player.js?v=23';
+import { Guide } from './guide.js?v=23';
+import { Dialogue } from './dialogue.js?v=23';
+import { Effects } from './effects.js?v=23';
+import { Hud } from './hud.js?v=23';
+import { Profile } from './profile.js?v=23';
+import { Loot } from './loot.js?v=23';
+import { Menu } from './menu.js?v=23';
+import { Console } from './console.js?v=23';
+import { Pet } from './pet.js?v=23';
+import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=23';
+import { capturePortrait, systemPortrait } from './portraits.js?v=23';
+import { ZoneMap, MapView, Minimap } from './map.js?v=23';
+import * as Zone1 from './zone1.js?v=23';
+import * as Zone2 from './zone2.js?v=23';
+import * as Zone3 from './zone3.js?v=23';
 
 // Zone registry. Each zone is loaded on its own page load (gates save and reload).
 const ZONES = { z1: Zone1, z2: Zone2, z3: Zone3 };
@@ -171,6 +171,13 @@ async function boot() {
     profile.d.zones[zone.id] = zone.replayData();
     profile.save(); autostart(); location.reload();
   });
+  // TESTING ONLY (remove before release): jump straight to the next zone.
+  const ZONE_ORDER = Object.keys(ZONES);
+  $('menu-next').addEventListener('click', () => {
+    const next = ZONE_ORDER[(ZONE_ORDER.indexOf(zone.id) + 1) % ZONE_ORDER.length];
+    if (!confirm(`TEST: jump to ${ZONE_NAMES[next]}?`)) return;
+    menu.hide(); travel(next);
+  });
   // Sound settings.
   const bindVol = (id, key) => {
     const el = $(id), val = $(id + '-v');
@@ -288,6 +295,8 @@ async function boot() {
     for (let i = enemies.length - 1; i >= 0; i--) {
       const e = enemies[i];
       if (e.gone) { scene.remove(e.group); enemies.splice(i, 1); continue; }
+      if (e.dead && !e.deathSeen) { e.deathSeen = true; if (!e.isBoss && zone.map.cleared?.()) e.respawnT = Math.max(e.respawnT || 0, 180); } // cleared zone: back after 3 minutes
+      else if (!e.dead) e.deathSeen = false;
       const atk = dialogue.active ? null : e.update(dt * cons.enemyTimeScale, t, player, world);
       if (atk && (atk.direct || player.pos.distanceTo(e.pos) < (atk.aoe || 2.1))) player.damage(atk.damage, atk.from, atk.enemy, atk);
     }

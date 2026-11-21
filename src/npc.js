@@ -2,7 +2,7 @@
 // (looping dialogue, glitch jitter) that Patch can fix.
 import * as THREE from 'three';
 import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
-import { buildCharacter } from './characters.js?v=22';
+import { buildCharacter } from './characters.js?v=23';
 
 function nameTag(text, color) {
   const c = document.createElement('canvas'); c.width = 256; c.height = 64;

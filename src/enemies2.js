@@ -1,8 +1,8 @@
 // Zone 2 enemies: Null Wolves (packs that circle and pounce) and Static Sprites (floating TVs
 // that zap from range and teleport away). Same interface as Zone 1 slimes.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=22';
-import { buildNullWolf, buildStaticSprite, bake } from './monsters2.js?v=22';
+import { sfx } from './audio.js?v=23';
+import { buildNullWolf, buildStaticSprite, bake } from './monsters2.js?v=23';
 
 const CYAN = 0x29e6ff, MAGENTA = 0xff2bd6;
 let DETAIL = true; // false on phones: no outline lines, no real shadows

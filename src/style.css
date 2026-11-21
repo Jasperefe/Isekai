@@ -361,3 +361,6 @@ em.ok { color: #7dff9a; } em.go { color: var(--gold); } em.bad { color: #ff8a9c;
 #shop .fbtns button { margin-top: 10px; }
 @media (max-height: 430px) { #shop .sbox { padding: 10px 14px 12px; } .sitem { padding: 7px 6px; } .sitem span { min-height: 0; } }
 .sitem i.coin { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff2b0, #ffcc4d 50%, #b8860b); display: inline-block; }
+
+.con-help { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font-size: 11px; line-height: 1.45; color: #c9d3ef; } .con-help b { color: var(--gold); }
+.sbtn.test { border-color: rgba(255, 204, 77, 0.6); background: rgba(255, 204, 77, 0.08); color: var(--gold); }

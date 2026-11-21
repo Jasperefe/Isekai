@@ -1,8 +1,8 @@
 // Zone 2 story: Glitchwood Forest. Old Mira, Area Patch, the Console, the Corrupted Grove,
 // the Lost Pixel Fox side quest and the Thornwraith.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=22';
-import { Z2 } from './world2.js?v=22';
+import { sfx, music } from './audio.js?v=23';
+import { Z2 } from './world2.js?v=23';
 
 const STAGES = [
   { id: 'arrive', title: 'The Spreading Null', text: 'Follow the path into Glitchwood' },
@@ -213,6 +213,16 @@ export class Story2 {
   }
 
   // The crypt door in Root Hollow: the road to the Capital of Aster (open after the Thornwraith).
+  // What the player still needs for a Console secret, in plain words.
+  #secretStatus(id) {
+    const con = this.ctx.console, d = this.ctx.profile.d, cost = id === 'noclip' ? 2 : 1, name = '/' + id;
+    if (!d.consoleUnlocked) return `${name} is a CONSOLE command.\nOld Mira teaches you the Console first.`;
+    if (con.has(id)) return id === 'noclip' ? 'Tap CONSOLE, run /noclip,\nthen walk through the pink wall (4 seconds)' : '/doublejump is on: jump, then jump AGAIN in mid-air';
+    if (d.debugPoints >= cost) return `You have ${d.debugPoints} DEBUG POINT${d.debugPoints === 1 ? '' : 'S'}!\nTap CONSOLE and unlock ${name} (${cost} point${cost > 1 ? 's' : ''})`;
+    return `${name} costs ${cost} DEBUG POINT${cost > 1 ? 'S' : ''}. You have ${d.debugPoints}.\nGet them from BOSSES, special CHESTS\nand sometimes GLITCHED enemies`;
+  }
+  #secretLine(id) { return { who: 'GUIDE', text: this.#secretStatus(id).replace(/\n/g, ' ') }; }
+
   async capitalGate() {
     const first = !this.ctx.profile.d.zones.z3;
     await this.#say(first ? [
@@ -322,14 +332,20 @@ export class Story2 {
       this.#say([{ who: 'GUIDE', text: "Your blade won't get stronger on its own. Bram's forge is back in Starter Meadow. Open MAP, then WORLD, to travel there any time." }]);
       return;
     }
-    if (!this.flags.hintWall && player.pos.distanceTo(world.glitchWallPos) < 8) {
-      this.flags.hintWall = true; this.save();
-      this.#say([{ who: 'GUIDE', text: 'A wall of corrupted data. It is solid... unless you run /noclip from the CONSOLE.' }]);
-    }
+    const opened = id => (this.ctx.profile.zone('z2').flags?.chests || []).includes(id);
+    const nearWall = player.pos.distanceTo(world.glitchWallPos) < 8 && !opened('c3');
     const lp = new THREE.Vector3(Z2.ledge.x, player.pos.y, Z2.ledge.z);
-    if (!this.flags.hintLedge && player.pos.distanceTo(lp) < 7) {
+    const nearLedge = player.pos.distanceTo(lp) < 7 && !opened('c4');
+    if (nearWall && !this.flags.hintWall) {
+      this.flags.hintWall = true; this.save();
+      this.#say([{ who: 'GUIDE', text: 'A wall of broken data with a chest behind it! It never opens. You can only pass it with the CONSOLE command /noclip: run it, then walk straight through the wall.' }, this.#secretLine('noclip')]);
+    } else if (nearLedge && !this.flags.hintLedge) {
       this.flags.hintLedge = true; this.save();
-      this.#say([{ who: 'GUIDE', text: 'A chest on top of that stump! Too high for one jump... /doublejump would do it.' }]);
+      this.#say([{ who: 'GUIDE', text: 'A chest on top of that stump! It is too high for one jump. With the CONSOLE command /doublejump you can jump again in mid-air.' }, this.#secretLine('doublejump')]);
+    } else if ((nearWall || nearLedge) && (this.secretHintT || 0) < this.playTime) {
+      // Reminder every 20 s while standing near a secret: exactly what is still missing.
+      this.secretHintT = this.playTime + 20;
+      hud.system(this.#secretStatus(nearWall ? 'noclip' : 'doublejump'), 5);
     }
     if (world.sealed && player.pos.distanceTo(Z2.hollow) < Z2.hollowR + 4 && (this.sealHintT || 0) < this.playTime) {
       this.sealHintT = this.playTime + 20;

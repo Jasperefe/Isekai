@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>ISEKAI</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Cpath d=%22M6 3v24l6-6 4 9 4-2-4-9h9z%22 fill=%22%2329e6ff%22/%3E%3C/svg%3E">
-<link rel="stylesheet" href="src/style.css?v=22">
+<link rel="stylesheet" href="src/style.css?v=23">
 <script type="importmap">
 { "imports": { "three": "./lib/three.module.min.js", "three/addons/": "./lib/addons/" } }
 </script>
@@ -91,12 +91,13 @@
             <h5>GRAPHICS</h5>
             <div class="seg" id="gfx-seg"><button data-gfx="auto">Auto</button><button data-gfx="high">High</button><button data-gfx="medium">Med</button><button data-gfx="low">Low</button></div>
             <label class="tgl"><span>Minimap</span><button id="mm-toggle" class="sw on" aria-label="Minimap on or off"><i></i></button></label>
-            <div class="setinfo"><span id="menu-fps">measuring FPS...</span><span id="build">build 22</span></div>
+            <div class="setinfo"><span id="menu-fps">measuring FPS...</span><span id="build">build 23</span></div>
             <button id="menu-gfx" class="hidden"></button>
           </div>
           <div class="setcard wide">
             <h5>PROGRESS</h5>
             <button id="menu-replay" class="sbtn">Replay this zone <small>keeps level, gear, skills</small></button>
+            <button id="menu-next" class="sbtn test">TEST: Next zone &#9654; <small>testing only, removed at release</small></button>
             <button id="menu-credits" class="sbtn">Credits</button>
             <button id="menu-restart" class="sbtn danger">Restart story <small>erases all progress</small></button>
           </div>
@@ -131,6 +132,7 @@
   <div class="con-box">
     <div class="con-head">&gt; CONSOLE <span>Debug points: <b id="console-points">0</b></span></div>
     <div id="console-cmds"></div>
+    <div class="con-help">Unlock a command ONCE with Debug Points, then use it as often as you like.<br>Debug Points come from <b>BOSSES</b>, special <b>CHESTS</b> and sometimes <b>GLITCHED</b> enemies.</div>
     <button id="console-close">&#10005;</button>
   </div>
 </div>
@@ -166,6 +168,6 @@
   <button id="btn-talk" class="btn ctx hidden"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M4 4h16a2 2 0 012 2v9a2 2 0 01-2 2h-8l-5 4v-4H4a2 2 0 01-2-2V6a2 2 0 012-2z" fill="currentColor"/><circle cx="8" cy="10.5" r="1.3" fill="#0b1020"/><circle cx="12" cy="10.5" r="1.3" fill="#0b1020"/><circle cx="16" cy="10.5" r="1.3" fill="#0b1020"/></svg><em id="btn-talk-label">TALK</em></button>
 </div>
 
-<script type="module" src="src/main.js?v=22"></script>
+<script type="module" src="src/main.js?v=23"></script>
 </body>
 </html>
