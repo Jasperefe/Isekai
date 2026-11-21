@@ -1,8 +1,8 @@
 // Placeholder enemies for the prototype: normal slimes and "glitched" slimes.
 // Glitched slimes take reduced damage until Jasper patches them.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=19';
-import { heightAt } from './world.js?v=19';
+import { sfx } from './audio.js?v=20';
+import { heightAt } from './world.js?v=20';
 
 const SLIME_GEO = new THREE.SphereGeometry(0.55, 24, 16);
 SLIME_GEO.translate(0, 0.55, 0);
@@ -30,10 +30,15 @@ const STAR_GEO = new THREE.OctahedronGeometry(0.08);
 
 const iceMat = new THREE.MeshStandardMaterial({ color: 0x9feeff, transparent: true, opacity: 0.45, emissive: 0x29e6ff, emissiveIntensity: 0.6 });
 
+// Field slimes get a little tougher as Jasper levels up (Zone 1: Medium).
+let LEVEL = 1;
+export function setSlimeLevel(L) { LEVEL = Math.max(1, L || 1); }
+
 export class Slime {
   constructor(scene, home, glitched) {
     this.scene = scene; this.home = home.clone(); this.glitched = glitched;
-    this.maxHp = glitched ? 70 : 40;
+    this.maxHp = Math.round((glitched ? 70 : 40) * (1 + 0.12 * (LEVEL - 1)));
+    this.dmgMul = 1 + 0.08 * (LEVEL - 1);
     this.mat = new THREE.MeshStandardMaterial({
       color: glitched ? 0x7a3cff : 0x5fd35a, roughness: 0.25, transparent: true, opacity: 0.92,
       emissive: glitched ? 0x3a0f80 : 0x0c3a0c, emissiveIntensity: 0.6,
@@ -160,7 +165,7 @@ export class Slime {
         if (this.windup <= 0) {
           this.attackCd = 1.5;
           this.knock.copy(dir.normalize()).multiplyScalar(5); // small lunge toward the player
-          if (dist < 2.0) attack = { damage: this.glitchedActive ? 14 : 9, from: this.pos.clone(), enemy: this };
+          if (dist < 2.0) attack = { damage: Math.round((this.glitchedActive ? 14 : 9) * this.dmgMul), from: this.pos.clone(), enemy: this };
         }
       } else {
         // Hop movement.

@@ -1,15 +1,15 @@
 // Zone 1: Starter Meadow. Builds the map, villagers, enemies, boss, chests and story.
 // Every zone module exports the same shape so the game core can load zones one after another.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=19';
-import { World, Z1, riverX, PATHS, WORLD_RADIUS } from './world.js?v=19';
-import { VillageKit } from './village.js?v=19';
-import { spawnSlimes } from './enemies.js?v=19';
-import { SlimeKing } from './boss.js?v=19';
-import { NPC } from './npc.js?v=19';
-import { Story } from './story.js?v=19';
-import { makeChest } from './loot.js?v=19';
-import { makeItem } from './items.js?v=19';
+import { sfx, music } from './audio.js?v=20';
+import { World, Z1, riverX, PATHS, WORLD_RADIUS } from './world.js?v=20';
+import { VillageKit } from './village.js?v=20';
+import { spawnSlimes, setSlimeLevel } from './enemies.js?v=20';
+import { SlimeKing } from './boss.js?v=20';
+import { NPC } from './npc.js?v=20';
+import { Story } from './story.js?v=20';
+import { makeChest } from './loot.js?v=20';
+import { makeItem } from './items.js?v=20';
 
 export const ZONE_ID = 'z1';
 export const ZONE_NAME = 'Starter Meadow';
@@ -28,8 +28,9 @@ export async function loadZone(core) {
   const [natureG, villageG, bramG, vfG, vmG] = await Promise.all(names.map(f => loader.loadAsync(`assets/models/${f}.glb`)));
 
   const world = new World(scene, natureG, new VillageKit(villageG), quality);
+  setSlimeLevel(profile.d.level);
   const enemies = spawnSlimes(scene, Z1.field);
-  const boss = new SlimeKing(scene, Z1.arena.clone().add(new THREE.Vector3(-4, 0, 0)), world, effects);
+  const boss = new SlimeKing(scene, Z1.arena.clone().add(new THREE.Vector3(-4, 0, 0)), world, effects, profile.d.level);
   enemies.push(boss);
 
   const npcs = [

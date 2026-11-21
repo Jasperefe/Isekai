@@ -1,16 +1,20 @@
 // Slime King (Unscaled): Zone 1 boss.
 // - Hops after Jasper, telegraphs big jump slams with a red ring on the ground.
-// - Summons minions at 66% and 33% HP.
+// - Summons minions at 70%, 45% and 20% HP.
+// - Below 40% HP he is ENRAGED: faster, and every slam sends out a shockwave to jump or dodge.
+// - Difficulty: Medium. HP and damage grow with Jasper's level.
 // - Every so often his bug kicks in: he grows HUGE ("Unscaled") and takes almost no damage.
 //   PATCH shrinks him back and leaves him stunned and taking double damage.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=19';
+import { sfx } from './audio.js?v=20';
 
 export class SlimeKing {
-  constructor(scene, home, world, effects) {
+  constructor(scene, home, world, effects, level = 4) {
     this.scene = scene; this.home = home.clone(); this.world = world; this.effects = effects;
     this.isBoss = true; this.glitched = true; this.radius = 1.6; this.name = 'SLIME KING';
-    this.maxHp = 700; this.hp = this.maxHp;
+    const L = Math.max(3, level), ref = 100 + 10 * (L - 1); // ref = Jasper's base HP at this level
+    this.maxHp = 900 + 130 * L; this.hp = this.maxHp;
+    this.dmg = { touch: Math.round(ref * 0.08), touchBig: Math.round(ref * 0.12), slam: Math.round(ref * 0.18), slamBig: Math.round(ref * 0.25), wave: Math.round(ref * 0.12) };
     this.mat = new THREE.MeshStandardMaterial({ color: 0x47c94a, roughness: 0.2, transparent: true, opacity: 0.9, emissive: 0x0c3a0c, emissiveIntensity: 0.5 });
     this.group = new THREE.Group();
     const geo = new THREE.SphereGeometry(1, 32, 24); geo.translate(0, 1, 0);
@@ -39,6 +43,9 @@ export class SlimeKing {
     for (let i = 0; i < 4; i++) { const st = new THREE.Mesh(new THREE.OctahedronGeometry(0.15), new THREE.MeshBasicMaterial({ color: 0xffe28a })); st.userData.a = i / 4 * Math.PI * 2; this.stars.add(st); }
     this.stars.visible = false; this.group.add(this.stars);
     this.group.visible = false;
+    // Enraged shockwave: a ring that rolls outward after each slam.
+    this.waveMesh = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 64), new THREE.MeshBasicMaterial({ color: 0xffb03b, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false }));
+    this.waveMesh.rotation.x = -Math.PI / 2; this.waveMesh.visible = false; scene.add(this.waveMesh);
     scene.add(this.group);
     this.reset();
   }
@@ -47,8 +54,9 @@ export class SlimeKing {
     this.hp = this.maxHp; this.dead = false; this.active = false; this.frozen = 0; this.stunned = 0; this.patchMult = 2;
     this.pos = this.home.clone(); this.knock = new THREE.Vector3(); this.facing = Math.PI / 2;
     this.state = 'idle'; this.stateT = 0; this.scale = 1.6; this.targetScale = 1.6; this.unscaled = false;
-    this.hopT = 0; this.nextSpecial = 4; this.summoned = [false, false]; this.unscaledCount = 0; this.hitFlash = 0; this.deathT = 0;
+    this.hopT = 0; this.nextSpecial = 4; this.summoned = [false, false, false]; this.enraged = false; this.wave = null; this.unscaledCount = 0; this.hitFlash = 0; this.deathT = 0;
     this.group.visible = false; this.ring.visible = false; this.group.scale.setScalar(1);
+    if (this.waveMesh) this.waveMesh.visible = false;
   }
 
   activate() { this.active = true; this.group.visible = true; this.state = 'chase'; this.stateT = 0; }
@@ -63,7 +71,7 @@ export class SlimeKing {
     if (this.unscaled) dmg = Math.max(1, Math.round(amount * 0.05));       // Unscaled: nearly immune
     else if (this.frozen > 0) dmg = Math.round(amount * this.patchMult);   // patched: double damage
     this.hp -= dmg; this.hitFlash = 0.12;
-    if (this.hp <= 0) { this.hp = 0; this.dead = true; this.deathT = 0; this.ring.visible = false; sfx('bossDie'); this.onDefeat?.(); }
+    if (this.hp <= 0) { this.hp = 0; this.dead = true; this.deathT = 0; this.ring.visible = false; this.wave = null; this.waveMesh.visible = false; sfx('bossDie'); this.onDefeat?.(); }
     return dmg;
   }
 
@@ -104,9 +112,20 @@ export class SlimeKing {
 
     // Phase events.
     const hpF = this.hp / this.maxHp;
-    [0.66, 0.33].forEach((th, i) => { if (!this.summoned[i] && hpF < th && this.state !== 'air') { this.summoned[i] = true; this.onSummon?.(i); } });
+    [0.7, 0.45, 0.2].forEach((th, i) => { if (!this.summoned[i] && hpF < th && this.state !== 'air') { this.summoned[i] = true; this.onSummon?.(i); } });
+    if (!this.enraged && hpF < 0.4) { this.enraged = true; sfx('bossRoar'); this.onEnrage?.(); }
+    const rage = this.enraged ? 1.35 : 1;
     if (this.frozen > 0) this.frozen -= dt;
     if (this.stunned > 0) this.stunned -= dt;
+    // Shockwave: jump over it or dodge through it.
+    if (this.wave) {
+      const w = this.wave; w.r += 9 * dt;
+      this.waveMesh.position.set(w.c.x, world.groundAt(w.c.x, w.c.z) + 0.1, w.c.z); this.waveMesh.scale.setScalar(w.r);
+      this.waveMesh.material.opacity = 0.85 * Math.max(0, 1 - w.r / w.max);
+      const pd = Math.hypot(player.pos.x - w.c.x, player.pos.z - w.c.z);
+      if (!w.hit && player.onGround && Math.abs(pd - w.r) < 0.7) { w.hit = true; attack = { damage: this.dmg.wave, from: w.c.clone(), enemy: this, direct: true }; }
+      if (w.r > w.max) { this.wave = null; this.waveMesh.visible = false; }
+    }
 
     switch (this.state) {
       case 'stunned':
@@ -114,15 +133,15 @@ export class SlimeKing {
         break;
       case 'chase': {
         if (dist > 0.1) this.facing = Math.atan2(toP.x, toP.z);
-        this.hopT += dt * (this.unscaled ? 1.6 : 1.1);
+        this.hopT += dt * (this.unscaled ? 1.6 : 1.1) * rage;
         const phase = this.hopT % 1;
-        const speed = (this.unscaled ? 5.2 : 3.2);
+        const speed = (this.unscaled ? 5.2 : 3.2) * rage;
         if (phase < 0.5 && dist > this.radius + 0.6) this.pos.addScaledVector(toP.normalize(), speed * dt * 1.8);
         this.contactCd = (this.contactCd || 0) - dt;
-        if (dist < this.radius + 0.8 && this.contactCd <= 0) { this.contactCd = 1.0; attack = { damage: this.unscaled ? 16 : 10, from: this.pos.clone(), enemy: this, aoe: this.radius + 1.0 }; }
+        if (dist < this.radius + 0.8 && this.contactCd <= 0) { this.contactCd = 1.0; attack = attack || { damage: this.unscaled ? this.dmg.touchBig : this.dmg.touch, from: this.pos.clone(), enemy: this, aoe: this.radius + 1.0 }; }
         this.nextSpecial -= dt;
         if (this.nextSpecial <= 0) {
-          this.nextSpecial = this.unscaled ? 2.2 : 3.5;
+          this.nextSpecial = (this.unscaled ? 2.2 : 3.5) / rage;
           // First Unscaled after 10s, then whenever enough time has passed.
           if (!this.unscaled && (this.unscaledCount === 0 ? this.stateTotal > 10 : this.sinceUnscaled > 16) && player.alive) this.#goUnscaled();
           else { this.state = 'crouch'; this.stateT = 0; this.slamTarget = player.pos.clone(); }
@@ -130,7 +149,7 @@ export class SlimeKing {
         break;
       }
       case 'crouch':
-        if (this.stateT > 0.75) { // longer wind-up: more time to react
+        if (this.stateT > (this.enraged ? 0.6 : 0.75)) { // wind-up: time to react
           this.state = 'air'; this.stateT = 0; this.jumpFrom = this.pos.clone();
           this.slamTarget = player.pos.clone(); // aim where Jasper is when he jumps
           this.ring.visible = true; sfx('pounce', this.pos);
@@ -150,7 +169,8 @@ export class SlimeKing {
           this.effects.shockwave(this.pos.clone(), aoe);
           this.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 0.5, 0)), 24, [3, 2], 6);
           this.onSlam?.(aoe); sfx('bossSlam');
-          attack = { damage: this.unscaled ? 26 : 20, from: this.pos.clone(), enemy: this, aoe, unblockable: false };
+          attack = { damage: this.unscaled ? this.dmg.slamBig : this.dmg.slam, from: this.pos.clone(), enemy: this, aoe, unblockable: false };
+          if (this.enraged) { this.wave = { c: this.pos.clone(), r: aoe * 0.7, max: aoe + 8, hit: false }; this.waveMesh.visible = true; }
         }
         break;
       }
@@ -163,7 +183,7 @@ export class SlimeKing {
     // Unscaled wears off after 14s if not patched (he heals a little: punish ignoring Patch).
     if (this.unscaled) {
       this.unscaledT = (this.unscaledT || 0) + dt;
-      if (this.unscaledT > 14) { this.unscaled = false; this.unscaledT = 0; this.targetScale = 1.6; this.hp = Math.min(this.maxHp, this.hp + 40); this.shards.forEach(s => (s.visible = false)); }
+      if (this.unscaledT > 14) { this.unscaled = false; this.unscaledT = 0; this.targetScale = 1.6; this.hp = Math.min(this.maxHp, this.hp + Math.round(this.maxHp * 0.06)); this.shards.forEach(s => (s.visible = false)); }
     } else this.unscaledT = 0;
 
     this.pos.addScaledVector(this.knock, dt); this.knock.multiplyScalar(Math.pow(0.02, dt));
@@ -181,7 +201,7 @@ export class SlimeKing {
       const flick = Math.sin(t * 37) > 0.7;
       this.mat.color.set(flick ? 0xff2bd6 : 0x7a3cff); this.mat.emissive.set(0x3a0f80); this.mat.emissiveIntensity = 0.8;
       this.body.position.x = flick ? (Math.random() - 0.5) * 0.4 : 0;
-    } else { this.mat.color.set(this.frozen > 0 ? 0x9feeff : 0x47c94a); this.mat.emissive.set(this.frozen > 0 ? 0x29e6ff : 0x0c3a0c); this.mat.emissiveIntensity = this.frozen > 0 ? 0.5 : 0.4; this.body.position.x = 0; }
+    } else { this.mat.color.set(this.frozen > 0 ? 0x9feeff : this.enraged ? 0xc9d93a : 0x47c94a); this.mat.emissive.set(this.frozen > 0 ? 0x29e6ff : 0x0c3a0c); this.mat.emissiveIntensity = this.frozen > 0 ? 0.5 : 0.4; this.body.position.x = 0; }
     this.shards.forEach((s, i) => { if (!s.visible) return; const a = i / 10 * Math.PI * 2 + t * 1.5; s.position.set(Math.cos(a) * this.scale * 1.2, this.scale * (0.8 + Math.sin(t * 3 + i) * 0.4), Math.sin(a) * this.scale * 1.2); s.rotation.set(t * 2 + i, t * 3, 0); });
     this.stars.visible = this.state === 'stunned';
     if (this.stars.visible) { this.stars.position.y = this.scale * 2.1; this.stars.children.forEach(st => { const a = st.userData.a + t * 4; st.position.set(Math.cos(a) * 0.8, 0, Math.sin(a) * 0.8); }); }

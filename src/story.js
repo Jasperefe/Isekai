@@ -1,8 +1,8 @@
 // Zone 1 story: quests, cutscenes, objective markers, unlocks and save/load.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=19';
-import { Z1 } from './world.js?v=19';
-import { Slime } from './enemies.js?v=19';
+import { sfx, music } from './audio.js?v=20';
+import { Z1 } from './world.js?v=20';
+import { Slime } from './enemies.js?v=20';
 
 
 // Quest stages in order.
@@ -35,6 +35,7 @@ export class Story {
     ctx.boss.onDefeat = () => this.#onBossDefeated();
     ctx.boss.onUnscaled = () => { ctx.hud.system('SLIME KING IS UNSCALED!\nHe resists everything - use PATCH!', 3); };
     ctx.boss.onSummon = i => this.#summon(i);
+    ctx.boss.onEnrage = () => ctx.hud.system('THE SLIME KING IS FURIOUS!\nJump over his shockwaves!', 2.8);
     // Every field slime must fall before the story moves on to the Slime King.
     this.guards = ctx.enemies.filter(e => !e.isBoss && !e.minion);
     SLIME_GOAL = this.guards.length;
@@ -304,7 +305,7 @@ export class Story {
     hud.system('THE KING CALLS HIS MINIONS!', 2);
     for (let k = 0; k < 3; k++) {
       const a = Math.random() * Math.PI * 2;
-      const s = new Slime(scene, boss.pos.clone().add(new THREE.Vector3(Math.cos(a) * 4, 0, Math.sin(a) * 4)), k === 2 && i === 1);
+      const s = new Slime(scene, boss.pos.clone().add(new THREE.Vector3(Math.cos(a) * 4, 0, Math.sin(a) * 4)), k === 2 && i >= 1);
       s.noRespawn = true; s.minion = true;
       enemies.push(s);
     }

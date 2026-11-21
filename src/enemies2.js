@@ -1,8 +1,8 @@
 // Zone 2 enemies: Null Wolves (packs that circle and pounce) and Static Sprites (floating TVs
 // that zap from range and teleport away). Same interface as Zone 1 slimes.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=19';
-import { buildNullWolf, buildStaticSprite, bake } from './monsters2.js?v=19';
+import { sfx } from './audio.js?v=20';
+import { buildNullWolf, buildStaticSprite, bake } from './monsters2.js?v=20';
 
 const CYAN = 0x29e6ff, MAGENTA = 0xff2bd6;
 let DETAIL = true; // false on phones: no outline lines, no real shadows
@@ -148,7 +148,7 @@ export class NullWolf extends Enemy2 {
     this.name = 'NULL WOLF';
     const L = this.level;
     this.maxHp = Math.round((60 + 12 * L) * (this.glitched ? 1.3 : 1));
-    this.dmg = Math.round(10 + 1.6 * L);
+    this.dmg = Math.round(12 + 1.9 * L);
     this.xp = Math.round((30 + 4 * L) * (this.glitched ? 1.4 : 1));
     this.m = wolfModel(); this.group.add(this.m.root);
     this.m.root.rotation.y = 0;
@@ -256,7 +256,7 @@ export class StaticSprite extends Enemy2 {
     this.name = 'STATIC SPRITE';
     const L = this.level;
     this.maxHp = Math.round(40 + 8 * L);
-    this.dmg = Math.round(8 + 1.1 * L);
+    this.dmg = Math.round(9 + 1.3 * L);
     this.xp = Math.round(35 + 4 * L);
     this.knockPower = 3;
     this.m = spriteModel(); this.group.add(this.m.root);
@@ -357,7 +357,7 @@ export class StaticSprite extends Enemy2 {
 // Zone 2 enemy placement. `level` follows Jasper's level (Glitchwood is tuned for 6-12).
 export function spawnZone2(scene, effects, level, quality) {
   setMonsterDetail(!!quality?.dense);
-  const L = Math.max(6, Math.min(12, level));
+  const L = Math.max(6, level); // Medium-Hard: keeps growing with Jasper
   const list = [];
   const pack = (cx, cz, spots) => {
     const p = { token: null, cd: 0, size: spots.length };

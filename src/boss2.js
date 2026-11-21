@@ -5,8 +5,8 @@
 // - At 60% and 30% HP it splits into 3 copies. Only the real one casts a shadow
 //   (dark circle on the ground). Hitting or patching a copy makes it vanish.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=19';
-import { buildThornwraith, bake } from './monsters2.js?v=19';
+import { sfx } from './audio.js?v=20';
+import { buildThornwraith, bake } from './monsters2.js?v=20';
 
 const MAGENTA = 0xff2bd6;
 const spikeGeo = new THREE.ConeGeometry(0.28, 2.2, 5); spikeGeo.translate(0, 1.1, 0);
@@ -102,7 +102,10 @@ class ThornClone {
     if (toP.length() > 5) this.pos.addScaledVector(toP.normalize(), 1.2 * dt);
     world.resolve(this.pos, this.radius);
     this.group.position.set(this.pos.x, world.groundAt(this.pos.x, this.pos.z), this.pos.z);
-    if (this.spikeCd <= 0) { this.spikeCd = 4 + Math.random() * 2; this.boss.spikes.add(player.pos.clone(), 0, world); }
+    if (this.spikeCd <= 0) {
+      this.spikeCd = 2.8 + Math.random(); this.boss.spikes.add(player.pos.clone(), 0, world);
+      this.boss.spikes.add(player.pos.clone().addScaledVector(player.vel.clone().setY(0), 0.6), 0.2, world);
+    }
     return null;
   }
 }
@@ -112,9 +115,10 @@ export class Thornwraith {
     this.scene = scene; this.home = home.clone(); this.world = world; this.effects = effects;
     this.isBoss = true; this.glitched = true; this.radius = 1.5; this.name = 'THORNWRAITH';
     this.mat = { opacity: 1 };
-    const L = Math.max(6, Math.min(12, level));
-    this.maxHp = 1000 + 40 * L; this.hp = this.maxHp;
-    this.dmgClaw = Math.round(14 + 1.5 * L); this.dmgSpike = Math.round(16 + 1.6 * L);
+    // Difficulty: Medium-Hard. HP and damage grow with Jasper's level (ref = his base HP at this level).
+    const L = Math.max(7, level), ref = 100 + 10 * (L - 1);
+    this.maxHp = 1500 + 150 * L; this.hp = this.maxHp;
+    this.dmgClaw = Math.round(ref * 0.24); this.dmgSpike = Math.round(ref * 0.17);
     this.xp = 300;
     this.m = model(); this.group = new THREE.Group(); this.group.add(this.m.root);
     // Fake shadow (always visible, even with shadows off): only the real Thornwraith has it.
@@ -141,7 +145,7 @@ export class Thornwraith {
     this.hp = this.maxHp; this.dead = false; this.active = false; this.frozen = 0; this.stunned = 0; this.patchMult = 2;
     this.pos = this.home.clone(); this.knock = new THREE.Vector3(); this.facing = 0;
     this.state = 'idle'; this.stateT = 0; this.unfinished = false; this.nextGlitch = 10; this.spikeCd = 3; this.sweepCd = 2;
-    this.split = [false, false]; this.hitFlash = 0; this.deathT = 0; this.walkT = 0;
+    this.split = [false, false]; this.enraged = false; this.pattern = 0; this.hitFlash = 0; this.deathT = 0; this.walkT = 0;
     this.group.visible = false; this.group.scale.setScalar(1); this.arc.visible = false;
     this.spikes.clear(); this.clones.forEach(c => c.vanish());
     this.#setArm(false);
@@ -178,7 +182,7 @@ export class Thornwraith {
   patch(bonus = 0) {
     if (!this.unfinished) return false;
     this.unfinished = false; this.#setArm(true);
-    this.frozen = 5 + bonus; this.stunned = 5 + bonus; this.state = 'stunned'; this.stateT = 0; this.arc.visible = false;
+    this.frozen = 4 + bonus; this.stunned = 4 + bonus; this.state = 'stunned'; this.stateT = 0; this.arc.visible = false;
     this.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 3, 0)), 34, [0, 2], 7);
     this.patchMsg = 'ASSET LOADED!\nHeart exposed - x2 DAMAGE!';
     this.onPatched?.();
@@ -232,6 +236,8 @@ export class Thornwraith {
     const toP = player.pos.clone().sub(this.pos).setY(0), dist = toP.length();
     const hpF = this.hp / this.maxHp;
     [0.6, 0.3].forEach((th, i) => { if (!this.split[i] && hpF < th && this.state === 'chase') { this.split[i] = true; this.#split(player); } });
+    if (!this.enraged && hpF < 0.25) { this.enraged = true; sfx('bossRoar'); this.onEnrage?.(); }
+    const rage = this.enraged ? 1.3 : 1;
     if (this.frozen > 0) this.frozen -= dt;
     if (this.stunned > 0) this.stunned -= dt;
     let mode = 'idle', k = 0;
@@ -242,14 +248,23 @@ export class Thornwraith {
         break;
       case 'chase': {
         if (dist > 0.1) { let d = Math.atan2(toP.x, toP.z) - this.facing; d = Math.atan2(Math.sin(d), Math.cos(d)); this.facing += d * Math.min(1, dt * 3); }
-        if (dist > 3.4) { this.pos.addScaledVector(toP.clone().normalize(), (this.unfinished ? 2.6 : 1.9) * dt); mode = 'walk'; this.walkT += dt; }
-        this.sweepCd -= dt; this.spikeCd -= dt; this.nextGlitch -= dt;
+        if (dist > 3.4) { this.pos.addScaledVector(toP.clone().normalize(), (this.unfinished ? 2.6 : 1.9) * rage * dt); mode = 'walk'; this.walkT += dt; }
+        this.sweepCd -= dt * rage; this.spikeCd -= dt * rage; this.nextGlitch -= dt;
         if (dist < 4.6 && this.sweepCd <= 0) { this.state = 'sweepWind'; this.stateT = 0; this.arc.visible = true; sfx('growl', this.pos, 1.4); }
         else if (this.spikeCd <= 0 && player.alive) {
-          // Spikes under Jasper and where he is heading.
-          const ahead = player.pos.clone().addScaledVector(player.vel.clone().setY(0), 0.7);
-          this.spikes.add(player.pos.clone(), 0, world); this.spikes.add(ahead, 0.25, world);
-          if (this.hp / this.maxHp < 0.6) { const a = Math.random() * Math.PI * 2; this.spikes.add(player.pos.clone().add(new THREE.Vector3(Math.cos(a) * 2.6, 0, Math.sin(a) * 2.6)), 0.5, world); }
+          // Three root patterns in turn: under + ahead of Jasper, a line from the boss, a ring around Jasper.
+          const P = player.pos.clone(), pat = this.pattern++ % 3;
+          if (pat === 0) {
+            this.spikes.add(P, 0, world); this.spikes.add(P.clone().addScaledVector(player.vel.clone().setY(0), 0.7), 0.25, world);
+            if (this.hp / this.maxHp < 0.6) { const a = Math.random() * Math.PI * 2; this.spikes.add(P.clone().add(new THREE.Vector3(Math.cos(a) * 2.6, 0, Math.sin(a) * 2.6)), 0.5, world); }
+          } else if (pat === 1) {
+            const dir = toP.clone().normalize();
+            for (let i = 1; i <= 6; i++) this.spikes.add(this.pos.clone().addScaledVector(dir, 1.6 + i * 2.2), i * 0.12, world);
+          } else {
+            const a0 = Math.random() * Math.PI;
+            for (let i = 0; i < 6; i++) { const a = a0 + i / 6 * Math.PI * 2; this.spikes.add(P.clone().add(new THREE.Vector3(Math.cos(a) * 2.8, 0, Math.sin(a) * 2.8)), 0.05 * i, world); }
+            this.spikes.add(P, 0.55, world); // then the middle: get out through a gap
+          }
           this.spikeCd = this.unfinished ? 2.4 : 3.6;
           this.state = 'raise'; this.stateT = 0;
         } else if (this.nextGlitch <= 0 && !this.unfinished) {
@@ -265,7 +280,7 @@ export class Thornwraith {
       case 'sweepWind':
         mode = 'sweep'; k = 0;
         this.arc.material.opacity = 0.25 + Math.sin(this.stateT * 28) * 0.15;
-        if (this.stateT > 0.7) { this.state = 'sweep'; this.stateT = 0; this.arc.visible = false; this.swept = false; }
+        if (this.stateT > (this.enraged ? 0.5 : 0.7)) { this.state = 'sweep'; this.stateT = 0; this.arc.visible = false; this.swept = false; }
         break;
       case 'sweep': {
         mode = 'sweep'; k = Math.min(1, this.stateT / 0.25);
@@ -275,16 +290,16 @@ export class Thornwraith {
           if (dist < 5 && fwd.dot(toP.clone().normalize()) > 0.2) attack = { damage: this.dmgClaw, from: this.pos.clone(), enemy: this, direct: true };
           this.effects.slash(this.pos, this.facing, 0xff3b3b, true); sfx('sweep');
         }
-        if (this.stateT > 0.8) { this.state = 'chase'; this.stateT = 0; this.sweepCd = 2.5 + Math.random(); }
+        if (this.stateT > 0.8) { this.state = 'chase'; this.stateT = 0; this.sweepCd = this.enraged ? 1.6 + Math.random() * 0.6 : 2.3 + Math.random(); }
         break;
       }
     }
     // The unfinished arm fixes itself after 12 s if ignored, and the forest hits back hard.
     if (this.unfinished) {
       this.glitchT += dt;
-      if (this.glitchT > 12) {
-        this.unfinished = false; this.#setArm(false); this.nextGlitch = 14;
-        for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; this.spikes.add(player.pos.clone().add(new THREE.Vector3(Math.cos(a) * 2.2, 0, Math.sin(a) * 2.2)), 0.1 * i, world); }
+      if (this.glitchT > 8) { // less time to Patch
+        this.unfinished = false; this.#setArm(false); this.nextGlitch = 12;
+        for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; this.spikes.add(player.pos.clone().add(new THREE.Vector3(Math.cos(a) * 2.2, 0, Math.sin(a) * 2.2)), 0.1 * i, world); }
       }
     }
     if (this.spikes.update(dt, player) && player.alive) attack = attack || { damage: this.dmgSpike, from: player.pos.clone().add(new THREE.Vector3(0, 0, 0.5)), enemy: this, direct: true };
@@ -295,7 +310,7 @@ export class Thornwraith {
     const heart = this.m.parts.heart;
     const exposed = this.frozen > 0;
     heart.scale.setScalar((exposed ? 1.6 : 1) * (1 + Math.sin(t * (this.unfinished ? 12 : 4)) * 0.12)); heart.scale.y *= 1.35;
-    this.heartLight.intensity = exposed ? 14 : this.unfinished ? 6 + Math.sin(t * 20) * 3 : 2;
+    this.heartLight.intensity = exposed ? 14 : this.unfinished ? 6 + Math.sin(t * 20) * 3 : this.enraged ? 5 + Math.sin(t * 9) * 2 : 2;
     if (this.unfinished) this.m.root.position.x = Math.sin(t * 33) > 0.8 ? (Math.random() - 0.5) * 0.3 : 0; else this.m.root.position.x = 0;
     this.m.root.scale.setScalar(this.hitFlash > 0 ? 1.04 : 1); this.hitFlash -= dt;
     this.stars.visible = this.state === 'stunned';

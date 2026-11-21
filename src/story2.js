@@ -1,8 +1,8 @@
 // Zone 2 story: Glitchwood Forest. Old Mira, Area Patch, the Console, the Corrupted Grove,
 // the Lost Pixel Fox side quest and the Thornwraith.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=19';
-import { Z2 } from './world2.js?v=19';
+import { sfx, music } from './audio.js?v=20';
+import { Z2 } from './world2.js?v=20';
 
 const STAGES = [
   { id: 'arrive', title: 'The Spreading Null', text: 'Follow the path into Glitchwood' },
@@ -28,6 +28,7 @@ export class Story2 {
     ctx.patchables = [this.pipTarget];
     boss.onDefeat = () => this.#onBossDefeated();
     boss.onUnfinished = () => hud.system('ITS ARM FAILED TO LOAD!\nIt resists everything - PATCH it!', 3);
+    boss.onEnrage = () => hud.system('THE THORNWRAITH IS ENRAGED!\nFaster swipes - keep moving!', 2.8);
     boss.onSplit = () => hud.system('THE THORNWRAITH SPLITS IN THREE!\nOnly the real one casts a shadow', 3.2);
     boss.onReveal = () => hud.system('COPIES DELETED!', 1.6);
     // Every regular enemy in the zone must fall before Root Hollow opens.
