@@ -1,7 +1,7 @@
 // Zone 1 story: quests, cutscenes, objective markers, unlocks and save/load.
 import * as THREE from 'three';
-import { Z1 } from './world.js?v=13';
-import { Slime } from './enemies.js?v=13';
+import { Z1 } from './world.js?v=14';
+import { Slime } from './enemies.js?v=14';
 
 
 // Quest stages in order.
@@ -10,14 +10,14 @@ const STAGES = [
   { id: 'village', title: 'Wake Up, Player One', text: 'Follow the path to the village' },
   { id: 'bram', title: 'A Loop Too Long', text: 'Talk to Bram the blacksmith' },
   { id: 'patchBram', title: 'A Loop Too Long', text: 'Use PATCH on Bram to fix his dialogue loop' },
-  { id: 'slimes', title: 'Slimes in the Field', text: 'Defeat slimes in the east field' },
+  { id: 'slimes', title: 'Slimes in the Field', text: 'Defeat every slime in the east field' },
   { id: 'bridge', title: 'The Broken Bridge', text: 'Go to the old bridge west of the village' },
   { id: 'patchBridge', title: 'The Broken Bridge', text: 'Use PATCH to rebuild the bridge' },
   { id: 'pond', title: 'Big Slime Problem', text: 'Cross the bridge and enter Slime Pond' },
   { id: 'boss', title: 'Big Slime Problem', text: 'Defeat the Slime King' },
   { id: 'done', title: 'Zone 1 Complete', text: 'Explore, or replay the fight with the slimes' },
 ];
-const SLIME_GOAL = 5;
+let SLIME_GOAL = 7; // every field slime (set from the real count in the constructor)
 
 export class Story {
   constructor(ctx) {
@@ -34,6 +34,9 @@ export class Story {
     ctx.boss.onDefeat = () => this.#onBossDefeated();
     ctx.boss.onUnscaled = () => { ctx.hud.system('SLIME KING IS UNSCALED!\nHe resists everything - use PATCH!', 3); };
     ctx.boss.onSummon = i => this.#summon(i);
+    // Every field slime must fall before the story moves on to the Slime King.
+    this.guards = ctx.enemies.filter(e => !e.isBoss && !e.minion);
+    SLIME_GOAL = this.guards.length;
   }
 
   idx(id) { return STAGES.findIndex(s => s.id === id); }
@@ -43,6 +46,7 @@ export class Story {
   save() {
     const p = this.ctx.player, prof = this.ctx.profile;
     this.flags.tutorial = this.flags.tutorial || !!this.ctx.hud.tutorialShown;
+    if (this.stage < this.idx('done')) this.flags.cleared = this.guards.map((e, i) => (e.alive ? -1 : i)).filter(i => i >= 0);
     Object.assign(prof.zone('z1'), { stage: this.stage, kills: this.kills, crystal: this.crystal, flags: this.flags });
     p.syncProfile?.();
     prof.save();
@@ -66,6 +70,7 @@ export class Story {
     if (data && data.stage > 0) {
       this.stage = data.stage; this.kills = data.kills || 0; this.crystal = data.crystal ?? -1; this.flags = data.flags || {};
       this.ctx.hud.tutorialShown = !!this.flags.tutorial || this.stage > this.idx('slimes');
+      if (this.stage === this.idx('slimes')) for (const i of this.flags.cleared || []) { const e = this.guards[i]; if (e) { e.dead = true; e.deathT = 1; e.respawnT = 1e9; e.group.visible = false; } }
       player.refreshStats(); player.hp = player.maxHp;
       this.#applyStage(true);
       player.spawnAt(this.respawnPoint(), Math.PI);
@@ -110,6 +115,7 @@ export class Story {
   // Unlocks and world state that follow from the current stage (also used after loading).
   #applyStage(loading = false) {
     const st = this.stage, { player, world, npcs } = this.ctx;
+    for (const e of this.guards) e.holdRespawn = st <= this.idx('slimes'); // stay defeated until the field is clear
     player.unlocks.sword = st >= this.idx('slimes');
     player.unlocks.patch = st >= this.idx('patchBram');
     player.unlocks.skill = st >= this.idx('bridge');
@@ -249,7 +255,9 @@ export class Story {
   onKill(e) {
     if (this.id === 'slimes' && !e.isBoss && !e.minion) {
       this.kills++;
+      this.kills = this.guards.filter(g => !g.alive).length;
       this.ctx.hud.questProgress(`Slimes defeated: ${Math.min(this.kills, SLIME_GOAL)} / ${SLIME_GOAL}`);
+      this.save();
       if (this.kills >= SLIME_GOAL) this.#slimesDone();
     }
   }

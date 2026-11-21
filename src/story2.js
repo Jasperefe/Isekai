@@ -1,12 +1,13 @@
 // Zone 2 story: Glitchwood Forest. Old Mira, Area Patch, the Console, the Corrupted Grove,
 // the Lost Pixel Fox side quest and the Thornwraith.
 import * as THREE from 'three';
-import { Z2 } from './world2.js?v=13';
+import { Z2 } from './world2.js?v=14';
 
 const STAGES = [
   { id: 'arrive', title: 'The Spreading Null', text: 'Follow the path into Glitchwood' },
   { id: 'findMira', title: 'The Forgotten Beta', text: 'Follow the lantern light west and find who lives here' },
   { id: 'grove', title: 'The Spreading Null', text: 'Clear the Corrupted Grove east of the path' },
+  { id: 'purge', title: 'Break the Seal', text: 'Defeat every Null enemy in Glitchwood' },
   { id: 'hollow', title: 'Roots of the Null', text: 'Go north to Root Hollow' },
   { id: 'boss', title: 'Roots of the Null', text: 'Defeat the Thornwraith' },
   { id: 'done', title: 'Glitchwood Cleared', text: 'Explore: find the hidden chests and help Pip' },
@@ -28,6 +29,15 @@ export class Story2 {
     boss.onUnfinished = () => hud.system('ITS ARM FAILED TO LOAD!\nIt resists everything - PATCH it!', 3);
     boss.onSplit = () => hud.system('THE THORNWRAITH SPLITS IN THREE!\nOnly the real one casts a shadow', 3.2);
     boss.onReveal = () => hud.system('COPIES DELETED!', 1.6);
+    // Every regular enemy in the zone must fall before Root Hollow opens.
+    this.guards = ctx.enemies.filter(e => !e.isBoss && !e.isClone);
+  }
+
+  get guardsLeft() { return this.guards.filter(e => e.alive).length; }
+  #nearestGuard() {
+    let best = null, bd = 1e9;
+    for (const e of this.guards) if (e.alive) { const d = e.pos.distanceTo(this.ctx.player.pos); if (d < bd) { bd = d; best = e; } }
+    return best?.pos || null;
   }
 
   idx(id) { return STAGES.findIndex(s => s.id === id); }
@@ -36,7 +46,8 @@ export class Story2 {
 
   save() {
     const prof = this.ctx.profile;
-    Object.assign(prof.zone('z2'), { stage: this.stage, kills: this.kills, crystal: this.crystal, flags: this.flags });
+    if (this.idx('done') > this.stage) this.flags.cleared = this.guards.map((e, i) => (e.alive ? -1 : i)).filter(i => i >= 0);
+    Object.assign(prof.zone('z2'), { stage: this.stage, stageId: this.id, kills: this.kills, crystal: this.crystal, flags: this.flags });
     this.ctx.player.syncProfile?.();
     prof.save();
   }
@@ -50,7 +61,11 @@ export class Story2 {
   async start() {
     const { player, guide, profile, hud, pet } = this.ctx;
     const z = profile.zone('z2');
-    this.stage = z.stage || 0; this.kills = z.kills || 0; this.crystal = z.crystal ?? -1; this.flags = z.flags || {};
+    // Saves from build 12/13 stored the stage number before 'purge' existed.
+    this.stage = z.stageId ? Math.max(0, this.idx(z.stageId)) : (z.stage >= 3 ? z.stage + 1 : z.stage || 0);
+    this.kills = z.kills || 0; this.crystal = z.crystal ?? -1; this.flags = z.flags || {};
+    // Enemies already defeated stay defeated (until the Thornwraith falls).
+    for (const i of this.flags.cleared || []) { const e = this.guards[i]; if (e) { e.dead = true; e.deathT = 1; e.respawnT = 1e9; e.group.visible = false; } }
     player.refreshStats(); player.hp = player.maxHp;
     hud.tutorialShown = true; // learned in Zone 1
     this.#applyStage();
@@ -85,7 +100,10 @@ export class Story2 {
   }
 
   #applyStage() {
-    const { player, hud } = this.ctx;
+    const { player, hud, world } = this.ctx;
+    const done = this.stage >= this.idx('done');
+    for (const e of this.guards) e.holdRespawn = !done;
+    world.setSeal(this.stage < this.idx('hollow'));
     player.unlocks.sword = player.unlocks.patch = player.unlocks.skill = true;
     hud.setUnlocks(player.unlocks);
     player.char.blade.visible = true;
@@ -105,6 +123,7 @@ export class Story2 {
       case 'arrive': return Z2.edge;
       case 'findMira': return this.mira.pos;
       case 'grove': return this.kills >= GROVE_GOAL ? null : Z2.grove;
+      case 'purge': return this.#nearestGuard();
       case 'hollow': return Z2.hollow;
       default: return this.flags.pip === 'found' ? this.mira.pos : null;
     }
@@ -189,20 +208,38 @@ export class Story2 {
 
   // ---------- Events ----------
   onKill(e) {
-    if (this.id === 'grove' && !e.isBoss && !e.minion) {
+    if (e.isBoss || e.minion) return;
+    if (this.id === 'grove') {
       this.kills++;
       this.ctx.hud.questProgress(`Null enemies defeated: ${Math.min(this.kills, GROVE_GOAL)} / ${GROVE_GOAL}`);
-      if (this.kills >= GROVE_GOAL) this.#groveDone();
+      if (this.kills >= GROVE_GOAL || this.guardsLeft === 0) this.#groveDone();
+    } else if (this.id === 'purge') {
+      const left = this.guardsLeft;
+      this.ctx.hud.questProgress(left ? `${left} Null enem${left === 1 ? 'y' : 'ies'} left` : 'Forest cleared!');
+      if (!left) this.#sealBroken();
     }
+    if (this.idx('done') > this.stage) this.save(); // remember who is already defeated
   }
 
   async #groveDone() {
     await wait(600);
     await this.#say([
       { who: 'GUIDE', text: 'The cracks are fading here! But my scan says the Null is not coming from the grove.' },
-      { who: 'GUIDE', text: 'It comes from the north. A place called ROOT HOLLOW. Something big is down there.' },
+      { who: 'GUIDE', text: 'It comes from the north: ROOT HOLLOW. But the Hollow is SEALED, and the seal feeds on the Null creatures in this forest.' },
+      { who: 'GUIDE', text: 'Defeat every last one of them and the seal will break. The marker will lead you to the nearest one!' },
     ]);
+    this.#setStage('purge');
+    if (this.guardsLeft === 0) this.#sealBroken();
+  }
+
+  async #sealBroken() {
+    if (this.id !== 'purge') return;
     this.#setStage('hollow');
+    this.ctx.effects.burst(Z2.hollow.clone().add(new THREE.Vector3(0, 3, Z2.hollowR)), 40, [0, 1, 2], 8);
+    await this.#say([
+      { who: 'GUIDE', text: 'That was the last one! The seal on Root Hollow is breaking!' },
+      { who: 'JASPER', text: 'Then let\'s see what\'s been hiding down there.' },
+    ]);
   }
 
   async #startBoss() {
@@ -226,7 +263,8 @@ export class Story2 {
     world.setBarrier(false);
     player.gainXp(300);
     profile.d.debugPoints++;
-    this.#setStage('done');
+    this.flags.cleared = [];
+    this.#setStage('done'); // enemies respawn again from now on
     await wait(1600);
     await this.#say([
       { who: 'THORNWRAITH', text: 'I was made... to protect this forest... They left me... half made...', glitch: true },
@@ -251,6 +289,7 @@ export class Story2 {
       const pipBack = this.id === 'done' && this.flags.pip === 'found';
       hud.quest(pipBack ? 'Lost Pixel Fox' : st.title, pipBack ? 'Bring Pip back to Old Mira' : st.text, d);
     } else hud.quest(st.title, this.id === 'grove' ? `Null enemies defeated: ${Math.min(this.kills, GROVE_GOAL)} / ${GROVE_GOAL}` : st.text, null);
+    if (this.id === 'purge' && target) hud.quest(st.title, `Defeat every Null enemy: ${this.guardsLeft} left`, Math.round(Math.hypot(target.x - player.pos.x, target.z - player.pos.z)));
     // Save crystals.
     world.crystals.forEach((c, i) => {
       if (c.pos.distanceTo(player.pos) < 2.4 && (this.crystal !== i || player.hp < player.maxHp)) {
@@ -269,6 +308,10 @@ export class Story2 {
     if (!this.flags.hintLedge && player.pos.distanceTo(lp) < 7) {
       this.flags.hintLedge = true; this.save();
       this.#say([{ who: 'GUIDE', text: 'A chest on top of that stump! Too high for one jump... /doublejump would do it.' }]);
+    }
+    if (world.sealed && player.pos.distanceTo(Z2.hollow) < Z2.hollowR + 4 && (this.sealHintT || 0) < this.playTime) {
+      this.sealHintT = this.playTime + 20;
+      hud.system(`ROOT HOLLOW IS SEALED\n${this.guardsLeft} Null enem${this.guardsLeft === 1 ? 'y' : 'ies'} still in the forest`, 3);
     }
     if (this.id === 'hollow' && player.pos.distanceTo(Z2.hollow) < Z2.hollowR - 3) this.#startBoss();
     if (this.id === 'boss' && !player.alive) {

@@ -1,7 +1,7 @@
 // Placeholder enemies for the prototype: normal slimes and "glitched" slimes.
 // Glitched slimes take reduced damage until Jasper patches them.
 import * as THREE from 'three';
-import { heightAt } from './world.js?v=13';
+import { heightAt } from './world.js?v=14';
 
 const SLIME_GEO = new THREE.SphereGeometry(0.55, 24, 16);
 SLIME_GEO.translate(0, 0.55, 0);
@@ -125,7 +125,7 @@ export class Slime {
       this.group.scale.set(1 + (1 - k) * 0.8, k, 1 + (1 - k) * 0.8);
       if (k <= 0) this.group.visible = false;
       this.respawnT -= dt;
-      if (this.respawnT <= 0) this.spawn();
+      if (this.respawnT <= 0 && !this.holdRespawn) this.spawn(); // held: stays defeated until the boss falls
       return null;
     }
     let attack = null;

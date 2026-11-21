@@ -206,7 +206,13 @@ export class World2 {
     this.scene.add(b); this.barrierMesh = b;
   }
 
-  setBarrier(on) { this.barrier = on; this.barrierMesh.visible = on; }
+  setBarrier(on) { this.barrier = on; this.#barrierLook(); }
+  // Sealed: nobody gets IN until every Null enemy in the forest is defeated.
+  setSeal(on) { this.sealed = on; this.#barrierLook(); }
+  #barrierLook() {
+    this.barrierMesh.visible = !!(this.barrier || this.sealed);
+    this.barrierMesh.material.opacity = this.sealed ? 0.55 : 0.22;
+  }
 
   // ---- Gate back to Starter Meadow ----
   #gate() {
@@ -517,6 +523,9 @@ export class World2 {
     if (this.barrier) {
       const dx = p.x - Z2.hollow.x, dz = p.z - Z2.hollow.z, d = Math.hypot(dx, dz), max = Z2.hollowR - 0.8;
       if (d > max && d < Z2.hollowR + 4) { p.x = Z2.hollow.x + dx / d * max; p.z = Z2.hollow.z + dz / d * max; }
+    } else if (this.sealed) {
+      const dx = p.x - Z2.hollow.x, dz = p.z - Z2.hollow.z, d = Math.hypot(dx, dz), min = Z2.hollowR + 0.8;
+      if (d < min && d > 1e-4) { p.x = Z2.hollow.x + dx / d * min; p.z = Z2.hollow.z + dz / d * min; }
     }
     const d = Math.hypot(p.x, p.z), max = WORLD2_RADIUS - 6;
     if (d > max) { p.x *= max / d; p.z *= max / d; }
