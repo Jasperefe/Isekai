@@ -2,20 +2,20 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=15';
-import { buildCharacter, captureGrip } from './characters.js?v=15';
-import { Player } from './player.js?v=15';
-import { Guide } from './guide.js?v=15';
-import { Dialogue } from './dialogue.js?v=15';
-import { Effects } from './effects.js?v=15';
-import { Hud } from './hud.js?v=15';
-import { Profile } from './profile.js?v=15';
-import { Loot } from './loot.js?v=15';
-import { Menu } from './menu.js?v=15';
-import { Console } from './console.js?v=15';
-import { Pet } from './pet.js?v=15';
-import * as Zone1 from './zone1.js?v=15';
-import * as Zone2 from './zone2.js?v=15';
+import { Input, isTouch } from './input.js?v=16';
+import { buildCharacter, captureGrip } from './characters.js?v=16';
+import { Player } from './player.js?v=16';
+import { Guide } from './guide.js?v=16';
+import { Dialogue } from './dialogue.js?v=16';
+import { Effects } from './effects.js?v=16';
+import { Hud } from './hud.js?v=16';
+import { Profile } from './profile.js?v=16';
+import { Loot } from './loot.js?v=16';
+import { Menu } from './menu.js?v=16';
+import { Console } from './console.js?v=16';
+import { Pet } from './pet.js?v=16';
+import * as Zone1 from './zone1.js?v=16';
+import * as Zone2 from './zone2.js?v=16';
 
 // Zone registry. Each zone is loaded on its own page load (gates save and reload).
 const ZONES = { z1: Zone1, z2: Zone2 };

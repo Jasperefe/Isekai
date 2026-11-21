@@ -5,7 +5,7 @@
 // - At 60% and 30% HP it splits into 3 copies. Only the real one casts a shadow
 //   (dark circle on the ground). Hitting or patching a copy makes it vanish.
 import * as THREE from 'three';
-import { buildThornwraith, bake } from './monsters2.js?v=15';
+import { buildThornwraith, bake } from './monsters2.js?v=16';
 
 const MAGENTA = 0xff2bd6;
 const spikeGeo = new THREE.ConeGeometry(0.28, 2.2, 5); spikeGeo.translate(0, 1.1, 0);

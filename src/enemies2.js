@@ -1,7 +1,7 @@
 // Zone 2 enemies: Null Wolves (packs that circle and pounce) and Static Sprites (floating TVs
 // that zap from range and teleport away). Same interface as Zone 1 slimes.
 import * as THREE from 'three';
-import { buildNullWolf, buildStaticSprite, bake } from './monsters2.js?v=15';
+import { buildNullWolf, buildStaticSprite, bake } from './monsters2.js?v=16';
 
 const CYAN = 0x29e6ff, MAGENTA = 0xff2bd6;
 let DETAIL = true; // false on phones: no outline lines, no real shadows
@@ -267,17 +267,18 @@ export class StaticSprite extends Enemy2 {
 
   spawn() {
     this.spawnCommon();
-    this.state = 'drift'; this.stateT = 0; this.fireCd = 1.5 + Math.random() * 1.5; this.blinkCd = 0; this.hover = 1;
+    this.state = 'drift'; this.stateT = 0; this.fireCd = 1.5 + Math.random() * 1.5; this.blinkCd = 3; this.hover = 1;
     this.strafe = Math.random() < 0.5 ? -1 : 1;
   }
 
   #blink(player, world) {
     this.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 14, [0, 2], 4);
     const a = Math.random() * Math.PI * 2;
-    this.pos.copy(player.pos).add(new THREE.Vector3(Math.cos(a) * 8, 0, Math.sin(a) * 8));
+    this.pos.copy(player.pos).add(new THREE.Vector3(Math.cos(a) * 6, 0, Math.sin(a) * 6));
     world.resolve(this.pos, this.radius);
     this.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 14, [0, 2], 4);
-    this.blinkCd = 4; this.state = 'drift'; this.stateT = 0;
+    // Dizzy after teleporting: no moving or shooting for a moment (a chance to hit it).
+    this.blinkCd = 9; this.state = 'dazed'; this.stateT = 0; this.fireCd = Math.max(this.fireCd, 2);
   }
 
   update(dt, t, player, world) {
@@ -302,7 +303,9 @@ export class StaticSprite extends Enemy2 {
     if (grounded || this.stunned > 0) { this.state = 'drift'; }
     else if (this.alert) {
       this.facing = Math.atan2(toP.x, toP.z);
-      if (dist < 3.2 && this.blinkCd <= 0) this.#blink(player, world);
+      if (this.state === 'dazed') { if (this.stateT > 1.5) { this.state = 'drift'; this.stateT = 0; } }
+      else if (this.state === 'warn') { if (this.stateT > 0.9) this.#blink(player, world); }   // flickers, then vanishes
+      else if (dist < 3.2 && this.blinkCd <= 0 && !this.patched) { this.state = 'warn'; this.stateT = 0; } // patched TVs can't teleport
       else if (this.state === 'charge') {
         if (this.stateT > 0.7) {
           // Fire a static bolt at where Jasper is now.
@@ -340,6 +343,8 @@ export class StaticSprite extends Enemy2 {
     this.m.bits.rotation.y += dt * 1.5;
     this.m.trail.visible = !grounded;
     this.m.root.position.x = this.glitchedActive && Math.sin(t * 31 + this.home.z) > 0.9 ? (Math.random() - 0.5) * 0.2 : 0;
+    this.m.root.visible = this.state !== 'warn' || Math.sin(this.stateT * 45) > -0.3; // warning flicker before a teleport
+    if (this.state === 'dazed') this.m.body.rotation.z = Math.sin(t * 14) * 0.25;
     this.m.root.scale.setScalar(this.hitFlash > 0 ? 1.1 : 1);
     this.group.position.set(this.pos.x, world.groundAt(this.pos.x, this.pos.z), this.pos.z);
     this.group.rotation.y = this.facing;
