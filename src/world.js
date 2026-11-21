@@ -58,7 +58,7 @@ function rng(seed) { return () => { seed = (seed * 16807) % 2147483647; return (
 
 export class World {
   constructor(scene, natureGltf, villageKit, quality) {
-    this.scene = scene;
+    this.scene = scene; this.quality = quality;
     this.colliders = []; // circles { x, z, r } and boxes { box: true, x, z, hx, hz, ry }
     this.bridgeRepaired = false;
     this.barrier = null;
@@ -76,7 +76,7 @@ export class World {
   #sky() {
     const s = this.scene;
     s.background = new THREE.Color(0x9fd4ff);
-    s.fog = new THREE.Fog(0xbfe3ff, 45, 120);
+    s.fog = new THREE.Fog(0xbfe3ff, 40, 110);
     const mat = new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false, fog: false,
       uniforms: { top: { value: new THREE.Color(0x4f9be8) }, bottom: { value: new THREE.Color(0xd8efff) } },
@@ -300,19 +300,30 @@ export class World {
   }
 
   // ---- Instanced props ----
+  // Each prop type becomes InstancedMeshes split into 40 m map sections, so sections
+  // off-screen (or outside the shadow area) are skipped entirely.
   #instance(template, transforms, { shadow = true } = {}) {
     template.updateMatrixWorld(true);
     const meshes = [];
     template.traverse(o => { if (o.isMesh) meshes.push(o); });
     const m4 = new THREE.Matrix4(), local = new THREE.Matrix4(), inv = new THREE.Matrix4().copy(template.matrixWorld).invert();
+    const CELL = 60, cells = new Map();
+    for (const t of transforms) {
+      const key = Math.floor(t.p.x / CELL) + ',' + Math.floor(t.p.z / CELL);
+      if (!cells.has(key)) cells.set(key, []);
+      cells.get(key).push(t);
+    }
     for (const src of meshes) {
       if (/Leaves/i.test(src.material.name) && src.material.vertexColors) { src.material.vertexColors = false; src.material.needsUpdate = true; }
       local.multiplyMatrices(inv, src.matrixWorld);
-      const im = new THREE.InstancedMesh(src.geometry, src.material, transforms.length);
-      transforms.forEach((t, i) => { m4.compose(t.p, t.q, t.s).multiply(local); im.setMatrixAt(i, m4); });
-      im.castShadow = shadow; im.receiveShadow = true;
-      im.computeBoundingSphere();
-      this.scene.add(im);
+      for (const list of cells.values()) {
+        const im = new THREE.InstancedMesh(src.geometry, src.material, list.length);
+        list.forEach((t, i) => { m4.compose(t.p, t.q, t.s).multiply(local); im.setMatrixAt(i, m4); });
+        im.castShadow = shadow && this.quality.dense; // phones: only characters/buildings cast shadows
+        im.receiveShadow = true;
+        im.computeBoundingSphere();
+        this.scene.add(im);
+      }
     }
   }
 
@@ -376,10 +387,10 @@ export class World {
     place('Rock_Medium_2', 9, { scale: [1.0, 1.6], collide: 'solid', ring, spacing: 1 });
     place('Pine_2', 8, { scale: [1.0, 1.4], collide: 'solid', ring: { ...ring, r: Z1.arenaR + 7, w: 4 }, spacing: 2 });
     const k = dense ? 1 : 0.7;
-    place('CommonTree_1', Math.round(5 * k), { scale: [0.9, 1.3], collide: 'solid', spacing: 7 });
-    place('CommonTree_2', Math.round(5 * k), { scale: [0.9, 1.3], collide: 'solid', spacing: 7 });
-    place('CommonTree_3', Math.round(4 * k), { scale: [0.9, 1.3], collide: 'solid', spacing: 7 });
-    place('Pine_1', Math.round(16 * k), { scale: [0.9, 1.5], collide: 'solid', spacing: 5 });
+    place('CommonTree_1', Math.round(4 * k), { scale: [1.0, 1.35], collide: 'solid', spacing: 7 });
+    place('CommonTree_2', Math.round(3 * k), { scale: [1.0, 1.35], collide: 'solid', spacing: 7 });
+    place('CommonTree_3', Math.round(3 * k), { scale: [1.0, 1.35], collide: 'solid', spacing: 7 });
+    place('Pine_1', Math.round(20 * k), { scale: [0.9, 1.5], collide: 'solid', spacing: 5 });
     place('Pine_2', Math.round(16 * k), { scale: [0.9, 1.5], collide: 'solid', spacing: 5 });
     place('TwistedTree_1', 4, { scale: [0.9, 1.1], collide: 'solid', spacing: 6 });
     place('Rock_Medium_3', 10, { scale: [0.6, 1.2], collide: 'solid', spacing: 3 });

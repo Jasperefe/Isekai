@@ -2,19 +2,19 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=5';
-import { World, Z1 } from './world.js?v=5';
-import { VillageKit } from './village.js?v=5';
-import { buildCharacter, captureGrip } from './characters.js?v=5';
-import { Player } from './player.js?v=5';
-import { spawnSlimes } from './enemies.js?v=5';
-import { SlimeKing } from './boss.js?v=5';
-import { NPC } from './npc.js?v=5';
-import { Guide } from './guide.js?v=5';
-import { Dialogue } from './dialogue.js?v=5';
-import { Story } from './story.js?v=5';
-import { Effects } from './effects.js?v=5';
-import { Hud } from './hud.js?v=5';
+import { Input, isTouch } from './input.js?v=6';
+import { World, Z1 } from './world.js?v=6';
+import { VillageKit } from './village.js?v=6';
+import { buildCharacter, captureGrip } from './characters.js?v=6';
+import { Player } from './player.js?v=6';
+import { spawnSlimes } from './enemies.js?v=6';
+import { SlimeKing } from './boss.js?v=6';
+import { NPC } from './npc.js?v=6';
+import { Guide } from './guide.js?v=6';
+import { Dialogue } from './dialogue.js?v=6';
+import { Story } from './story.js?v=6';
+import { Effects } from './effects.js?v=6';
+import { Hud } from './hud.js?v=6';
 
 const quality = isTouch
   ? { pixelRatio: Math.min(devicePixelRatio, 1.5), shadows: true, shadowSize: 1024, dense: false }
@@ -197,21 +197,42 @@ async function boot() {
     input.endFrame();
     if (doRender) renderer.render(scene, camera);
   };
-  // Adaptive quality: if the phone can't keep up, lower resolution, then shadows.
-  let fpsFrames = 0, fpsTime = 0, qualityStep = 0, fps = 60;
+  // Graphics: Auto (default) adjusts to the phone's FPS; High/Medium/Low are fixed.
+  const LEVELS = ['high', 'medium', 'low'];
+  const applyLevel = lvl => {
+    const pr = lvl === 'high' ? quality.pixelRatio : lvl === 'medium' ? Math.min(devicePixelRatio, 1) : 0.75;
+    renderer.setPixelRatio(pr);
+    const shadows = lvl !== 'low';
+    if (renderer.shadowMap.enabled !== shadows) { renderer.shadowMap.enabled = shadows; scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => (m.needsUpdate = true)); }); }
+    renderer.setSize(innerWidth, innerHeight);
+    curLevel = lvl;
+  };
+  let setting = 'auto', curLevel = 'high';
+  try { setting = localStorage.getItem('isekai_gfx') || 'auto'; } catch (e) { /* ignore */ }
+  if (setting !== 'auto') applyLevel(setting);
+  const gfxBtn = document.getElementById('menu-gfx');
+  const labelGfx = () => { gfxBtn.textContent = `Graphics: ${setting === 'auto' ? 'Auto (' + curLevel + ')' : setting[0].toUpperCase() + setting.slice(1)}`; };
+  gfxBtn.addEventListener('click', () => {
+    const order = ['auto', 'high', 'medium', 'low'];
+    setting = order[(order.indexOf(setting) + 1) % order.length];
+    try { localStorage.setItem('isekai_gfx', setting); } catch (e) { /* ignore */ }
+    applyLevel(setting === 'auto' ? 'high' : setting); lowCount = 0; labelGfx();
+  });
+  let fpsFrames = 0, fpsTime = 0, lowCount = 0, highCount = 0;
   const fpsEl = document.getElementById('menu-fps');
   const adapt = rawDt => {
     fpsFrames++; fpsTime += rawDt;
     if (fpsTime < 2) return;
-    fps = fpsFrames / fpsTime; fpsFrames = 0; fpsTime = 0;
-    if (fpsEl) fpsEl.textContent = `${Math.round(fps)} FPS · quality ${['high', 'medium', 'low', 'lowest'][qualityStep]}`;
-    if (fps < 40 && qualityStep < 3) {
-      qualityStep++;
-      if (qualityStep === 1) renderer.setPixelRatio(Math.min(devicePixelRatio, 1));
-      if (qualityStep === 2) { renderer.shadowMap.enabled = false; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; }); }
-      if (qualityStep === 3) renderer.setPixelRatio(0.75);
-      renderer.setSize(innerWidth, innerHeight);
-    }
+    const fps = fpsFrames / fpsTime; fpsFrames = 0; fpsTime = 0;
+    if (fpsEl) fpsEl.textContent = `${Math.round(fps)} FPS`;
+    labelGfx();
+    if (setting !== 'auto' || paused) return;
+    // Only step down after 2 slow checks in a row (4 s below 30 FPS); step back up when smooth.
+    lowCount = fps < 30 ? lowCount + 1 : 0;
+    highCount = fps > 55 ? highCount + 1 : 0;
+    const i = LEVELS.indexOf(curLevel);
+    if (lowCount >= 2 && i < 2) { applyLevel(LEVELS[i + 1]); lowCount = 0; }
+    if (highCount >= 4 && i > 0) { applyLevel(LEVELS[i - 1]); highCount = 0; }
   };
   renderer.setAnimationLoop(() => { const d = clock.getDelta(); adapt(d); frame(d); });
   window.__step = (dt, n = 1) => { for (let i = 0; i < n; i++) frame(dt, false); }; // test hook

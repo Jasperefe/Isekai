@@ -1,7 +1,7 @@
 // Zone 1 story: quests, cutscenes, objective markers, unlocks and save/load.
 import * as THREE from 'three';
-import { Z1 } from './world.js?v=5';
-import { Slime } from './enemies.js?v=5';
+import { Z1 } from './world.js?v=6';
+import { Slime } from './enemies.js?v=6';
 
 const SAVE_KEY = 'isekai_save_v1';
 
