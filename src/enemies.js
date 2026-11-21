@@ -1,7 +1,8 @@
 // Placeholder enemies for the prototype: normal slimes and "glitched" slimes.
 // Glitched slimes take reduced damage until Jasper patches them.
 import * as THREE from 'three';
-import { heightAt } from './world.js?v=16';
+import { sfx } from './audio.js?v=17';
+import { heightAt } from './world.js?v=17';
 
 const SLIME_GEO = new THREE.SphereGeometry(0.55, 24, 16);
 SLIME_GEO.translate(0, 0.55, 0);
@@ -88,7 +89,7 @@ export class Slime {
     this.hp -= dmg; this.hitFlash = 0.15;
     const away = this.pos.clone().sub(fromPos).setY(0).normalize();
     this.knock.copy(away).multiplyScalar(this.frozen > 0 ? 0 : 6);
-    if (this.hp <= 0) { this.dead = true; this.deathT = 0; this.respawnT = 7; }
+    if (this.hp <= 0) { this.dead = true; this.deathT = 0; this.respawnT = 7; sfx('slimeDie', this.pos); }
     return dmg;
   }
 
@@ -167,7 +168,7 @@ export class Slime {
         const hopPhase = this.hopT % 1;
         const speed = chase ? 3.4 : 1.4;
         if (hopPhase < 0.55 && dir.lengthSq() > (chase ? 1.4 : 0.2)) this.pos.addScaledVector(dir.clone().normalize(), speed * dt * 1.6);
-        if (chase && dist < 1.7 && this.attackCd <= 0) this.windup = 0.5;
+        if (chase && dist < 1.7 && this.attackCd <= 0) { this.windup = 0.5; sfx('slime', this.pos); }
       }
     }
     this.pos.addScaledVector(this.knock, dt); this.knock.multiplyScalar(Math.pow(0.02, dt));

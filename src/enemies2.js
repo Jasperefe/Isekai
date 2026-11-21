@@ -1,7 +1,8 @@
 // Zone 2 enemies: Null Wolves (packs that circle and pounce) and Static Sprites (floating TVs
 // that zap from range and teleport away). Same interface as Zone 1 slimes.
 import * as THREE from 'three';
-import { buildNullWolf, buildStaticSprite, bake } from './monsters2.js?v=16';
+import { sfx } from './audio.js?v=17';
+import { buildNullWolf, buildStaticSprite, bake } from './monsters2.js?v=17';
 
 const CYAN = 0x29e6ff, MAGENTA = 0xff2bd6;
 let DETAIL = true; // false on phones: no outline lines, no real shadows
@@ -73,7 +74,7 @@ class Enemy2 {
     this.onHurt?.();
     if (this.hp <= 0) {
       this.dead = true; this.deathT = 0; this.respawnT = 25;
-      this.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 22, [0, 1, 2], 5);
+      this.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 22, [0, 1, 2], 5); sfx('enemyDie', this.pos);
     }
     return dmg;
   }
@@ -182,7 +183,7 @@ export class NullWolf extends Enemy2 {
     else if (this.state === 'windup') {
       this.facing = Math.atan2(this.leapDir.x, this.leapDir.z);
       this.arrow.visible = true; this.arrow.material.opacity = 0.3 + Math.sin(this.stateT * 30) * 0.2;
-      if (this.stateT > 0.6) { this.state = 'leap'; this.stateT = 0; this.bit = false; this.arrow.visible = false; }
+      if (this.stateT > 0.6) { this.state = 'leap'; this.stateT = 0; this.bit = false; this.arrow.visible = false; sfx('pounce', this.pos); }
     } else if (this.state === 'leap') {
       const k = this.stateT / 0.42;
       this.pos.addScaledVector(this.leapDir, 13 * dt);
@@ -200,7 +201,7 @@ export class NullWolf extends Enemy2 {
       this.facing = Math.atan2(toP.x, toP.z);
       this.pack.cd -= dt / Math.max(1, this.pack.size || 1);
       if (this.attackCd <= 0 && this.pack.cd <= 0 && !this.pack.token && dist < 7.5) {
-        this.pack.token = this; this.state = 'windup'; this.stateT = 0;
+        this.pack.token = this; this.state = 'windup'; this.stateT = 0; sfx('growl', this.pos);
         this.leapDir = toP.clone().normalize();
       }
     } else {
@@ -278,7 +279,7 @@ export class StaticSprite extends Enemy2 {
     world.resolve(this.pos, this.radius);
     this.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 14, [0, 2], 4);
     // Dizzy after teleporting: no moving or shooting for a moment (a chance to hit it).
-    this.blinkCd = 9; this.state = 'dazed'; this.stateT = 0; this.fireCd = Math.max(this.fireCd, 2);
+    sfx('teleport', this.pos); this.blinkCd = 9; this.state = 'dazed'; this.stateT = 0; this.fireCd = Math.max(this.fireCd, 2);
   }
 
   update(dt, t, player, world) {
@@ -305,7 +306,7 @@ export class StaticSprite extends Enemy2 {
       this.facing = Math.atan2(toP.x, toP.z);
       if (this.state === 'dazed') { if (this.stateT > 1.5) { this.state = 'drift'; this.stateT = 0; } }
       else if (this.state === 'warn') { if (this.stateT > 0.9) this.#blink(player, world); }   // flickers, then vanishes
-      else if (dist < 3.2 && this.blinkCd <= 0 && !this.patched) { this.state = 'warn'; this.stateT = 0; } // patched TVs can't teleport
+      else if (dist < 3.2 && this.blinkCd <= 0 && !this.patched) { this.state = 'warn'; this.stateT = 0; sfx('warn', this.pos); } // patched TVs can't teleport
       else if (this.state === 'charge') {
         if (this.stateT > 0.7) {
           // Fire a static bolt at where Jasper is now.
@@ -313,7 +314,7 @@ export class StaticSprite extends Enemy2 {
           const to = player.pos.clone().add(new THREE.Vector3(0, 1.1, 0));
           const dir = to.sub(from).normalize();
           const mesh = new THREE.Mesh(boltGeo, boltMat); mesh.position.copy(from); mesh.lookAt(from.clone().add(dir));
-          this.scene.add(mesh); this.bolts.push({ mesh, vel: dir.multiplyScalar(13), life: 1.6 });
+          this.scene.add(mesh); this.bolts.push({ mesh, vel: dir.multiplyScalar(13), life: 1.6 }); sfx('tvZap', this.pos);
           this.state = 'drift'; this.stateT = 0; this.fireCd = 2.4 + Math.random() * 1.2;
         }
       } else {
@@ -324,7 +325,7 @@ export class StaticSprite extends Enemy2 {
         if (dist > 10) move.addScaledVector(toP.clone().normalize(), 3);
         this.pos.addScaledVector(move, dt);
         if (Math.random() < dt * 0.3) this.strafe *= -1;
-        if (this.fireCd <= 0 && dist < 16) { this.state = 'charge'; this.stateT = 0; }
+        if (this.fireCd <= 0 && dist < 16) { this.state = 'charge'; this.stateT = 0; sfx('tvCharge', this.pos); }
       }
     } else {
       const to = this.home.clone().add(new THREE.Vector3(Math.sin(t * 0.3 + this.home.x) * 4, 0, Math.cos(t * 0.25 + this.home.z) * 4)).sub(this.pos).setY(0);

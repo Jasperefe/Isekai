@@ -1,6 +1,7 @@
 // Loot: gold coins and glitch shards that fly to Jasper, item drops, and treasure chests.
 import * as THREE from 'three';
-import { makeItem, rollRarity, RARITY } from './items.js?v=16';
+import { sfx } from './audio.js?v=17';
+import { makeItem, rollRarity, RARITY } from './items.js?v=17';
 import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
 
 const COIN_GEO = new THREE.CylinderGeometry(0.16, 0.16, 0.05, 14);
@@ -73,11 +74,11 @@ export class Loot {
   #collect(it) {
     const { profile, hud, player } = this.ctx;
     const at = player.pos.clone().add(new THREE.Vector3(0, 2, 0));
-    if (it.kind === 'gold') { profile.d.gold += it.value; hud.float(at, `+${it.value} gold`, 'gold'); }
-    else if (it.kind === 'shards') { profile.d.shards += it.value; hud.float(at, `+${it.value} shard${it.value > 1 ? 's' : ''}`, 'shard'); }
+    if (it.kind === 'gold') { profile.d.gold += it.value; hud.float(at, `+${it.value} gold`, 'gold'); sfx('coin'); }
+    else if (it.kind === 'shards') { profile.d.shards += it.value; hud.float(at, `+${it.value} shard${it.value > 1 ? 's' : ''}`, 'shard'); sfx('shard'); }
     else if (it.kind === 'item') {
       if (!profile.addItem(it.item)) { hud.system('Bag full! Scrap something in the menu.', 2); return false; }
-      hud.itemToast(it.item);
+      hud.itemToast(it.item); sfx('item');
     }
     hud.wallet(profile.d);
     return true;

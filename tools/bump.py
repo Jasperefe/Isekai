@@ -11,6 +11,8 @@ idx = root / 'index.html'
 s = idx.read_text()
 s = re.sub(r'src/main\.js(\?v=[^"]*)?"', f'src/main.js?v={build}"', s)
 s = re.sub(r'src/style\.css(\?v=[^"]*)?"', f'src/style.css?v={build}"', s)
-s = re.sub(r'<small id="build">[^<]*</small>', f'<small id="build">build {build}</small>', s)
+s = re.sub(r'<(small|span) id="build">[^<]*</(small|span)>', f'<span id="build">build {build}</span>', s)
+# The title screen and the game read the build number from here.
+s = re.sub(r'window\.BUILD = [0-9]+;', f'window.BUILD = {build};', s)
 idx.write_text(s)
 print('stamped build', build)

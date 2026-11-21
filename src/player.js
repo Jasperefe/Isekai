@@ -1,7 +1,8 @@
 // Jasper: movement, sword combat, Debug Dash, block/parry, Blade Storm, Patch
 // and the animation state machine.
 import * as THREE from 'three';
-import { heightAt } from './world.js?v=16';
+import { sfx } from './audio.js?v=17';
+import { heightAt } from './world.js?v=17';
 
 const CFG = {
   walk: 2.2, jog: 5.4, sprint: 7.8, accel: 14, turn: 12,
@@ -112,7 +113,7 @@ export class Player {
       if (this.skillCd > 0) return;
       if (this.stamina < this.st.skillCost) return this.ctx.hud.flash('st');
       this.stamina -= this.st.skillCost; this.skillCd = CFG.skillCooldown;
-      this.ctx.hud.system('> BLADE STORM.exe', 1.2);
+      this.ctx.hud.system('> BLADE STORM.exe', 1.2); sfx('consoleRun');
     }
     if (key === 'heavy') this.stamina -= CFG.heavyCost;
     if (key === 'breaker' || key === 'bash') { if (this.stamina < 12) return this.ctx.hud.flash('st'); this.stamina -= 12; }
@@ -135,7 +136,7 @@ export class Player {
   #arm() {
     this.combatT = 4;
     if (this.armed || !this.unlocks.sword) return;
-    this.armed = true; this.char.draw?.();
+    this.armed = true; this.char.draw?.(); sfx('swing', null, 0.5);
     this.ctx.effects.burst(this.char.tip.getWorldPosition(new THREE.Vector3()), 8, [0, 2], 2);
   }
 
@@ -150,7 +151,7 @@ export class Player {
     this.stamina -= this.st.dashCost;
     const mv = this.#moveDir(input, camYaw);
     if (mv.lengthSq() > 0.01) this.facing = Math.atan2(mv.x, mv.z);
-    this.state = 'dash'; this.stateT = 0; this.invuln = this.st.iframe;
+    this.state = 'dash'; this.stateT = 0; this.invuln = this.st.iframe; sfx('dash');
     this.play('Roll', 0.06, 1.45);
     this.dashDur = Math.min(0.6, this.current.getClip().duration / 1.45);
     this.ctx.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 8, [0, 1], 3);
@@ -188,7 +189,7 @@ export class Player {
   #startPatch() {
     if (this.patchCd > 0) return;
     const best = this.patchTarget();
-    if (!best) { this.ctx.hud.system('Nothing glitched nearby to patch'); return; }
+    if (!best) { this.ctx.hud.system('Nothing glitched nearby to patch'); sfx('patchFail'); return; }
     this.facing = Math.atan2(best.pos.x - this.pos.x, best.pos.z - this.pos.z);
     this.state = 'cast'; this.stateT = 0; this.patchCd = this.patchCdMax;
     this.play('Spell_Simple_Shoot', 0.08, 1.5);
@@ -217,7 +218,7 @@ export class Player {
         enemy?.stun(1.8, this.pos);
         this.stamina = Math.min(100, this.stamina + 15);
         this.riposteT = 1.2;
-        this.ctx.hud.system('> PARRY! Attack now to COUNTER', 1.2);
+        this.ctx.hud.system('> PARRY! Attack now to COUNTER', 1.2); sfx('parry');
         this.ctx.hud.float(at, 'PARRY!', 'crit');
         this.ctx.effects.burst(at, 18, [2, 0], 5);
         this.ctx.effects.slash(this.pos, this.facing, 0xffe28a, true);
@@ -228,14 +229,14 @@ export class Player {
       if (this.stamina > 0) {
         const chip = Math.max(1, Math.round(amount * 0.15));
         this.hp = Math.max(1, this.hp - chip);
-        this.ctx.hud.float(at, 'BLOCK', '');
+        this.ctx.hud.float(at, 'BLOCK', ''); sfx('block');
         this.ctx.effects.burst(at, 6, [2], 3);
         this.vel.addScaledVector(toEnemy, -3);
         this.ctx.camera.shake(0.08);
         return;
       }
       this.stamina = 0;
-      this.ctx.hud.float(at, 'GUARD BREAK', 'hurt');
+      this.ctx.hud.float(at, 'GUARD BREAK', 'hurt'); sfx('error');
     }
     this.combatT = 4;
     const armor = this.state === 'act' && this.move?.armor;
@@ -244,11 +245,11 @@ export class Player {
     this.hp = Math.max(0, this.hp - dmg);
     if (opts.drain) this.stamina = Math.max(0, this.stamina - opts.drain);
     this.invuln = 0.6;
-    this.ctx.hud.float(this.pos.clone().add(new THREE.Vector3(0, 2.1, 0)), '-' + dmg, 'hurt');
+    this.ctx.hud.float(this.pos.clone().add(new THREE.Vector3(0, 2.1, 0)), '-' + dmg, 'hurt'); sfx('hurt');
     this.ctx.hud.hurt();
     this.vel.addScaledVector(toEnemy, -6);
     if (this.hp <= 0) {
-      this.state = 'dead'; this.stateT = 0; this.play('Death01', 0.1);
+      this.state = 'dead'; this.stateT = 0; this.play('Death01', 0.1); sfx('death');
       this.ctx.hud.death(true);
       return;
     }
@@ -300,7 +301,7 @@ export class Player {
     while (d.xp >= d.level * 100) {
       d.xp -= d.level * 100; d.level++; d.skillPoints++;
       this.refreshStats(); this.hp = this.maxHp;
-      this.ctx.hud.system(`> LEVEL UP: LV ${d.level}\n> +1 SKILL POINT (open the menu)`, 3);
+      this.ctx.hud.system(`> LEVEL UP: LV ${d.level}\n> +1 SKILL POINT (open the menu)`, 3); sfx('levelUp');
       this.ctx.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 1, 0)), 24, [0, 2, 3], 5);
     }
   }
@@ -330,7 +331,8 @@ export class Player {
     const fwd = new THREE.Vector3(Math.sin(this.facing), 0, Math.cos(this.facing));
     if (!noSlash && !m.noSlash) this.ctx.effects.slash(this.pos, this.facing + (m.arc > 6 ? this.hitIdx * 1.7 : 0), m.color ?? 0x29e6ff, m.wide);
     if (m.shock) this.ctx.effects.shockwave(this.pos.clone().addScaledVector(fwd, 1.6), 3.2);
-    let landed = false;
+    let landed = false, critAny = false, shatterAny = false;
+    sfx(m.wide ? 'swingHeavy' : 'swing');
     for (const e of this.ctx.enemies) {
       if (!e.alive) continue;
       const to = e.pos.clone().sub(this.pos).setY(0);
@@ -349,13 +351,13 @@ export class Player {
       let dmg = e.takeHit(base, this.pos, { pierce: m.pierce });
       if (st.doubleHit && Math.random() < st.doubleHit && e.alive) dmg += e.takeHit(Math.round(base * 0.5), this.pos, { pierce: m.pierce });
       if (st.lifesteal) this.hp = Math.min(this.maxHp, this.hp + dmg * st.lifesteal);
-      if (crit) this.ctx.hud.float(e.pos.clone().add(new THREE.Vector3(0.4, 1.9, 0)), 'CRIT', 'xp');
+      if (crit) { critAny = true; this.ctx.hud.float(e.pos.clone().add(new THREE.Vector3(0.4, 1.9, 0)), 'CRIT', 'xp'); }
       if (shatter) {
         // SHATTER: break the ice, splash damage around the target.
         if (!e.isBoss) { e.frozen = 0; if (e.ice) e.ice.visible = false; if (e.tagFixed) e.tagFixed.visible = false; }
         this.ctx.effects.shockwave(e.pos.clone(), 3.0);
         this.ctx.effects.burst(e.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 26, [0, 2], 6);
-        this.ctx.hud.float(e.pos.clone().add(new THREE.Vector3(0, 2.0, 0)), 'SHATTER!', 'crit');
+        this.ctx.hud.float(e.pos.clone().add(new THREE.Vector3(0, 2.0, 0)), 'SHATTER!', 'crit'); shatterAny = true;
         for (const o of this.ctx.enemies) if (o !== e && o.alive && o.pos.distanceTo(e.pos) < 3.2) {
           const sd = o.takeHit(Math.round(14 * this.st.shatterMul), e.pos); this.ctx.hud.float(o.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), String(sd), '');
         }
@@ -375,6 +377,7 @@ export class Player {
       }
     }
     if (landed) {
+      sfx(shatterAny ? 'shatter' : critAny ? 'crit' : 'hit');
       this.ctx.camera.shake(m.wide ? 0.22 : 0.12); this.ctx.hitStop(m.wide ? 0.07 : 0.045);
       // Hit counter: only hits that land count; it resets after 2 s without one.
       this.hitChain = (this.hitChainT > 0 ? this.hitChain : 0) + 1; this.hitChainT = 2;
@@ -447,10 +450,10 @@ export class Player {
       else if (this.state === 'act' && this.move.next && this.stateT > 0.08) this.queued = true;
     }
     if (input.consume('jump') && free) {
-      if (this.onGround) { this.state = 'move'; this.velY = CFG.jumpVel; this.onGround = false; this.usedDouble = false; this.play('Jump_Start', 0.08, 1.4); }
+      if (this.onGround) { this.state = 'move'; this.velY = CFG.jumpVel; this.onGround = false; this.usedDouble = false; this.play('Jump_Start', 0.08, 1.4); sfx('jump'); }
       else if (this.state === 'move' && this.ctx.console?.doubleJump && !this.usedDouble) {
         // /doublejump: a second jump in mid-air.
-        this.usedDouble = true; this.velY = CFG.jumpVel * 0.95; this.play('Jump_Start', 0.05, 1.6);
+        this.usedDouble = true; this.velY = CFG.jumpVel * 0.95; this.play('Jump_Start', 0.05, 1.6); sfx('doubleJump');
         this.ctx.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 0.2, 0)), 10, [0, 2], 2.5);
       }
     }
@@ -504,6 +507,7 @@ export class Player {
         const e = this.patchTarget_;
         const from = this.char.cursor ? this.char.cursor.getWorldPosition(new THREE.Vector3()) : this.pos.clone().add(new THREE.Vector3(0, 1.3, 0));
         this.ctx.effects.beam(from, e.pos.clone().add(new THREE.Vector3(0, 0.6, 0)));
+        sfx('patch');
         e.patch(this.st.freezeBonus);
         this.ctx.effects.burst(e.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 18, [0, 2], 4);
         // Area Patch (taught by Old Mira): also fixes every glitched enemy near the target.
@@ -533,7 +537,7 @@ export class Player {
     if (!this.onGround) {
       this.velY -= CFG.gravity * (this.state === 'air' ? 2.2 : 1) * dt; this.pos.y += this.velY * dt;
       if (this.pos.y <= gy) {
-        this.pos.y = gy; this.onGround = true; this.velY = 0;
+        this.pos.y = gy; this.onGround = true; this.velY = 0; sfx('land');
         if (this.state === 'air') {
           // Slam landing: area hit around Jasper.
           this.action.timeScale = 1.2;
@@ -548,6 +552,12 @@ export class Player {
       }
     } else this.pos.y = gy;
 
+    // Footsteps.
+    const sp = Math.hypot(this.vel.x, this.vel.z);
+    if (this.onGround && sp > 1 && (this.state === 'move' || this.state === 'recover')) {
+      this.stepT = (this.stepT || 0) - dt * sp;
+      if (this.stepT <= 0) { this.stepT = 2.2; sfx('step'); }
+    }
     if (this.state === 'move') {
       this.landT = (this.landT || 0) - dt;
       if (!this.onGround && this.velY < 2) this.play('Jump_Loop', 0.2);

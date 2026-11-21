@@ -1,13 +1,14 @@
 // Zone 2: Glitchwood Forest. Same shape as zone1.js so the game core can load either.
 import * as THREE from 'three';
-import { World2, Z2, PATHS2, WORLD2_RADIUS } from './world2.js?v=16';
-import { VillageKit } from './village.js?v=16';
-import { spawnZone2 } from './enemies2.js?v=16';
-import { Thornwraith } from './boss2.js?v=16';
-import { NPC } from './npc.js?v=16';
-import { Story2 } from './story2.js?v=16';
-import { makeChest } from './loot.js?v=16';
-import { makeItem } from './items.js?v=16';
+import { sfx, music } from './audio.js?v=17';
+import { World2, Z2, PATHS2, WORLD2_RADIUS } from './world2.js?v=17';
+import { VillageKit } from './village.js?v=17';
+import { spawnZone2 } from './enemies2.js?v=17';
+import { Thornwraith } from './boss2.js?v=17';
+import { NPC } from './npc.js?v=17';
+import { Story2 } from './story2.js?v=17';
+import { makeChest } from './loot.js?v=17';
+import { makeItem } from './items.js?v=17';
 
 export const ZONE_ID = 'z2';
 export const ZONE_NAME = 'Glitchwood Forest';
@@ -54,13 +55,13 @@ export async function loadZone(core) {
   });
   const openChest = ch => {
     if (ch.opened) return;
-    ch.opened = true; ch.group.userData.open(false);
+    ch.opened = true; ch.group.userData.open(false); sfx('chest');
     zdata.flags.chests.push(ch.id); profile.d.totals.chests++;
     const st = profile.stats(), at = ch.pos3.clone().add(new THREE.Vector3(0, 0.6, 0));
     core.loot.spawn(at, 'gold', Math.round((60 + Math.random() * 40) * st.lootMul));
     core.loot.spawn(at, 'shards', Math.round(6 * st.lootMul));
     core.loot.spawnItem(at, makeItem(profile.d.level + 1, Math.random() < 0.35 ? 'epic' : Math.random() < 0.15 ? 'glitched' : 'rare'));
-    if (ch.debugPoint) { profile.d.debugPoints++; hud.system('You found a DEBUG POINT!\nSpend it in the CONSOLE', 3); }
+    if (ch.debugPoint) { profile.d.debugPoints++; sfx('unlock'); hud.system('You found a DEBUG POINT!\nSpend it in the CONSOLE', 3); }
     effects.burst(at.clone().add(new THREE.Vector3(0, 0.5, 0)), 18, [2, 3], 4);
     profile.save();
   };
@@ -74,6 +75,7 @@ export async function loadZone(core) {
   let miraT = 0;
   return {
     id: ZONE_ID, name: ZONE_NAME, world, enemies, npcs, boss, story, chests, interactables,
+    titleView: { target: Z2.hollow.clone().add(new THREE.Vector3(0, 0, -4)), radius: 10, height: 3.6 },
     respawnPoint: () => story.respawnPoint(),
     // Replay: back to the Corrupted Grove quest (Mira's gifts, Pip and opened chests are kept).
     replayData: () => {

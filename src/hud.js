@@ -1,5 +1,6 @@
 // DOM-based HUD: bars, floating numbers, system messages and death screen.
 import * as THREE from 'three';
+import { sfx } from './audio.js?v=17';
 
 const $ = id => document.getElementById(id);
 
@@ -15,13 +16,14 @@ export class Hud {
   show() { this.el.classList.remove('hidden'); }
 
   update(dt, p) {
-    $('hp-fill').style.width = (p.hp / p.maxHp * 100) + '%';
+    const hpPct = (p.hp / p.maxHp * 100) + '%';
+    $('hp-fill').style.width = hpPct; $('hp-trail').style.width = hpPct; // the pale trail catches up after a moment
     $('hp-text').textContent = `${Math.ceil(p.hp)} / ${p.maxHp}`;
     $('st-fill').style.width = p.stamina + '%';
     $('xp-fill').style.width = (p.xp / (p.level * 100) * 100) + '%';
     $('lvl').textContent = 'LV ' + p.level;
-    const cd = $('patch-cd'); if (cd) cd.style.height = (p.patchCd / (p.patchCdMax || 8) * 100) + '%';
-    const sc = $('skill-cd'); if (sc) sc.style.height = (p.skillCd / 6 * 100) + '%';
+    $('patch-cd')?.style.setProperty('--p', Math.max(0, p.patchCd / (p.patchCdMax || 8)));
+    $('skill-cd')?.style.setProperty('--p', Math.max(0, p.skillCd / 6));
     const cp = $('chip-patch'), cs = $('chip-skill');
     const target = p.patchTarget(), ready = !!target && p.patchCd <= 0;
     cp.textContent = p.patchCd > 0 ? `E PATCH ${Math.ceil(p.patchCd)}s` : ready ? 'PRESS E: PATCH IT!' : 'E PATCH';
@@ -31,7 +33,7 @@ export class Hud {
     if (target && target.takeHit && !target.isBoss && !this.tutorialShown && target.pos.distanceTo(p.pos) < 9) { this.tutorialShown = true; this.tutorial(); }
     if (this.tutT > 0) { this.tutT -= dt; if (this.tutT <= 0) $('tutorial').classList.add('hidden'); }
     cs.textContent = p.skillCd > 0 ? `R BLADE STORM ${Math.ceil(p.skillCd)}s` : 'R BLADE STORM'; cs.classList.toggle('cool', p.skillCd > 0 || p.stamina < 40);
-    if (this.boss) $('boss-fill').style.width = (this.boss.hp / this.boss.maxHp * 100) + '%';
+    if (this.boss) { const w = Math.max(0, this.boss.hp / this.boss.maxHp * 100) + '%'; $('boss-fill').style.width = w; $('boss-trail').style.width = w; }
     if (this.msgTimer > 0) { this.msgTimer -= dt; if (this.msgTimer <= 0) $('system-msg').classList.remove('show'); }
   }
 
@@ -77,8 +79,8 @@ export class Hud {
 
   questProgress(text) { this.system(text, 1.6); }
 
-  questToast(title, text) { this.toast('NEW OBJECTIVE', title, text, 3.2); }
-  newAbility(name, text) { this.toast('NEW ABILITY', name, text, 4.5); }
+  questToast(title, text) { this.toast('NEW OBJECTIVE', title, text, 3.2); sfx('quest'); }
+  newAbility(name, text) { this.toast('NEW ABILITY', name, text, 4.5); sfx('ability'); }
 
   toast(kicker, title, text, time) {
     $('toast-kicker').textContent = kicker; $('toast-title').textContent = title; $('toast-text').textContent = text;
@@ -100,9 +102,11 @@ export class Hud {
 
   talkPrompt(label, button = 'TALK') {
     const p = $('talk-prompt'), b = $('btn-talk');
-    if (label) { p.innerHTML = `<b>F</b> ${label}`; b.textContent = button; p.classList.remove('hidden'); b.classList.remove('hidden'); }
+    if (label) { p.innerHTML = `<b>F</b> ${label}`; $('btn-talk-label').textContent = button; p.classList.remove('hidden'); b.classList.remove('hidden'); }
     else { p.classList.add('hidden'); b.classList.add('hidden'); }
   }
+
+  setPortrait(url) { if (url) $('pp-face').src = url; }
 
   bossBar(on, boss) { this.boss = on ? boss : null; $('bossbar').classList.toggle('hidden', !on); if (on && boss?.name) $('boss-name').textContent = boss.name; }
 
@@ -124,7 +128,7 @@ export class Hud {
     const m = Math.floor((stats.time || 0) / 60), s = Math.floor((stats.time || 0) % 60);
     $('zone-stats').textContent = `Level ${stats.level} · Time ${m}m ${s}s`;
     if (stats.num) { $('zone-num').textContent = stats.num; $('zone-title').textContent = stats.title; $('zone-next').innerHTML = stats.next; }
-    $('zone-done').classList.remove('hidden');
+    $('zone-done').classList.remove('hidden'); sfx('zoneClear');
     $('zone-continue').onclick = () => $('zone-done').classList.add('hidden');
   }
 
@@ -141,7 +145,8 @@ export class Hud {
 
   flash(which) {
     const el = which === 'st' ? $('st-fill').parentElement : $('hp-fill').parentElement;
-    el.animate([{ outline: '2px solid #ff5b6b' }, { outline: '2px solid transparent' }], { duration: 400 });
+    el.animate([{ boxShadow: '0 0 0 2px #ff5b6b, 0 0 12px #ff5b6b' }, { boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }], { duration: 450 });
+    sfx('error');
   }
 
   hurt() {

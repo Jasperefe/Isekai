@@ -4,6 +4,7 @@
 // - Every so often his bug kicks in: he grows HUGE ("Unscaled") and takes almost no damage.
 //   PATCH shrinks him back and leaves him stunned and taking double damage.
 import * as THREE from 'three';
+import { sfx } from './audio.js?v=17';
 
 export class SlimeKing {
   constructor(scene, home, world, effects) {
@@ -62,7 +63,7 @@ export class SlimeKing {
     if (this.unscaled) dmg = Math.max(1, Math.round(amount * 0.05));       // Unscaled: nearly immune
     else if (this.frozen > 0) dmg = Math.round(amount * this.patchMult);   // patched: double damage
     this.hp -= dmg; this.hitFlash = 0.12;
-    if (this.hp <= 0) { this.hp = 0; this.dead = true; this.deathT = 0; this.ring.visible = false; this.onDefeat?.(); }
+    if (this.hp <= 0) { this.hp = 0; this.dead = true; this.deathT = 0; this.ring.visible = false; sfx('bossDie'); this.onDefeat?.(); }
     return dmg;
   }
 
@@ -80,7 +81,7 @@ export class SlimeKing {
   }
 
   #goUnscaled() {
-    this.unscaled = true; this.targetScale = 3.6; this.state = 'chase'; this.stateT = 0; this.unscaledCount++;
+    sfx('glitchBig'); this.unscaled = true; this.targetScale = 3.6; this.state = 'chase'; this.stateT = 0; this.unscaledCount++;
     this.shards.forEach(s => (s.visible = true));
     this.onUnscaled?.();
   }
@@ -132,7 +133,7 @@ export class SlimeKing {
         if (this.stateT > 0.75) { // longer wind-up: more time to react
           this.state = 'air'; this.stateT = 0; this.jumpFrom = this.pos.clone();
           this.slamTarget = player.pos.clone(); // aim where Jasper is when he jumps
-          this.ring.visible = true;
+          this.ring.visible = true; sfx('pounce', this.pos);
         }
         break;
       case 'air': {
@@ -148,7 +149,7 @@ export class SlimeKing {
           this.state = 'land'; this.stateT = 0;
           this.effects.shockwave(this.pos.clone(), aoe);
           this.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 0.5, 0)), 24, [3, 2], 6);
-          this.onSlam?.(aoe);
+          this.onSlam?.(aoe); sfx('bossSlam');
           attack = { damage: this.unscaled ? 26 : 20, from: this.pos.clone(), enemy: this, aoe, unblockable: false };
         }
         break;

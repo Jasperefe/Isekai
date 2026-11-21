@@ -1,7 +1,8 @@
 // Zone 1 story: quests, cutscenes, objective markers, unlocks and save/load.
 import * as THREE from 'three';
-import { Z1 } from './world.js?v=16';
-import { Slime } from './enemies.js?v=16';
+import { sfx, music } from './audio.js?v=17';
+import { Z1 } from './world.js?v=17';
+import { Slime } from './enemies.js?v=17';
 
 
 // Quest stages in order.
@@ -248,7 +249,7 @@ export class Story {
       ]);
       this.flags.gateSeen = true; this.save();
     }
-    this.ctx.travel('z2');
+    sfx('gate'); this.ctx.travel('z2');
   }
 
   // ---------- Events ----------
@@ -287,7 +288,7 @@ export class Story {
   async #startBoss() {
     const { world, boss, hud } = this.ctx;
     this.#setStage('boss');
-    world.setBarrier(true);
+    world.setBarrier(true); music('boss', 1.2);
     boss.reset(); boss.activate();
     hud.bossBar(true, boss);
     await this.#say([
@@ -309,7 +310,7 @@ export class Story {
 
   async #onBossDefeated() {
     const { world, hud, player, enemies } = this.ctx;
-    hud.bossBar(false);
+    hud.bossBar(false); music('meadow', 3);
     world.setBarrier(false);
     for (const e of enemies) if (e.minion && e.alive) e.takeHit(999, e.pos);
     player.gainXp(150);
@@ -344,7 +345,7 @@ export class Story {
       if (c.pos.distanceTo(player.pos) < 2.4) {
         if (this.crystal !== i || player.hp < player.maxHp) {
           this.crystal = i; player.hp = player.maxHp; player.stamina = 100;
-          this.save(); hud.system('> SAVE CRYSTAL: progress saved, HP restored', 2);
+          this.save(); hud.system('> SAVE CRYSTAL: progress saved, HP restored', 2); sfx('save');
           this.ctx.effects.burst(c.pos.clone().add(new THREE.Vector3(0, 1.6, 0)), 16, [0, 2], 3);
         }
       }
@@ -363,7 +364,7 @@ export class Story {
     if (this.id === 'boss' && !player.alive) {
       // Lost the fight: reset the boss right away; Jasper respawns at the crystal outside the arena.
       const { boss, enemies } = this.ctx;
-      world.setBarrier(false); hud.bossBar(false);
+      world.setBarrier(false); hud.bossBar(false); music('meadow', 2);
       boss.reset();
       for (const e of enemies) if (e.minion) { e.dead = true; e.noRespawn = true; e.group.visible = false; e.gone = true; }
       this.stage = this.idx('pond'); this.save();

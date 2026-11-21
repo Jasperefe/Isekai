@@ -1,7 +1,8 @@
 // Zone 2 story: Glitchwood Forest. Old Mira, Area Patch, the Console, the Corrupted Grove,
 // the Lost Pixel Fox side quest and the Thornwraith.
 import * as THREE from 'three';
-import { Z2 } from './world2.js?v=16';
+import { sfx, music } from './audio.js?v=17';
+import { Z2 } from './world2.js?v=17';
 
 const STAGES = [
   { id: 'arrive', title: 'The Spreading Null', text: 'Follow the path into Glitchwood' },
@@ -203,7 +204,7 @@ export class Story2 {
 
   async gate() {
     await this.#say([{ who: 'GUIDE', text: 'This gate leads back to Starter Meadow. Your progress is saved.' }]);
-    this.ctx.travel('z1');
+    sfx('gate'); this.ctx.travel('z1');
   }
 
   // ---------- Events ----------
@@ -235,7 +236,7 @@ export class Story2 {
   async #sealBroken() {
     if (this.id !== 'purge') return;
     this.#setStage('hollow');
-    this.ctx.effects.burst(Z2.hollow.clone().add(new THREE.Vector3(0, 3, Z2.hollowR)), 40, [0, 1, 2], 8);
+    this.ctx.effects.burst(Z2.hollow.clone().add(new THREE.Vector3(0, 3, Z2.hollowR)), 40, [0, 1, 2], 8); sfx('glitchBig');
     await this.#say([
       { who: 'GUIDE', text: 'That was the last one! The seal on Root Hollow is breaking!' },
       { who: 'JASPER', text: 'Then let\'s see what\'s been hiding down there.' },
@@ -248,7 +249,7 @@ export class Story2 {
     world.setBarrier(true);
     // Other monsters leave the arena: this fight is one on one.
     for (const e of this.ctx.enemies) if (!e.isBoss && !e.isClone && e.alive && e.pos.distanceTo(Z2.hollow) < Z2.hollowR + 4) { e.dead = true; e.deathT = 1; e.respawnT = 40; e.group.visible = false; }
-    boss.reset(); boss.activate();
+    boss.reset(); boss.activate(); music('boss', 1.2);
     hud.bossBar(true, boss);
     await this.#say([
       { who: 'THORNWRAITH', text: 'Leave... This place... was never... finished...', glitch: true },
@@ -259,7 +260,7 @@ export class Story2 {
 
   async #onBossDefeated() {
     const { world, hud, player, profile } = this.ctx;
-    hud.bossBar(false);
+    hud.bossBar(false); music('glitchwood', 3);
     world.setBarrier(false);
     player.gainXp(300);
     profile.d.debugPoints++;
@@ -294,7 +295,7 @@ export class Story2 {
     world.crystals.forEach((c, i) => {
       if (c.pos.distanceTo(player.pos) < 2.4 && (this.crystal !== i || player.hp < player.maxHp)) {
         this.crystal = i; player.hp = player.maxHp; player.stamina = 100;
-        this.save(); hud.system('> SAVE CRYSTAL: progress saved, HP restored', 2);
+        this.save(); hud.system('> SAVE CRYSTAL: progress saved, HP restored', 2); sfx('save');
         this.ctx.effects.burst(c.pos.clone().add(new THREE.Vector3(0, 1.6, 0)), 16, [0, 2], 3);
       }
     });
@@ -316,7 +317,7 @@ export class Story2 {
     if (this.id === 'hollow' && player.pos.distanceTo(Z2.hollow) < Z2.hollowR - 3) this.#startBoss();
     if (this.id === 'boss' && !player.alive) {
       const { boss } = this.ctx;
-      world.setBarrier(false); hud.bossBar(false);
+      world.setBarrier(false); hud.bossBar(false); music('glitchwood', 2);
       boss.reset();
       this.stage = this.idx('hollow'); this.save();
       hud.system('The Thornwraith was too strong...\nTry again: PATCH its arm when it glitches!', 3.5);

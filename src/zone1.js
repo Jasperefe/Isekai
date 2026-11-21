@@ -1,14 +1,15 @@
 // Zone 1: Starter Meadow. Builds the map, villagers, enemies, boss, chests and story.
 // Every zone module exports the same shape so the game core can load zones one after another.
 import * as THREE from 'three';
-import { World, Z1, riverX, PATHS, WORLD_RADIUS } from './world.js?v=16';
-import { VillageKit } from './village.js?v=16';
-import { spawnSlimes } from './enemies.js?v=16';
-import { SlimeKing } from './boss.js?v=16';
-import { NPC } from './npc.js?v=16';
-import { Story } from './story.js?v=16';
-import { makeChest } from './loot.js?v=16';
-import { makeItem } from './items.js?v=16';
+import { sfx, music } from './audio.js?v=17';
+import { World, Z1, riverX, PATHS, WORLD_RADIUS } from './world.js?v=17';
+import { VillageKit } from './village.js?v=17';
+import { spawnSlimes } from './enemies.js?v=17';
+import { SlimeKing } from './boss.js?v=17';
+import { NPC } from './npc.js?v=17';
+import { Story } from './story.js?v=17';
+import { makeChest } from './loot.js?v=17';
+import { makeItem } from './items.js?v=17';
 
 export const ZONE_ID = 'z1';
 export const ZONE_NAME = 'Starter Meadow';
@@ -56,14 +57,14 @@ export async function loadZone(core) {
 
   const openChest = ch => {
     if (ch.opened) return;
-    ch.opened = true; ch.group.userData.open(false);
+    ch.opened = true; ch.group.userData.open(false); sfx('chest');
     zdata.flags.chests.push(ch.id); profile.d.totals.chests++;
     const st = profile.stats();
     const at = ch.pos3.clone().add(new THREE.Vector3(0, 0.6, 0));
     core.loot.spawn(at, 'gold', Math.round((25 + Math.random() * 20) * st.lootMul));
     core.loot.spawn(at, 'shards', Math.round(3 * st.lootMul));
     core.loot.spawnItem(at, makeItem(profile.d.level + 1, Math.random() < 0.25 ? 'epic' : 'rare'));
-    if (ch.debugPoint) { profile.d.debugPoints++; hud.system('You found a DEBUG POINT!\n(used for Console Commands later)', 3); }
+    if (ch.debugPoint) { profile.d.debugPoints++; sfx('unlock'); hud.system('You found a DEBUG POINT!\n(used for Console Commands later)', 3); }
     effects.burst(at.clone().add(new THREE.Vector3(0, 0.5, 0)), 18, [2, 3], 4);
     profile.save();
   };
@@ -77,6 +78,7 @@ export async function loadZone(core) {
 
   return {
     id: ZONE_ID, name: ZONE_NAME, world, enemies, npcs, boss, story, chests, interactables,
+    titleView: { target: new THREE.Vector3(-2, 0, 4), radius: 17, height: 6 },
     respawnPoint: () => story.respawnPoint(),
     // Replay: back to the slime field (Bram stays fixed, opened chests stay opened).
     replayData: () => {

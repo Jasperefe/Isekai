@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>ISEKAI</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Cpath d=%22M6 3v24l6-6 4 9 4-2-4-9h9z%22 fill=%22%2329e6ff%22/%3E%3C/svg%3E">
-<link rel="stylesheet" href="src/style.css?v=16">
+<link rel="stylesheet" href="src/style.css?v=17">
 <script type="importmap">
 { "imports": { "three": "./lib/three.module.min.js", "three/addons/": "./lib/addons/" } }
 </script>
@@ -20,52 +20,23 @@
 </div>
 
 <div id="hud" class="hidden">
-  <div id="bars">
-    <div class="name">JASPER <span id="lvl">LV 1</span></div>
-    <div class="bar hp"><div id="hp-fill"></div><span id="hp-text">100 / 100</span></div>
-    <div class="bar st"><div id="st-fill"></div></div>
-    <div class="bar xp"><div id="xp-fill"></div></div>
-    <div id="wallet"><span class="g">&#9679; <b id="w-gold">0</b></span><span class="s">&#9670; <b id="w-shards">0</b></span></div>
-  </div>
-  <div id="quest"><div class="qt" id="quest-title"></div><div class="qx" id="quest-text"></div></div>
-  <button id="menu-btn" aria-label="Menu">&#9776;</button>
-  <div id="menu" class="hidden">
-    <div class="mwin">
-      <div class="mtabs">
-        <button data-tab="gear" class="on">GEAR</button><button data-tab="skills">SKILLS <span id="sp-badge"></span></button><button data-tab="map">MAP</button><button data-tab="settings">SETTINGS</button>
-        <button id="menu-close" class="mclose">&#10005;</button>
-      </div>
-      <div class="mbody">
-        <section data-tab="gear" class="on">
-          <div class="gear-left">
-            <div class="slots" id="slots"></div>
-            <div class="statsbox" id="statsbox"></div>
-          </div>
-          <div class="gear-right">
-            <div class="bagtitle">BAG <small id="bag-count"></small></div>
-            <div class="bag" id="bag"></div>
-            <div class="detail" id="detail"></div>
-          </div>
-        </section>
-        <section data-tab="skills"><div class="sp-line">Skill points: <b id="sp-count">0</b> <small>(+1 every level)</small></div><div class="tree" id="tree"></div></section>
-        <section data-tab="map"><canvas id="mapcv" width="420" height="420"></canvas><div class="maplegend" id="maplegend"></div></section>
-        <section data-tab="settings">
-          <div class="setlist">
-            <button id="menu-gfx">Graphics: Auto</button>
-            <small id="menu-fps">measuring FPS...</small><small id="build">build 16</small>
-            <button id="menu-replay">Replay this zone (keeps level, gear, skills)</button>
-            <button id="menu-restart" class="danger">Restart story (erases progress)</button>
-          </div>
-        </section>
-      </div>
+  <div id="player-panel">
+    <div class="pp-portrait"><img id="pp-face" alt=""><span id="lvl">LV 1</span></div>
+    <div class="pp-main">
+      <div class="pp-name">JASPER <span class="pp-tag">PLAYER ONE</span></div>
+      <div class="bar hp"><div class="trail" id="hp-trail"></div><div class="fill" id="hp-fill"></div><span id="hp-text">100 / 100</span></div>
+      <div class="bar st"><div class="fill" id="st-fill"></div></div>
+      <div class="bar xp"><div class="fill" id="xp-fill"></div></div>
+      <div id="wallet"><span class="g"><i class="coin"></i><b id="w-gold">0</b></span><span class="s"><i class="gem"></i><b id="w-shards">0</b></span></div>
     </div>
   </div>
-  <div id="forge" class="hidden"><div class="fbox"><small>BRAM'S FORGE</small><h2 id="forge-title"></h2><p id="forge-text"></p><div class="fbtns"><button id="forge-up">Upgrade</button><button id="forge-close">Close</button></div></div></div>
+  <div id="quest"><div class="qt"><i></i><span id="quest-title"></span></div><div class="qx" id="quest-text"></div></div>
+  <button id="menu-btn" aria-label="Menu"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><span class="dot"></span></button>
   <div id="toast" class="hidden"><small id="toast-kicker"></small><b id="toast-title"></b><span id="toast-text"></span></div>
   <div id="subtitle" class="hidden"></div>
-  <div id="bossbar" class="hidden"><div class="bname" id="boss-name">SLIME KING</div><div class="bbar"><div id="boss-fill"></div></div></div>
+  <div id="bossbar" class="hidden"><div class="bname"><i></i><span id="boss-name">SLIME KING</span><i></i></div><div class="bbar"><div class="trail" id="boss-trail"></div><div id="boss-fill"></div><div class="ticks"></div></div></div>
   <div id="talk-prompt" class="hidden"></div>
-  <div id="dialogue" class="hidden"><div class="dname"></div><div class="dtext"></div><div class="dnext">&#9660;</div></div>
+  <div id="dialogue" class="hidden"><div class="dportrait"><img alt=""><span class="dinit"></span></div><div class="dbody"><div class="dname"></div><div class="dtext"></div></div><div class="dnext">TAP <b>&#9654;</b></div></div>
   <div id="cinematic" class="hidden"><pre id="cine-text"></pre></div>
   <div id="zone-done" class="hidden"><div class="zbox"><small id="zone-num">ZONE 1</small><h1 id="zone-title">STARTER MEADOW CLEARED</h1><p id="zone-stats"></p><p id="zone-next">Next: <b>Glitchwood Forest</b>, through the gate north of the village</p><button id="zone-continue">Keep exploring</button></div></div>
   <div id="tutorial" class="hidden"></div>
@@ -78,6 +49,66 @@
   <div id="death" class="hidden"><div>GAME OVER?</div><small>Respawning...</small></div>
 </div>
 
+  <div id="menu" class="hidden">
+  <div class="mwin">
+    <div class="mtabs">
+      <button data-tab="gear" class="on">GEAR</button><button data-tab="skills">SKILLS <span id="sp-badge"></span></button><button data-tab="map">MAP</button><button data-tab="settings">SETTINGS</button>
+      <button id="menu-close" class="mclose">&#10005;</button>
+    </div>
+    <div class="mbody">
+      <section data-tab="gear" class="on">
+        <div class="gear-left">
+          <div class="slots" id="slots"></div>
+          <div class="statsbox" id="statsbox"></div>
+        </div>
+        <div class="gear-right">
+          <div class="bagtitle">BAG <small id="bag-count"></small></div>
+          <div class="bag" id="bag"></div>
+          <div class="detail" id="detail"></div>
+        </div>
+      </section>
+      <section data-tab="skills"><div class="sp-line">Skill points: <b id="sp-count">0</b> <small>(+1 every level)</small></div><div class="tree" id="tree"></div></section>
+      <section data-tab="map"><canvas id="mapcv" width="420" height="420"></canvas><div class="maplegend" id="maplegend"></div></section>
+      <section data-tab="settings">
+        <div class="setgrid">
+          <div class="setcard">
+            <h5>SOUND</h5>
+            <label class="slider"><span>Music</span><input id="vol-music" type="range" min="0" max="100" step="5"><b id="vol-music-v"></b></label>
+            <label class="slider"><span>Effects</span><input id="vol-sfx" type="range" min="0" max="100" step="5"><b id="vol-sfx-v"></b></label>
+          </div>
+          <div class="setcard">
+            <h5>GRAPHICS</h5>
+            <div class="seg" id="gfx-seg"><button data-gfx="auto">Auto</button><button data-gfx="high">High</button><button data-gfx="medium">Med</button><button data-gfx="low">Low</button></div>
+            <div class="setinfo"><span id="menu-fps">measuring FPS...</span><span id="build">build 17</span></div>
+            <button id="menu-gfx" class="hidden"></button>
+          </div>
+          <div class="setcard wide">
+            <h5>PROGRESS</h5>
+            <button id="menu-replay" class="sbtn">Replay this zone <small>keeps level, gear, skills</small></button>
+            <button id="menu-credits" class="sbtn">Credits</button>
+            <button id="menu-restart" class="sbtn danger">Restart story <small>erases all progress</small></button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+<div id="forge" class="hidden"><div class="fbox"><small>BRAM'S FORGE</small><h2 id="forge-title"></h2><p id="forge-text"></p><div class="fbtns"><button id="forge-up">Upgrade</button><button id="forge-close">Close</button></div></div></div>
+  <div id="credits" class="hidden">
+  <div class="c-box">
+    <h3>CREDITS</h3>
+    <div class="c-scroll">
+      <p><small>A GAME BY</small>Jasperefe</p>
+      <p><small>MUSIC</small>"Daydream of a Deity" by <b>Fablefly Music</b> (CC BY 4.0)<br>"Awakening" and "Elven Companion" by <b>kmontesdev</b> (CC0)<br>"Cathedral in the Forest" by <b>congusbongus</b> (CC0)</p>
+      <p><small>3D CHARACTERS, ANIMATIONS, VILLAGE AND PROPS</small><b>Quaternius</b> (CC0)</p>
+      <p><small>GLITCHWOOD FOREST</small>KayKit Forest Nature Pack and Halloween Bits by <b>Kay Lousberg</b> (CC0)</p>
+      <p><small>MONSTERS, SOUND EFFECTS AND CODE</small>Made for ISEKAI</p>
+      <p><small>ENGINE</small><b>three.js</b> (MIT)</p>
+    </div>
+    <button id="c-close" class="t-btn">BACK</button>
+  </div>
+</div>
+
 <div id="console" class="hidden">
   <div class="con-box">
     <div class="con-head">&gt; CONSOLE <span>Debug points: <b id="console-points">0</b></span></div>
@@ -86,24 +117,37 @@
   </div>
 </div>
 
+<div id="title" class="hidden">
+  <div class="t-vignette"></div>
+  <div class="t-main">
+    <div class="t-logo" data-text="ISEKAI">ISEKAI</div>
+    <div class="t-tag">A game tester. An unfinished world. <b>One way home.</b></div>
+    <div class="t-menu">
+      <button id="t-continue" class="t-btn primary">CONTINUE<small id="t-save"></small></button>
+      <button id="t-new" class="t-btn">NEW GAME</button>
+      <button id="t-settings" class="t-btn">SETTINGS</button>
+      <button id="t-credits" class="t-btn">CREDITS</button>
+    </div>
+  </div>
+  <div class="t-foot"><span id="t-build"></span><span class="t-tap">Tap anywhere to start the music</span></div>
+</div>
+
 <div id="touch" class="hidden">
   <div id="stick-zone"><div id="stick-base"><div id="stick-knob"></div></div></div>
   <div id="buttons">
-    <button id="btn-attack" class="btn big">ATK</button>
-    <button id="btn-heavy" class="btn">HVY</button>
-    <button id="btn-dash" class="btn">DASH</button>
-    <button id="btn-patch" class="btn patch">PATCH<span class="cd" id="patch-cd"></span></button>
-    <button id="btn-jump" class="btn">JUMP</button>
-    <button id="btn-block" class="btn">BLOCK</button>
-    <button id="btn-skill" class="btn skill">SKILL<span class="cd" id="skill-cd"></span></button>
-    <button id="btn-sword" class="btn">SWORD</button>
-    <button id="btn-console" class="btn hidden">CON<br>SOLE</button>
+    <button id="btn-attack" class="btn big"><svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M19 3l2 2-9.5 9.5-2-2z M8.5 13.5l2 2-1.8 1.8 1.6 1.6-1.4 1.4-1.6-1.6L5 21l-2-2 2.3-2.3-1.6-1.6 1.4-1.4 1.6 1.6z" fill="currentColor"/></svg><em>ATTACK</em></button>
+    <button id="btn-heavy" class="btn"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M14 3l7 7-3 1-1.5-1.5-6.8 6.8 1.3 1.3-2 2-1.3-1.3L4 21l-1-1 2.7-3.7-1.3-1.3 2-2 1.3 1.3 6.8-6.8L13 6z" fill="currentColor"/><path d="M2 4l3 1M4 2l1 3M20 20l-3-1M22 18l-3-1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><em>HEAVY</em></button>
+    <button id="btn-skill" class="btn skill"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 2c3 3 3 6 0 8M12 22c-3-3-3-6 0-8M2 12c3-3 6-3 8 0M22 12c-3 3-6 3-8 0" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg><em>STORM</em><span class="cd" id="skill-cd"></span></button>
+    <button id="btn-patch" class="btn patch"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M5 3l14 7.5-6 1.6 3.6 6.4-2.4 1.4-3.6-6.4L6.4 17.6z" fill="currentColor"/><path d="M17 3l1 2M21 6l-2 .6M20 2.5l-.8 1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><em>PATCH</em><span class="cd" id="patch-cd"></span></button>
+    <button id="btn-dash" class="btn"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 8h9M2 12h8M3 16h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M13 5l8 7-8 7z" fill="currentColor"/></svg><em>DODGE</em></button>
+    <button id="btn-block" class="btn small"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z" fill="currentColor"/><path d="M12 6v12M8 10h8" stroke="#0b1020" stroke-width="1.6" stroke-linecap="round"/></svg><em>BLOCK</em></button>
+    <button id="btn-console" class="btn small con hidden"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="2.5" y="4" width="19" height="16" rx="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M6.5 9l3.5 3-3.5 3M12 15.5h5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><em>CONSOLE</em></button>
+    <button id="btn-sword" class="btn small"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M16 2l2 2-8.5 8.5-2-2z M7 11l2 2-1.5 1.5 1 1-1 1-1-1L4 18l-1-1 2.5-2.5-1-1 1-1 1 1z" fill="currentColor"/><path d="M15 15l4 4m0-4v4h-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><em>SWORD</em></button>
+    <button id="btn-jump" class="btn small"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3l7 8h-4.5v5h-5v-5H5z" fill="currentColor"/><path d="M7 20h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><em>JUMP</em></button>
   </div>
-  <button id="btn-talk" class="btn hidden">TALK</button>
-  <div>
-  </div>
+  <button id="btn-talk" class="btn ctx hidden"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M4 4h16a2 2 0 012 2v9a2 2 0 01-2 2h-8l-5 4v-4H4a2 2 0 01-2-2V6a2 2 0 012-2z" fill="currentColor"/><circle cx="8" cy="10.5" r="1.3" fill="#0b1020"/><circle cx="12" cy="10.5" r="1.3" fill="#0b1020"/><circle cx="16" cy="10.5" r="1.3" fill="#0b1020"/></svg><em id="btn-talk-label">TALK</em></button>
 </div>
 
-<script type="module" src="src/main.js?v=16"></script>
+<script type="module" src="src/main.js?v=17"></script>
 </body>
 </html>

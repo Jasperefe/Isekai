@@ -1,3 +1,4 @@
+import { sfx } from './audio.js?v=17';
 // CONSOLE: Jasper's cheat menu (taught by Old Mira). Opens a radial menu and slows time.
 // Commands are unlocked with Debug Points and each has a cooldown.
 const $ = id => document.getElementById(id);
@@ -30,18 +31,18 @@ export class Console {
   toggle() { this.open ? this.hide() : this.show(); }
   show() {
     if (!this.available || this.core.paused?.()) return;
-    this.open = true; this.el.classList.remove('hidden'); document.body.classList.add('console');
+    this.open = true; this.el.classList.remove('hidden'); document.body.classList.add('console'); sfx('consoleOpen');
     document.exitPointerLock?.();
     this.render();
   }
-  hide() { this.open = false; this.el.classList.add('hidden'); document.body.classList.remove('console'); }
+  hide() { if (this.open) sfx('close'); this.open = false; this.el.classList.add('hidden'); document.body.classList.remove('console'); }
 
   render() {
     const wrap = $('console-cmds'); wrap.innerHTML = ''; this.btns = [];
     COMMANDS.forEach((c, i) => {
       const a = -Math.PI / 2 + i / COMMANDS.length * Math.PI * 2;
       const b = document.createElement('button');
-      b.className = 'cmd'; b.style.left = `calc(50% + ${Math.cos(a) * 168}px)`; b.style.top = `calc(50% + ${Math.sin(a) * 92}px)`;
+      b.className = 'cmd'; b.style.left = `calc(50% + ${Math.cos(a) * 178}px)`; b.style.top = `calc(50% + ${Math.sin(a) * 104}px)`;
       b.innerHTML = `<b>${c.name}</b><small>${c.text}</small><i></i>`;
       b.addEventListener('click', () => this.#pick(c));
       wrap.appendChild(b); this.btns.push(b);
@@ -67,14 +68,14 @@ export class Console {
   #pick(c) {
     const { hud, profile } = this.core;
     if (!this.has(c.id)) {
-      if (this.d.debugPoints < c.cost) { hud.system(`Need ${c.cost} DEBUG POINT${c.cost > 1 ? 'S' : ''}\n(find them in hidden spots and from bosses)`, 2.2); return; }
+      if (this.d.debugPoints < c.cost) { sfx('error'); hud.system(`Need ${c.cost} DEBUG POINT${c.cost > 1 ? 'S' : ''}\n(find them in hidden spots and from bosses)`, 2.2); return; }
       this.d.debugPoints -= c.cost; (this.d.console ||= {})[c.id] = true; profile.save();
-      hud.system(`> ${c.name} UNLOCKED`, 1.8);
+      hud.system(`> ${c.name} UNLOCKED`, 1.8); sfx('unlock');
       this.#states(); return;
     }
     if (c.passive || this.cd[c.id] > 0) return;
     this.cd[c.id] = c.cd; this.active[c.id] = c.dur;
-    hud.system(`> ${c.name}`, 1.2);
+    hud.system(`> ${c.name}`, 1.2); sfx('consoleRun');
     this.core.effects.burst(this.core.player.pos.clone().setY(this.core.player.pos.y + 1.2), 16, [0, 2], 3);
     this.hide();
   }

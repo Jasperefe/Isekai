@@ -1,6 +1,7 @@
+import { sfx } from './audio.js?v=17';
 // Pause menu: Gear (equip/scrap), Skills (tree), Map, Settings. Plus Bram's forge window.
-import { RARITY, itemIcon } from './items.js?v=16';
-import { SKILLS, BRANCHES } from './skills.js?v=16';
+import { RARITY, itemIcon } from './items.js?v=17';
+import { SKILLS, BRANCHES } from './skills.js?v=17';
 
 const $ = id => document.getElementById(id);
 const SLOT_NAMES = { weapon: 'Weapon', armor: 'Armor', charm: 'Charm' };
@@ -16,20 +17,20 @@ export class Menu {
     addEventListener('keydown', e => { if (e.code === 'Escape' || e.code === 'KeyM' || e.code === 'Tab') { e.preventDefault(); this.open ? this.hide() : this.show(); } });
     $('forge-close').addEventListener('click', () => this.closeForge());
     $('forge-up').addEventListener('click', () => {
-      if (this.core.profile.upgradeSword()) { this.core.player.refreshStats(); this.core.profile.save(); this.core.hud.wallet(this.core.profile.d); this.core.hud.system(`DEBUG BLADE +${this.core.profile.d.swordLevel}!`, 2); }
+      if (this.core.profile.upgradeSword()) { sfx('levelUp'); this.core.player.refreshStats(); this.core.profile.save(); this.core.hud.wallet(this.core.profile.d); this.core.hud.system(`DEBUG BLADE +${this.core.profile.d.swordLevel}!`, 2); }
       this.#renderForge();
     });
   }
 
   show(tab) {
-    this.open = true; this.el.classList.remove('hidden'); document.exitPointerLock?.();
+    sfx('open'); this.open = true; this.el.classList.remove('hidden'); document.exitPointerLock?.();
     this.core.onPause(true);
     this.tab(tab || this.curTab || 'gear');
   }
-  hide() { this.open = false; this.el.classList.add('hidden'); this.core.onPause(false); this.core.profile.save(); }
+  hide() { sfx('close'); this.open = false; this.el.classList.add('hidden'); this.core.onPause(false); this.core.profile.save(); }
 
   tab(t) {
-    this.curTab = t;
+    if (this.curTab !== t) sfx('click'); this.curTab = t;
     for (const el of this.el.querySelectorAll('[data-tab]')) el.classList.toggle('on', el.dataset.tab === t);
     if (t === 'gear') this.#renderGear();
     if (t === 'skills') this.#renderSkills();
@@ -73,8 +74,8 @@ export class Menu {
       <div class="lines">${it.lines.join('<br>')}</div>
       ${!equipped && cur ? `<div class="cmp">Equipped now: ${cur.name} (${cur.lines.join(', ')})</div>` : ''}
       ${equipped ? '<button id="d-unequip">Unequip</button>' : `<button id="d-equip" class="primary">Equip</button><button id="d-scrap">Scrap (+${it.scrap} shard${it.scrap > 1 ? 's' : ''})</button>`}`;
-    $('d-equip')?.addEventListener('click', () => { profile.equip(it.uid); this.sel = null; player.refreshStats(); this.#renderGear(); });
-    $('d-scrap')?.addEventListener('click', () => { profile.scrap(it.uid); this.sel = null; hud.wallet(d); this.#renderGear(); });
+    $('d-equip')?.addEventListener('click', () => { sfx('item'); profile.equip(it.uid); this.sel = null; player.refreshStats(); this.#renderGear(); });
+    $('d-scrap')?.addEventListener('click', () => { sfx('shard'); profile.scrap(it.uid); this.sel = null; hud.wallet(d); this.#renderGear(); });
     $('d-unequip')?.addEventListener('click', () => { profile.unequip(it.slot); this.sel = null; player.refreshStats(); this.#renderGear(); });
   }
 
@@ -85,7 +86,7 @@ export class Menu {
     $('tree').innerHTML = BRANCHES.map(b => `<div class="branch" style="--c:${b.color}"><h5 style="color:${b.color}">${b.name}</h5>${
       SKILLS.filter(s => s.branch === b.id).map(s => `<div class="node ${d.skills[s.id] ? 'have' : profile.canLearn(s.id) ? 'can' : ''}" data-id="${s.id}"><b>${s.name}</b>${s.text}</div>`).join('')}</div>`).join('');
     for (const el of $('tree').querySelectorAll('.node')) el.addEventListener('click', () => {
-      if (profile.learn(el.dataset.id)) { player.refreshStats(); this.core.hud.wallet(d); this.#renderSkills(); this.#badge(); }
+      if (profile.learn(el.dataset.id)) { sfx('unlock'); player.refreshStats(); this.core.hud.wallet(d); this.#renderSkills(); this.#badge(); }
     });
   }
 
@@ -122,7 +123,7 @@ export class Menu {
   }
 
   // ---------- Bram's forge ----------
-  openForge() { $('forge').classList.remove('hidden'); this.core.onPause(true); this.#renderForge(); }
+  openForge() { sfx('open'); $('forge').classList.remove('hidden'); this.core.onPause(true); this.#renderForge(); }
   closeForge() { $('forge').classList.add('hidden'); this.core.onPause(false); this.core.profile.save(); }
   #renderForge() {
     const p = this.core.profile, d = p.d, c = p.swordCost();

@@ -43,10 +43,15 @@ export class Input {
     const base = document.getElementById('stick-base');
     const knob = document.getElementById('stick-knob');
     let stickId = null, cx = 0, cy = 0;
-    const R = 50;
+    const R = 52;
     zone.addEventListener('touchstart', e => {
       const t = e.changedTouches[0]; stickId = t.identifier;
-      const r = base.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2;
+      // Floating stick: move the base under the thumb (kept fully on screen).
+      const zr = zone.getBoundingClientRect(), half = base.offsetWidth / 2;
+      cx = Math.min(Math.max(t.clientX, zr.left + half + 6), zr.right - half);
+      cy = Math.min(Math.max(t.clientY, zr.top + half), zr.bottom - half - 6);
+      base.style.left = (cx - zr.left - half) + 'px'; base.style.bottom = (zr.bottom - cy - half) + 'px';
+      base.classList.add('active');
       this.#moveStick(t, cx, cy, R, knob); e.preventDefault();
     }, { passive: false });
     zone.addEventListener('touchmove', e => {
@@ -56,6 +61,7 @@ export class Input {
     const end = e => {
       for (const t of e.changedTouches) if (t.identifier === stickId) {
         stickId = null; this.move.x = 0; this.move.y = 0; knob.style.transform = '';
+        base.classList.remove('active'); base.style.left = ''; base.style.bottom = ''; // back to its resting spot
       }
     };
     zone.addEventListener('touchend', end); zone.addEventListener('touchcancel', end);

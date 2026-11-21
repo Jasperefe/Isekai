@@ -2,24 +2,28 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=16';
-import { buildCharacter, captureGrip } from './characters.js?v=16';
-import { Player } from './player.js?v=16';
-import { Guide } from './guide.js?v=16';
-import { Dialogue } from './dialogue.js?v=16';
-import { Effects } from './effects.js?v=16';
-import { Hud } from './hud.js?v=16';
-import { Profile } from './profile.js?v=16';
-import { Loot } from './loot.js?v=16';
-import { Menu } from './menu.js?v=16';
-import { Console } from './console.js?v=16';
-import { Pet } from './pet.js?v=16';
-import * as Zone1 from './zone1.js?v=16';
-import * as Zone2 from './zone2.js?v=16';
+import { Input, isTouch } from './input.js?v=17';
+import { buildCharacter, captureGrip } from './characters.js?v=17';
+import { Player } from './player.js?v=17';
+import { Guide } from './guide.js?v=17';
+import { Dialogue } from './dialogue.js?v=17';
+import { Effects } from './effects.js?v=17';
+import { Hud } from './hud.js?v=17';
+import { Profile } from './profile.js?v=17';
+import { Loot } from './loot.js?v=17';
+import { Menu } from './menu.js?v=17';
+import { Console } from './console.js?v=17';
+import { Pet } from './pet.js?v=17';
+import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=17';
+import { capturePortrait, systemPortrait } from './portraits.js?v=17';
+import * as Zone1 from './zone1.js?v=17';
+import * as Zone2 from './zone2.js?v=17';
 
 // Zone registry. Each zone is loaded on its own page load (gates save and reload).
 const ZONES = { z1: Zone1, z2: Zone2 };
 const ZONE_NAMES = { z1: 'Starter Meadow', z2: 'Glitchwood Forest' };
+const ZONE_MUSIC = { z1: 'meadow', z2: 'glitchwood' };
+const FAST = new URLSearchParams(location.search).has('fast');
 
 const quality = isTouch
   ? { pixelRatio: Math.min(devicePixelRatio, 1.5), shadows: true, shadowSize: 1024, dense: false }
@@ -125,6 +129,7 @@ async function boot() {
     document.getElementById('load-text').textContent = `Entering ${ZONE_NAMES[id]}...`;
     document.getElementById('load-fill').style.width = '0%';
     document.getElementById('loading').classList.remove('hidden');
+    try { sessionStorage.setItem('isekai_autostart', '1'); } catch (e) { /* ignore */ }
     setTimeout(() => location.reload(), 350);
   };
 
@@ -135,25 +140,106 @@ async function boot() {
 
   const input = new Input(canvas);
   document.getElementById('loading').classList.add('hidden');
-  hud.show(); hud.wallet(profile.d);
+  hud.wallet(profile.d);
   rig.yaw = 0;
-  document.getElementById('menu-restart').addEventListener('click', () => { if (confirm('Erase all progress and restart?')) { Profile.clear(); location.reload(); } });
-  document.getElementById('menu-replay').addEventListener('click', () => {
+  setListener(player.pos);
+  const $ = id => document.getElementById(id);
+  const autostart = () => { try { sessionStorage.setItem('isekai_autostart', '1'); } catch (e) { /* ignore */ } };
+  $('menu-restart').addEventListener('click', () => { if (confirm('Erase all progress and restart?')) { Profile.clear(); autostart(); location.reload(); } });
+  $('menu-replay').addEventListener('click', () => {
     if (!confirm(`Replay ${ZONE_NAMES[zone.id]}? Enemies, quests and the boss reset. Your level, gear, skills, gold and Pip stay.`)) return;
     player.syncProfile?.();
     profile.d.zones[zone.id] = zone.replayData();
-    profile.save(); location.reload();
+    profile.save(); autostart(); location.reload();
   });
+  // Sound settings.
+  const bindVol = (id, key) => {
+    const el = $(id), val = $(id + '-v');
+    el.value = Math.round(volumes()[key] * 100); val.textContent = el.value + '%';
+    el.addEventListener('input', () => { setVolumes({ [key]: el.value / 100 }); val.textContent = el.value + '%'; });
+    el.addEventListener('change', () => sfx(key === 'sfx' ? 'coin' : 'click'));
+  };
+  bindVol('vol-music', 'music'); bindVol('vol-sfx', 'sfx');
+  const showCredits = on => { $('credits').classList.toggle('hidden', !on); sfx(on ? 'open' : 'close'); };
+  $('menu-credits').addEventListener('click', () => showCredits(true));
+  $('t-credits').addEventListener('click', () => showCredits(true));
+  $('c-close').addEventListener('click', () => showCredits(false));
+  // Browsers only allow sound after the first tap or key press.
+  const unlock = () => { unlockAudio(); $('title').classList.add('audio-on'); };
+  for (const ev of ['pointerdown', 'touchend', 'click', 'keydown']) addEventListener(ev, unlock);
 
-  zone.start();
-  if (profile.d.pet === 'pip') pet.follow(player);
-  if (!isTouch) setTimeout(() => hud.system('> Click the screen to look around', 2.5), 9000);
-  setInterval(() => { if (!paused) { profile.d.totals.playTime += 5; } }, 5000);
+  // Portraits for the dialogue box and the HUD, rendered from the models (done between frames).
+  const portraitJobs = [];
+  const queuePortraits = () => {
+    const color = { JASPER: 0x1d2550, GUIDE: 0x0f2a3a, BRAM: 0x3a2412, NIA: 0x3a1430, TOMM: 0x1c3a14, MIRA: 0x123a3a, 'SLIME KING': 0x163a18, THORNWRAITH: 0x3a0f34 };
+    portraitJobs.push(['JASPER', player.group, { bg: color.JASPER }]);
+    portraitJobs.push(['GUIDE', guide.group, { bg: color.GUIDE, focus: 0.5, dist: 0.85, side: 0.12, reset: [guide.mesh] }]);
+    for (const n of zone.npcs) portraitJobs.push([n.name, n.group, { bg: color[n.name] ?? 0x1d2550 }]);
+    if (zone.boss) {
+      const b = zone.boss, big = b.name === 'THORNWRAITH';
+      portraitJobs.push([b.name, big ? b.m.root : b.group, { bg: color[b.name] ?? 0x2a1030, focus: big ? 0.72 : 0.6, dist: big ? 2.6 : 4.2, side: 0.2 }]);
+    }
+    dialogue.setPortrait('SYSTEM', systemPortrait());
+  };
+  queuePortraits();
+  const runPortraits = () => {
+    while (portraitJobs.length) {
+      const [name, obj, opts] = portraitJobs.shift();
+      try { const url = capturePortrait(renderer, obj, opts); dialogue.setPortrait(name, url); if (name === 'JASPER') hud.setPortrait(url); }
+      catch (e) { console.warn('portrait failed', name, e); }
+    }
+  };
+
+  // ---------------- Title screen (skipped after zone travel, replay or new game) ----------------
+  let titleMode = false;
+  const hasProgress = () => profile.d.level > 1 || Object.values(profile.d.zones || {}).some(z => (z.stage || 0) > 0);
+  const startGame = () => {
+    titleMode = false; document.body.classList.remove('title'); $('title').classList.add('hidden');
+    hud.show(); zone.start();
+    if (profile.d.pet === 'pip') pet.follow(player);
+    music(ZONE_MUSIC[zone.id], 2.5);
+    if (!isTouch) setTimeout(() => hud.system('> Click the screen to look around', 2.5), 9000);
+  };
+  let skip = FAST;
+  try { skip = skip || sessionStorage.getItem('isekai_autostart') === '1'; sessionStorage.removeItem('isekai_autostart'); } catch (e) { /* ignore */ }
+  if (skip) startGame();
+  else {
+    titleMode = true; document.body.classList.add('title'); $('title').classList.remove('hidden');
+    $('t-build').textContent = $('build').textContent;
+    const cont = $('t-continue');
+    if (hasProgress()) $('t-save').textContent = `Level ${profile.d.level} · ${ZONE_NAMES[zone.id]}`;
+    else { cont.classList.add('hidden'); $('t-new').classList.add('primary'); }
+    music('title', 1.5);
+    cont.addEventListener('click', () => { unlock(); sfx('ability'); startGame(); });
+    $('t-new').addEventListener('click', () => {
+      unlock();
+      if (hasProgress()) {
+        if (!confirm('Start a new game? This erases your current progress.')) return;
+        Profile.clear(); autostart(); location.reload(); return;
+      }
+      sfx('ability'); startGame();
+    });
+    $('t-settings').addEventListener('click', () => { unlock(); menu.show('settings'); });
+  }
+  setInterval(() => { if (!paused && !titleMode) { profile.d.totals.playTime += 5; } }, 5000);
 
   const clock = new THREE.Clock();
   let t = 0;
   const frame = (rawDt, doRender = true) => {
     let dt = Math.min(rawDt, 1 / 20);
+    if (doRender && portraitJobs.length) runPortraits();
+    if (titleMode) {
+      // Slow orbit around the zone's showcase spot behind the title screen.
+      t += dt;
+      const v = zone.titleView || { target: new THREE.Vector3(0, 0, 0), radius: 14, height: 5 };
+      const a = t * 0.06 + 0.6, tg = v.target;
+      camera.position.set(tg.x + Math.sin(a) * v.radius, zone.world.groundAt(tg.x, tg.z) + v.height, tg.z + Math.cos(a) * v.radius);
+      camera.lookAt(tg.x, zone.world.groundAt(tg.x, tg.z) + 1.5, tg.z);
+      zone.world.update(dt, t, tg); effects.update(dt);
+      for (const n of zone.npcs) n.update(dt, camera);
+      if (doRender) renderer.render(scene, camera);
+      return;
+    }
     if (paused) { if (doRender) renderer.render(scene, camera); return; }
     cons.update(dt);
     if (cons.open) dt *= 0.12; // the Console slows time while open
@@ -207,6 +293,7 @@ async function boot() {
       e.mat.opacity += ((near2 ? 0.25 : 0.92) - e.mat.opacity) * Math.min(1, dt * 10);
     }
     hud.update(dt, player);
+    document.body.classList.toggle('talking', dialogue.active);
     document.getElementById('hint').style.visibility = dialogue.active ? 'hidden' : '';
     input.endFrame();
     if (doRender) renderer.render(scene, camera);
@@ -224,14 +311,18 @@ async function boot() {
   let setting = 'auto', curLevel = 'high';
   try { setting = localStorage.getItem('isekai_gfx') || 'auto'; } catch (e) { /* ignore */ }
   if (setting !== 'auto') applyLevel(setting);
-  const gfxBtn = document.getElementById('menu-gfx');
-  const labelGfx = () => { gfxBtn.textContent = `Graphics: ${setting === 'auto' ? 'Auto (' + curLevel + ')' : setting[0].toUpperCase() + setting.slice(1)}`; };
-  gfxBtn.addEventListener('click', () => {
-    const order = ['auto', 'high', 'medium', 'low'];
-    setting = order[(order.indexOf(setting) + 1) % order.length];
+  const labelGfx = () => {
+    for (const b of document.querySelectorAll('#gfx-seg button')) {
+      b.classList.toggle('on', b.dataset.gfx === setting);
+      if (b.dataset.gfx === 'auto') b.textContent = setting === 'auto' ? `Auto (${curLevel})` : 'Auto';
+    }
+  };
+  for (const b of document.querySelectorAll('#gfx-seg button')) b.addEventListener('click', () => {
+    setting = b.dataset.gfx; sfx('click');
     try { localStorage.setItem('isekai_gfx', setting); } catch (e) { /* ignore */ }
     applyLevel(setting === 'auto' ? 'high' : setting); lowCount = 0; labelGfx();
   });
+  labelGfx();
   let fpsFrames = 0, fpsTime = 0, lowCount = 0, highCount = 0;
   const fpsEl = document.getElementById('menu-fps');
   const adapt = rawDt => {
