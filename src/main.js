@@ -2,19 +2,19 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js';
-import { World, Z1 } from './world.js';
-import { VillageKit } from './village.js';
-import { buildCharacter, captureGrip } from './characters.js';
-import { Player } from './player.js';
-import { spawnSlimes } from './enemies.js';
-import { SlimeKing } from './boss.js';
-import { NPC } from './npc.js';
-import { Guide } from './guide.js';
-import { Dialogue } from './dialogue.js';
-import { Story } from './story.js';
-import { Effects } from './effects.js';
-import { Hud } from './hud.js';
+import { Input, isTouch } from './input.js?v=5';
+import { World, Z1 } from './world.js?v=5';
+import { VillageKit } from './village.js?v=5';
+import { buildCharacter, captureGrip } from './characters.js?v=5';
+import { Player } from './player.js?v=5';
+import { spawnSlimes } from './enemies.js?v=5';
+import { SlimeKing } from './boss.js?v=5';
+import { NPC } from './npc.js?v=5';
+import { Guide } from './guide.js?v=5';
+import { Dialogue } from './dialogue.js?v=5';
+import { Story } from './story.js?v=5';
+import { Effects } from './effects.js?v=5';
+import { Hud } from './hud.js?v=5';
 
 const quality = isTouch
   ? { pixelRatio: Math.min(devicePixelRatio, 1.5), shadows: true, shadowSize: 1024, dense: false }
