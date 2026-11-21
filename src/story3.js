@@ -1,16 +1,16 @@
 // Zone 3 story: Capital of Aster. Captain Rho's loop, the copies in the city, Princess Victory,
 // Sir Duplicate and Victory's confession. Side quests: Merchant Dot's Price Glitch, ghost houses.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=25';
-import { Z3, HALL } from './world3.js?v=25';
+import { sfx, music } from './audio.js?v=26';
+import { Z3, HALL } from './world3.js?v=26';
 
 const STAGES = [
   { id: 'arrive', title: 'Rescue the Princess', text: 'Walk up the main street to the Market Plaza' },
   { id: 'rho', title: 'Rescue the Princess', text: 'Find the captain of the guard by the castle' },
   { id: 'patchRho', title: 'Guard Duty Loop', text: 'Use PATCH on Captain Rho to break his loop' },
   { id: 'purge', title: 'Copy, Paste, Clear', text: 'Defeat every copy in the city' },
-  { id: 'tower', title: 'Rescue the Princess', text: 'PATCH the cage of light in the castle courtyard' },
-  { id: 'throne', title: 'Copy, Paste, Fight', text: 'Enter the throne room through the keep door' },
+  { id: 'tower', title: 'Rescue the Princess', text: 'Go NORTH through the castle gate and PATCH the cage of light' },
+  { id: 'throne', title: 'Copy, Paste, Fight', text: 'Go NORTH into the castle: the keep door is at the back of the courtyard' },
   { id: 'boss', title: 'Copy, Paste, Fight', text: 'Defeat Sir Duplicate' },
   { id: 'done', title: 'Capital Cleared', text: 'Explore the Capital with Victory' },
 ];
@@ -128,8 +128,8 @@ export class Story3 {
 
   #marker() {
     const g = new THREE.Group();
-    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 40, 12, 1, true), new THREE.MeshBasicMaterial({ color: 0x29e6ff, transparent: true, opacity: 0.18, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
-    beam.position.y = 20; g.add(beam);
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 60, 12, 1, true), new THREE.MeshBasicMaterial({ color: 0x29e6ff, transparent: true, opacity: 0.4, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+    beam.position.y = 30; g.add(beam);
     const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.5), new THREE.MeshBasicMaterial({ color: 0x29e6ff }));
     gem.position.y = 4; g.add(gem); this.markerGem = gem;
     this.markerObj = g; this.ctx.scene.add(g);

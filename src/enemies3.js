@@ -3,10 +3,10 @@
 import * as THREE from 'three';
 import { clone as skClone } from 'three/addons/utils/SkeletonUtils.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { sfx } from './audio.js?v=25';
-import { buildCharacter } from './characters.js?v=25';
-import { Enemy2, makeTag } from './enemies2.js?v=25';
-import { bake } from './monsters2.js?v=25';
+import { sfx } from './audio.js?v=26';
+import { buildCharacter } from './characters.js?v=26';
+import { Enemy2, makeTag } from './enemies2.js?v=26';
+import { bake } from './monsters2.js?v=26';
 
 const MAGENTA = 0xff2bd6, CYAN = 0x29e6ff;
 let DETAIL = true;

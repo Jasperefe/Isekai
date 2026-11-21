@@ -2,24 +2,24 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=25';
-import { buildCharacter, captureGrip } from './characters.js?v=25';
-import { Player } from './player.js?v=25';
-import { Guide } from './guide.js?v=25';
-import { Dialogue } from './dialogue.js?v=25';
-import { Effects } from './effects.js?v=25';
-import { Hud } from './hud.js?v=25';
-import { Profile } from './profile.js?v=25';
-import { Loot } from './loot.js?v=25';
-import { Menu } from './menu.js?v=25';
-import { Console } from './console.js?v=25';
-import { Pet } from './pet.js?v=25';
-import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=25';
-import { capturePortrait, systemPortrait } from './portraits.js?v=25';
-import { ZoneMap, MapView, Minimap } from './map.js?v=25';
-import * as Zone1 from './zone1.js?v=25';
-import * as Zone2 from './zone2.js?v=25';
-import * as Zone3 from './zone3.js?v=25';
+import { Input, isTouch } from './input.js?v=26';
+import { buildCharacter, captureGrip } from './characters.js?v=26';
+import { Player } from './player.js?v=26';
+import { Guide } from './guide.js?v=26';
+import { Dialogue } from './dialogue.js?v=26';
+import { Effects } from './effects.js?v=26';
+import { Hud } from './hud.js?v=26';
+import { Profile } from './profile.js?v=26';
+import { Loot } from './loot.js?v=26';
+import { Menu } from './menu.js?v=26';
+import { Console } from './console.js?v=26';
+import { Pet } from './pet.js?v=26';
+import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=26';
+import { capturePortrait, systemPortrait } from './portraits.js?v=26';
+import { ZoneMap, MapView, Minimap } from './map.js?v=26';
+import * as Zone1 from './zone1.js?v=26';
+import * as Zone2 from './zone2.js?v=26';
+import * as Zone3 from './zone3.js?v=26';
 
 // Zone registry. Each zone is loaded on its own page load (gates save and reload).
 const ZONES = { z1: Zone1, z2: Zone2, z3: Zone3 };
@@ -157,6 +157,12 @@ async function boot() {
   const lockLandscape = () => { try { screen.orientation?.lock?.('landscape').catch(() => {}); } catch (e) { /* not supported (iPhone) */ } };
   addEventListener('pointerdown', lockLandscape, { once: true });
 
+  // Guide arrow: a glowing chevron on the ground next to Jasper, pointing at the objective.
+  const arrowShape = new THREE.Shape();
+  arrowShape.moveTo(0, 0.75); arrowShape.lineTo(0.55, 0.05); arrowShape.lineTo(0.2, 0.05); arrowShape.lineTo(0.2, -0.55); arrowShape.lineTo(-0.2, -0.55); arrowShape.lineTo(-0.2, 0.05); arrowShape.lineTo(-0.55, 0.05); arrowShape.closePath();
+  const arrowGeo = new THREE.ShapeGeometry(arrowShape); arrowGeo.rotateX(-Math.PI / 2); arrowGeo.rotateY(Math.PI);
+  const guideArrow = new THREE.Mesh(arrowGeo, new THREE.MeshBasicMaterial({ color: 0x29e6ff, transparent: true, opacity: 0.85, depthWrite: false }));
+  guideArrow.renderOrder = 3; guideArrow.visible = false; scene.add(guideArrow);
   // Maps: the zone picture is rendered from the 3D world on the first frame.
   const zmap = new ZoneMap({
     renderer, scene, zone, profile, player,
@@ -329,6 +335,15 @@ async function boot() {
     }
     hud.update(dt, player);
     zmap.update(dt, player.pos); minimap.update(dt);
+    {
+      const o = zone.map.objective?.(), far = o && Math.hypot(o.x - player.pos.x, o.z - player.pos.z);
+      guideArrow.visible = !!o && far > 7 && !dialogue.active && player.alive;
+      if (guideArrow.visible) {
+        const a = Math.atan2(o.x - player.pos.x, o.z - player.pos.z), k = 1.7 + Math.sin(t * 5) * 0.15;
+        guideArrow.position.set(player.pos.x + Math.sin(a) * k, world.groundAt(player.pos.x + Math.sin(a) * k, player.pos.z + Math.cos(a) * k) + 0.08, player.pos.z + Math.cos(a) * k);
+        guideArrow.rotation.y = a; guideArrow.material.opacity = 0.6 + Math.sin(t * 5) * 0.25;
+      }
+    }
     document.body.classList.toggle('talking', dialogue.active);
     document.getElementById('hint').style.visibility = dialogue.active ? 'hidden' : '';
     input.endFrame();
