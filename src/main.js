@@ -197,7 +197,23 @@ async function boot() {
     input.endFrame();
     if (doRender) renderer.render(scene, camera);
   };
-  renderer.setAnimationLoop(() => frame(clock.getDelta()));
+  // Adaptive quality: if the phone can't keep up, lower resolution, then shadows.
+  let fpsFrames = 0, fpsTime = 0, qualityStep = 0, fps = 60;
+  const fpsEl = document.getElementById('menu-fps');
+  const adapt = rawDt => {
+    fpsFrames++; fpsTime += rawDt;
+    if (fpsTime < 2) return;
+    fps = fpsFrames / fpsTime; fpsFrames = 0; fpsTime = 0;
+    if (fpsEl) fpsEl.textContent = `${Math.round(fps)} FPS · quality ${['high', 'medium', 'low', 'lowest'][qualityStep]}`;
+    if (fps < 40 && qualityStep < 3) {
+      qualityStep++;
+      if (qualityStep === 1) renderer.setPixelRatio(Math.min(devicePixelRatio, 1));
+      if (qualityStep === 2) { renderer.shadowMap.enabled = false; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; }); }
+      if (qualityStep === 3) renderer.setPixelRatio(0.75);
+      renderer.setSize(innerWidth, innerHeight);
+    }
+  };
+  renderer.setAnimationLoop(() => { const d = clock.getDelta(); adapt(d); frame(d); });
   window.__step = (dt, n = 1) => { for (let i = 0; i < n; i++) frame(dt, false); }; // test hook
   window.__game = { player, enemies, rig, scene, renderer, story, npcs, world, boss, dialogue, hud, guide, input, ctx };
 }

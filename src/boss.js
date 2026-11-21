@@ -129,17 +129,17 @@ export class SlimeKing {
         break;
       }
       case 'crouch':
-        if (this.stateT > 0.55) {
+        if (this.stateT > 0.75) { // longer wind-up: more time to react
           this.state = 'air'; this.stateT = 0; this.jumpFrom = this.pos.clone();
           this.slamTarget = player.pos.clone(); // aim where Jasper is when he jumps
           this.ring.visible = true;
         }
         break;
       case 'air': {
-        const dur = 1.0, k = Math.min(1, this.stateT / dur);
+        const dur = 1.2, k = Math.min(1, this.stateT / dur);
         this.pos.lerpVectors(this.jumpFrom, this.slamTarget, k);
         this.airY = Math.sin(k * Math.PI) * 6;
-        const aoe = this.unscaled ? 6 : 4.5;
+        const aoe = this.unscaled ? 5.5 : 4.0;
         this.ring.position.set(this.slamTarget.x, world.groundAt(this.slamTarget.x, this.slamTarget.z) + 0.08, this.slamTarget.z);
         this.ring.scale.setScalar(aoe * (0.4 + k * 0.6));
         this.ring.material.opacity = 0.4 + Math.sin(this.stateT * 30) * 0.3;

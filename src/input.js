@@ -104,7 +104,7 @@ export class Input {
   }
 
   get sprint() {
-    if (isTouch) return Math.hypot(this.move.x, this.move.y) > 0.95;
+    if (isTouch) return Math.hypot(this.move.x, this.move.y) > 0.88;
     return this.keys.has('ShiftLeft') || this.keys.has('ShiftRight');
   }
 

@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { heightAt } from './world.js';
 
 const CFG = {
-  walk: 2.2, jog: 4.6, sprint: 7.2, accel: 14, turn: 12,
+  walk: 2.2, jog: 5.4, sprint: 7.8, accel: 14, turn: 12,
   gravity: 22, jumpVel: 7.5,
   dashSpeed: 9.5, dashCost: 25, heavyCost: 20, skillCost: 40,
   staminaRegen: 28, patchCooldown: 8, patchRange: 10, skillCooldown: 6,
@@ -190,7 +190,7 @@ export class Player {
     const sp = Math.hypot(this.vel.x, this.vel.z);
     if (sp < 0.3) this.play(this.armed ? 'Sword_Idle' : 'Idle_Loop', 0.3);
     else if (sp < 3.2) this.play('Walk_Loop', 0.2, Math.max(0.8, sp / CFG.walk));
-    else if (sp < 6) this.play('Jog_Fwd_Loop', 0.2, sp / CFG.jog);
+    else if (sp < 6.6) this.play('Jog_Fwd_Loop', 0.2, sp / CFG.jog);
     else this.play('Sprint_Loop', 0.2, sp / CFG.sprint);
   }
 
@@ -429,12 +429,13 @@ export class Player {
       if (mag > 0.05 && this.state === 'move') {
         mv.normalize();
         const touch = 'ontouchstart' in window;
-        const speed = input.sprint && this.stamina > 5 ? CFG.sprint : (mag < 0.5 && !touch ? CFG.walk : CFG.jog * Math.max(0.5, mag));
+        // Phone stick: a small push walks, a normal push runs, pushing to the edge sprints.
+        const speed = input.sprint && this.stamina > 5 ? CFG.sprint : touch ? (mag < 0.3 ? CFG.walk : CFG.jog) : (mag < 0.5 ? CFG.walk : CFG.jog);
         desired.copy(mv).multiplyScalar(speed);
         const target = Math.atan2(mv.x, mv.z);
         let d = target - this.facing; d = Math.atan2(Math.sin(d), Math.cos(d));
         this.facing += d * Math.min(1, CFG.turn * dt);
-        if (speed === CFG.sprint) this.stamina = Math.max(0, this.stamina - 18 * dt);
+        if (speed === CFG.sprint) this.stamina = Math.max(0, this.stamina - 12 * dt);
       }
     } else if (this.state === 'dash') {
       const k = 1 - Math.min(1, this.stateT / this.dashDur);
