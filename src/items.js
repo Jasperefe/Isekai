@@ -36,7 +36,7 @@ export function rollRarity(luck = 1) {
 // level: zone power level; rarity optional; slot optional.
 export function makeItem(level = 1, rarity = rollRarity(), slot = pick(['weapon', 'armor', 'charm'])) {
   const R = RARITY[rarity], m = R.mult * (1 + (level - 1) * 0.15);
-  const item = { slot, rarity, stats: {}, lines: [] };
+  const item = { slot, rarity, level, stats: {}, lines: [] };
   if (slot === 'weapon') {
     item.name = pick(WEAPONS);
     const atk = Math.round(3 * m + Math.random() * 2);

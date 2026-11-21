@@ -1,7 +1,7 @@
 // Loot: gold coins and glitch shards that fly to Jasper, item drops, and treasure chests.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=28';
-import { makeItem, rollRarity, RARITY } from './items.js?v=28';
+import { sfx } from './audio.js?v=29';
+import { makeItem, rollRarity, RARITY } from './items.js?v=29';
 import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
 
 const COIN_GEO = new THREE.CylinderGeometry(0.16, 0.16, 0.05, 14);
@@ -82,9 +82,18 @@ export class Loot {
     else if (it.kind === 'shards') { profile.d.shards += it.value; hud.float(at, `+${it.value} shard${it.value > 1 ? 's' : ''}`, 'shard'); sfx('shard'); }
     else if (it.kind === 'item') {
       if (!profile.addItem(it.item)) {
-        const now = performance.now();
-        if (!(this.bagMsgT > now)) { this.bagMsgT = now + 6000; hud.system('BAG FULL (24/24)! The item waits here on the ground.\nOpen MENU > GEAR, tap old items and SCRAP them,\nthen walk back to pick it up', 5); }
-        return false;
+        // Bag full: no pop-ups. The weakest piece (the old one or the new one) turns into shards automatically.
+        const R = { common: 0, rare: 1, epic: 2, glitched: 3 }, score = x => R[x.rarity] * 1000 + (x.level || 0);
+        const bag = profile.d.bag;
+        let wi = 0; for (let i = 1; i < bag.length; i++) if (score(bag[i]) < score(bag[wi])) wi = i;
+        let gone = it.item;
+        if (bag.length && score(bag[wi]) < score(it.item)) { gone = bag[wi]; bag.splice(wi, 1); profile.addItem(it.item); }
+        profile.d.shards += gone.scrap || 1;
+        hud.float(at, `+${gone.scrap || 1} shards (auto-scrap)`, 'shard'); sfx('shard');
+        if (!this.bagTold) { this.bagTold = true; hud.system('Bag full: your weakest gear is now scrapped into shards automatically', 2.5); }
+        if (gone !== it.item) hud.itemToast(it.item);
+        hud.wallet(profile.d);
+        return true;
       }
       hud.itemToast(it.item); sfx('item');
     }

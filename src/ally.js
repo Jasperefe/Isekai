@@ -5,8 +5,8 @@
 // - BARRIER: a bubble that absorbs one hit (cast in boss fights).
 import * as THREE from 'three';
 import { clone as skClone } from 'three/addons/utils/SkeletonUtils.js';
-import { buildCharacter } from './characters.js?v=28';
-import { sfx } from './audio.js?v=28';
+import { buildCharacter } from './characters.js?v=29';
+import { sfx } from './audio.js?v=29';
 
 const GOLD = 0xffd36b, MAGENTA = 0xff2bd6;
 
@@ -129,7 +129,8 @@ export class Ally {
     // Follow Jasper: stay a little behind and to his left.
     const busy = this.ctx.busy?.();
     const back = new THREE.Vector3(Math.sin(player.facing), 0, Math.cos(player.facing));
-    const want = player.pos.clone().addScaledVector(back, -1.8).add(new THREE.Vector3(back.z, 0, -back.x).multiplyScalar(1.4));
+    // Beside Jasper (not behind him), so she never stands between him and the camera.
+    const want = player.pos.clone().addScaledVector(back, -0.4).add(new THREE.Vector3(back.z, 0, -back.x).multiplyScalar(2.2));
     const to = want.sub(this.pos).setY(0), d = to.length();
     if (player.pos.distanceTo(this.pos) > 18) { this.pos.copy(player.pos).addScaledVector(back, -1.5); this.ctx.world.resolve(this.pos, 0.4); }
     let speed = 0;

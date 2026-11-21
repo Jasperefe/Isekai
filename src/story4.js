@@ -2,8 +2,8 @@
 // the climb to NOVA's Core, NOVA, and the ending choice (with a secret third ending for players
 // who found every chest in Aster).
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=28';
-import { Z4, ISLANDS } from './world4.js?v=28';
+import { sfx, music } from './audio.js?v=29';
+import { Z4, ISLANDS } from './world4.js?v=29';
 
 const STAGES = [
   { id: 'arrive', title: 'The Edge of the Map', text: 'Look around the unfinished world' },

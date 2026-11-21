@@ -1,5 +1,5 @@
 // Dialogue box: portrait, speaker name plate, typed text with voice blips, tap/click/F to continue.
-import { sfx } from './audio.js?v=28';
+import { sfx } from './audio.js?v=29';
 
 export const SPEAKER_COLORS = {
   GUIDE: '#29e6ff', JASPER: '#e9f2ff', BRAM: '#ffb35a', NIA: '#ff8ae8', TOMM: '#9cff5a', MIRA: '#9cf0ff',

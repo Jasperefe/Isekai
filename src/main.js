@@ -2,26 +2,26 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=28';
-import { buildCharacter, captureGrip } from './characters.js?v=28';
-import { Player } from './player.js?v=28';
-import { Guide } from './guide.js?v=28';
-import { Dialogue } from './dialogue.js?v=28';
-import { Effects } from './effects.js?v=28';
-import { Hud } from './hud.js?v=28';
-import { Profile } from './profile.js?v=28';
-import { Loot } from './loot.js?v=28';
-import { Menu } from './menu.js?v=28';
-import { Console } from './console.js?v=28';
-import { Pet } from './pet.js?v=28';
-import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=28';
-import { capturePortrait, systemPortrait } from './portraits.js?v=28';
-import { ZoneMap, MapView, Minimap } from './map.js?v=28';
-import * as Zone1 from './zone1.js?v=28';
-import * as Zone2 from './zone2.js?v=28';
-import * as Zone3 from './zone3.js?v=28';
-import * as Zone4 from './zone4.js?v=28';
-import { Endings } from './endings.js?v=28';
+import { Input, isTouch } from './input.js?v=29';
+import { buildCharacter, captureGrip } from './characters.js?v=29';
+import { Player } from './player.js?v=29';
+import { Guide } from './guide.js?v=29';
+import { Dialogue } from './dialogue.js?v=29';
+import { Effects } from './effects.js?v=29';
+import { Hud } from './hud.js?v=29';
+import { Profile } from './profile.js?v=29';
+import { Loot } from './loot.js?v=29';
+import { Menu } from './menu.js?v=29';
+import { Console } from './console.js?v=29';
+import { Pet } from './pet.js?v=29';
+import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=29';
+import { capturePortrait, systemPortrait } from './portraits.js?v=29';
+import { ZoneMap, MapView, Minimap } from './map.js?v=29';
+import * as Zone1 from './zone1.js?v=29';
+import * as Zone2 from './zone2.js?v=29';
+import * as Zone3 from './zone3.js?v=29';
+import * as Zone4 from './zone4.js?v=29';
+import { Endings } from './endings.js?v=29';
 
 // Zone registry. Each zone is loaded on its own page load (gates save and reload).
 const ZONES = { z1: Zone1, z2: Zone2, z3: Zone3, z4: Zone4 };
@@ -110,7 +110,7 @@ async function boot() {
   const effects = new Effects(scene);
   const rig = new CameraRig(camera, null);
   const hud = new Hud(camera);
-  let hitStop = 0, zone = null, paused = false, lookIdle = 0;
+  let hitStop = 0, zone = null, paused = false, lookIdle = 0, autoTurn = 0;
   // Shared context used by the player; zone-specific parts are filled in when a zone loads.
   const ctx = {
     effects, hud, camera: rig, scene, profile,
@@ -313,7 +313,11 @@ async function boot() {
     dialogue.update(dt, input);
     const pIn = dialogue.active || story.busy ? NO_INPUT : input;
 
-    player.update(dt, pIn, rig.yaw);
+    // The stick keeps its world direction while the camera swings round on its own, so Jasper never
+    // curves when the camera turns to get behind him (only manual camera turns change the stick).
+    const stickOn = Math.hypot(pIn.move.x, pIn.move.y) > 0.15;
+    if (!stickOn || pIn.look.dx || pIn.look.dy) autoTurn = 0;
+    player.update(dt, pIn, rig.yaw - autoTurn);
     for (let i = enemies.length - 1; i >= 0; i--) {
       const e = enemies[i];
       if (e.gone) { scene.remove(e.group); enemies.splice(i, 1); continue; }
@@ -342,9 +346,11 @@ async function boot() {
     // gently round behind him, so he runs away from the camera instead of sideways or toward it.
     if (input.look.dx || input.look.dy) lookIdle = 0; else lookIdle += dt;
     const runSpeed = Math.hypot(player.vel.x, player.vel.z);
-    if (lookIdle > 1 && runSpeed > 2 && player.state === 'move' && !dialogue.active) {
+    if (lookIdle > 0.6 && runSpeed > 2 && player.state === 'move' && !dialogue.active) {
+      // Swing round behind Jasper, even when he runs toward the camera (he must never run "backwards" on screen).
       let d = player.facing + Math.PI - rig.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
-      rig.yaw += d * Math.min(1, dt * 1.6 * Math.max(0.35, Math.abs(Math.sin(d)))) * (Math.abs(d) > 2.6 ? 0 : 1);
+      const turn = d * Math.min(1, dt * (Math.abs(d) > 1.6 ? 3.2 : 2.2));
+      rig.yaw += turn; autoTurn += turn;
     }
     rig.update(dt, input, player.pos, boss.alive ? (world.inHall?.(player.pos) ? 1.12 : 1.45) : 1, dialogue.active && story.talkNpc ? story.talkNpc.pos : null);
     // Fade enemies that get between the camera and Jasper.

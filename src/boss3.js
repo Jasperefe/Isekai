@@ -6,8 +6,8 @@
 //   PATCH during the trick inspects them: the real one glows gold for a moment.
 // - Below 35% he is ENRAGED: faster combos, two charges in a row.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=28';
-import { KnightBody, arcDecal } from './enemies3.js?v=28';
+import { sfx } from './audio.js?v=29';
+import { KnightBody, arcDecal } from './enemies3.js?v=29';
 
 const SCALE = 1.4;
 

@@ -1,14 +1,14 @@
 // Zone 4: The Unfinished Zone. Same shape as the other zone modules so the game core can load it.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=28';
-import { World4, Z4, ISLANDS, SECRET, VOID, WORLD4_RADIUS } from './world4.js?v=28';
-import { spawnZone4, Placeholder } from './enemies4.js?v=28';
-import { Nova } from './boss4.js?v=28';
-import { Ally } from './ally.js?v=28';
-import { Story4 } from './story4.js?v=28';
-import { Endings } from './endings.js?v=28';
-import { makeChest } from './loot.js?v=28';
-import { makeItem } from './items.js?v=28';
+import { sfx } from './audio.js?v=29';
+import { World4, Z4, ISLANDS, SECRET, VOID, WORLD4_RADIUS } from './world4.js?v=29';
+import { spawnZone4, Placeholder } from './enemies4.js?v=29';
+import { Nova } from './boss4.js?v=29';
+import { Ally } from './ally.js?v=29';
+import { Story4 } from './story4.js?v=29';
+import { Endings } from './endings.js?v=29';
+import { makeChest } from './loot.js?v=29';
+import { makeItem } from './items.js?v=29';
 
 export const ZONE_ID = 'z4';
 export const ZONE_NAME = 'The Unfinished Zone';

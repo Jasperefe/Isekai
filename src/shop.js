@@ -1,7 +1,7 @@
 // Merchant Dot's shop. While Dot is bugged her prices glitch every time you look;
 // once patched they settle at a fair 20% discount (the "Price Glitch" side quest).
-import { sfx } from './audio.js?v=28';
-import { RARITY, makeItem, itemIcon } from './items.js?v=28';
+import { sfx } from './audio.js?v=29';
+import { RARITY, makeItem, itemIcon } from './items.js?v=29';
 
 const $ = id => document.getElementById(id);
 
