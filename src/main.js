@@ -2,24 +2,24 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=26';
-import { buildCharacter, captureGrip } from './characters.js?v=26';
-import { Player } from './player.js?v=26';
-import { Guide } from './guide.js?v=26';
-import { Dialogue } from './dialogue.js?v=26';
-import { Effects } from './effects.js?v=26';
-import { Hud } from './hud.js?v=26';
-import { Profile } from './profile.js?v=26';
-import { Loot } from './loot.js?v=26';
-import { Menu } from './menu.js?v=26';
-import { Console } from './console.js?v=26';
-import { Pet } from './pet.js?v=26';
-import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=26';
-import { capturePortrait, systemPortrait } from './portraits.js?v=26';
-import { ZoneMap, MapView, Minimap } from './map.js?v=26';
-import * as Zone1 from './zone1.js?v=26';
-import * as Zone2 from './zone2.js?v=26';
-import * as Zone3 from './zone3.js?v=26';
+import { Input, isTouch } from './input.js?v=27';
+import { buildCharacter, captureGrip } from './characters.js?v=27';
+import { Player } from './player.js?v=27';
+import { Guide } from './guide.js?v=27';
+import { Dialogue } from './dialogue.js?v=27';
+import { Effects } from './effects.js?v=27';
+import { Hud } from './hud.js?v=27';
+import { Profile } from './profile.js?v=27';
+import { Loot } from './loot.js?v=27';
+import { Menu } from './menu.js?v=27';
+import { Console } from './console.js?v=27';
+import { Pet } from './pet.js?v=27';
+import { unlockAudio, music, sfx, setVolumes, volumes, setListener } from './audio.js?v=27';
+import { capturePortrait, systemPortrait } from './portraits.js?v=27';
+import { ZoneMap, MapView, Minimap } from './map.js?v=27';
+import * as Zone1 from './zone1.js?v=27';
+import * as Zone2 from './zone2.js?v=27';
+import * as Zone3 from './zone3.js?v=27';
 
 // Zone registry. Each zone is loaded on its own page load (gates save and reload).
 const ZONES = { z1: Zone1, z2: Zone2, z3: Zone3 };
@@ -105,7 +105,7 @@ async function boot() {
   const effects = new Effects(scene);
   const rig = new CameraRig(camera, null);
   const hud = new Hud(camera);
-  let hitStop = 0, zone = null, paused = false;
+  let hitStop = 0, zone = null, paused = false, lookIdle = 0;
   // Shared context used by the player; zone-specific parts are filled in when a zone loads.
   const ctx = {
     effects, hud, camera: rig, scene, profile,
@@ -327,6 +327,14 @@ async function boot() {
     guide.update(dt, t, player.pos, player.facing, camera);
     effects.update(dt);
     world.update(dt, t, player.pos);
+    // Camera follow: while Jasper runs (and the player isn't turning the camera by hand) the camera swings
+    // gently round behind him, so he runs away from the camera instead of sideways or toward it.
+    if (input.look.dx || input.look.dy) lookIdle = 0; else lookIdle += dt;
+    const runSpeed = Math.hypot(player.vel.x, player.vel.z);
+    if (lookIdle > 1 && runSpeed > 2 && player.state === 'move' && !dialogue.active) {
+      let d = player.facing + Math.PI - rig.yaw; d = Math.atan2(Math.sin(d), Math.cos(d));
+      rig.yaw += d * Math.min(1, dt * 1.6 * Math.max(0.35, Math.abs(Math.sin(d)))) * (Math.abs(d) > 2.6 ? 0 : 1);
+    }
     rig.update(dt, input, player.pos, boss.alive ? 1.45 : 1, dialogue.active && story.talkNpc ? story.talkNpc.pos : null);
     // Fade enemies that get between the camera and Jasper.
     for (const e of enemies) {

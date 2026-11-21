@@ -1,8 +1,8 @@
 // Zone 2 story: Glitchwood Forest. Old Mira, Area Patch, the Console, the Corrupted Grove,
 // the Lost Pixel Fox side quest and the Thornwraith.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=26';
-import { Z2 } from './world2.js?v=26';
+import { sfx, music } from './audio.js?v=27';
+import { Z2 } from './world2.js?v=27';
 
 const STAGES = [
   { id: 'arrive', title: 'The Spreading Null', text: 'Follow the path into Glitchwood' },
