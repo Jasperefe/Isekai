@@ -1,6 +1,6 @@
 // Loot: gold coins and glitch shards that fly to Jasper, item drops, and treasure chests.
 import * as THREE from 'three';
-import { makeItem, rollRarity, RARITY } from './items.js?v=11';
+import { makeItem, rollRarity, RARITY } from './items.js?v=12';
 import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
 
 const COIN_GEO = new THREE.CylinderGeometry(0.16, 0.16, 0.05, 14);
@@ -23,7 +23,8 @@ export class Loot {
 
   // Drop loot for a defeated enemy.
   enemyDrop(e) {
-    const st = this.ctx.profile.stats(), luck = st.lootMul;
+    if (e.isClone) return;
+    const st = this.ctx.profile.stats(), luck = st.lootMul * (e.lootMul || 1);
     const pos = e.pos.clone();
     if (e.isBoss) {
       this.spawn(pos, 'gold', Math.round(120 * luck));
@@ -90,7 +91,7 @@ export class Loot {
       const m = it.mesh;
       const ground = world.groundAt(m.position.x, m.position.z) + (it.kind === 'item' ? 0.45 : 0.25);
       const toP = player.pos.clone().add(new THREE.Vector3(0, 1, 0)).sub(m.position), d = toP.length();
-      const magnet = it.kind === 'item' ? 2.5 : 3.5;
+      const magnet = it.kind === 'item' ? (this.ctx.profile.d.pet ? 4.5 : 2.5) : (this.ctx.profile.d.pet ? 7 : 3.5); // Pip fetches from further
       if (it.age > (it.kind === 'item' ? 0.9 : 0.5) && d < magnet && player.alive) {
         // Magnet toward Jasper.
         m.position.addScaledVector(toP.normalize(), Math.min(d, dt * (8 + (magnet - d) * 6)));

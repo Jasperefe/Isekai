@@ -104,7 +104,7 @@ export class Hud {
     else { p.classList.add('hidden'); b.classList.add('hidden'); }
   }
 
-  bossBar(on, boss) { this.boss = on ? boss : null; $('bossbar').classList.toggle('hidden', !on); }
+  bossBar(on, boss) { this.boss = on ? boss : null; $('bossbar').classList.toggle('hidden', !on); if (on && boss?.name) $('boss-name').textContent = boss.name; }
 
   cinematic(lines) {
     return new Promise(resolve => {
@@ -123,6 +123,7 @@ export class Hud {
   zoneComplete(stats) {
     const m = Math.floor((stats.time || 0) / 60), s = Math.floor((stats.time || 0) % 60);
     $('zone-stats').textContent = `Level ${stats.level} · Time ${m}m ${s}s`;
+    if (stats.num) { $('zone-num').textContent = stats.num; $('zone-title').textContent = stats.title; $('zone-next').innerHTML = stats.next; }
     $('zone-done').classList.remove('hidden');
     $('zone-continue').onclick = () => $('zone-done').classList.add('hidden');
   }

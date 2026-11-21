@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>ISEKAI</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Cpath d=%22M6 3v24l6-6 4 9 4-2-4-9h9z%22 fill=%22%2329e6ff%22/%3E%3C/svg%3E">
-<link rel="stylesheet" href="src/style.css?v=11">
+<link rel="stylesheet" href="src/style.css?v=12">
 <script type="importmap">
 { "imports": { "three": "./lib/three.module.min.js", "three/addons/": "./lib/addons/" } }
 </script>
@@ -52,7 +52,7 @@
         <section data-tab="settings">
           <div class="setlist">
             <button id="menu-gfx">Graphics: Auto</button>
-            <small id="menu-fps">measuring FPS...</small><small id="build">build 11</small>
+            <small id="menu-fps">measuring FPS...</small><small id="build">build 12</small>
             <button id="menu-restart" class="danger">Restart story (erases progress)</button>
           </div>
         </section>
@@ -66,14 +66,23 @@
   <div id="talk-prompt" class="hidden"></div>
   <div id="dialogue" class="hidden"><div class="dname"></div><div class="dtext"></div><div class="dnext">&#9660;</div></div>
   <div id="cinematic" class="hidden"><pre id="cine-text"></pre></div>
-  <div id="zone-done" class="hidden"><div class="zbox"><small>ZONE 1</small><h1>STARTER MEADOW CLEARED</h1><p id="zone-stats"></p><p>Next: <b>Glitchwood Forest</b> (coming in the next milestone)</p><button id="zone-continue">Keep exploring</button></div></div>
+  <div id="zone-done" class="hidden"><div class="zbox"><small id="zone-num">ZONE 1</small><h1 id="zone-title">STARTER MEADOW CLEARED</h1><p id="zone-stats"></p><p id="zone-next">Next: <b>Glitchwood Forest</b>, through the gate north of the village</p><button id="zone-continue">Keep exploring</button></div></div>
   <div id="tutorial" class="hidden"></div>
   <div id="system-msg"></div>
   <div id="combo"></div>
   <div id="float-layer"></div>
-  <div id="chips"><span id="chip-patch">E PATCH</span><span id="chip-skill">R BLADE STORM</span></div>
+  <div id="chips"><span id="chip-patch">E PATCH</span><span id="chip-skill">R BLADE STORM</span><span id="chip-console" class="hidden">C CONSOLE</span></div>
+  <div id="cmd-active" class="hidden"></div>
   <div id="hint">WASD move · Mouse look · Keep clicking = 8-move chain · Click+Right-click = Pommel Bash · Click,Click+Right-click = Glitch Breaker · Right-click heavy · Q block / parry then click = COUNTER · Space dodge (while sprinting = slide) · Dodge+click = dash strike · Jump+click = slam · R Blade Storm · E Patch · F talk / jump · X draw / put away sword</div>
   <div id="death" class="hidden"><div>GAME OVER?</div><small>Respawning...</small></div>
+</div>
+
+<div id="console" class="hidden">
+  <div class="con-box">
+    <div class="con-head">&gt; CONSOLE <span>Debug points: <b id="console-points">0</b></span></div>
+    <div id="console-cmds"></div>
+    <button id="console-close">&#10005;</button>
+  </div>
 </div>
 
 <div id="touch" class="hidden">
@@ -87,12 +96,13 @@
     <button id="btn-block" class="btn">BLOCK</button>
     <button id="btn-skill" class="btn skill">SKILL<span class="cd" id="skill-cd"></span></button>
     <button id="btn-sword" class="btn">SWORD</button>
+    <button id="btn-console" class="btn hidden">CON<br>SOLE</button>
   </div>
   <button id="btn-talk" class="btn hidden">TALK</button>
   <div>
   </div>
 </div>
 
-<script type="module" src="src/main.js?v=11"></script>
+<script type="module" src="src/main.js?v=12"></script>
 </body>
 </html>

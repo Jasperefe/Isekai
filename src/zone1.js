@@ -1,14 +1,14 @@
 // Zone 1: Starter Meadow. Builds the map, villagers, enemies, boss, chests and story.
 // Every zone module exports the same shape so the game core can load zones one after another.
 import * as THREE from 'three';
-import { World, Z1, riverX, PATHS, WORLD_RADIUS } from './world.js?v=11';
-import { VillageKit } from './village.js?v=11';
-import { spawnSlimes } from './enemies.js?v=11';
-import { SlimeKing } from './boss.js?v=11';
-import { NPC } from './npc.js?v=11';
-import { Story } from './story.js?v=11';
-import { makeChest } from './loot.js?v=11';
-import { makeItem } from './items.js?v=11';
+import { World, Z1, riverX, PATHS, WORLD_RADIUS } from './world.js?v=12';
+import { VillageKit } from './village.js?v=12';
+import { spawnSlimes } from './enemies.js?v=12';
+import { SlimeKing } from './boss.js?v=12';
+import { NPC } from './npc.js?v=12';
+import { Story } from './story.js?v=12';
+import { makeChest } from './loot.js?v=12';
+import { makeItem } from './items.js?v=12';
 
 export const ZONE_ID = 'z1';
 export const ZONE_NAME = 'Starter Meadow';
@@ -38,7 +38,7 @@ export async function loadZone(core) {
   ];
   npcs[1].root.position.set(0, -0.35, 0); // NIA is half inside a wall while bugged
 
-  const story = new Story({ player, guide, dialogue, hud, world, npcs, boss, enemies, effects, scene, rig, profile, openForge: core.openForge });
+  const story = new Story({ player, guide, dialogue, hud, world, npcs, boss, enemies, effects, scene, rig, profile, openForge: core.openForge, travel: core.travel });
   const zdata = profile.zone(ZONE_ID);
   zdata.flags.chests ||= [];
 
@@ -79,7 +79,14 @@ export async function loadZone(core) {
     id: ZONE_ID, name: ZONE_NAME, world, enemies, npcs, boss, story, chests, interactables,
     respawnPoint: () => story.respawnPoint(),
     onKill: e => story.onKill(e),
-    start: () => story.start(),
+    start: async () => {
+      await story.start();
+      if (profile.d.arrive === 'gate') {
+        delete profile.d.arrive;
+        player.spawnAt(Z1.gate.clone().add(new THREE.Vector3(0, 0, 6)), 0); guide.teleport(player.pos);
+        hud.system('> ENTERING STARTER MEADOW', 2);
+      }
+    },
     update(dt, t) {
       for (const n of npcs) n.update(dt, rig.cam);
       for (const c of chests) if (c.pos3.distanceTo(player.pos) < 40) c.group.userData.update(dt);

@@ -1,7 +1,7 @@
 // Zone 1 story: quests, cutscenes, objective markers, unlocks and save/load.
 import * as THREE from 'three';
-import { Z1 } from './world.js?v=11';
-import { Slime } from './enemies.js?v=11';
+import { Z1 } from './world.js?v=12';
+import { Slime } from './enemies.js?v=12';
 
 
 // Quest stages in order.
@@ -235,10 +235,14 @@ export class Story {
       await this.#say([{ who: 'GUIDE', text: 'A gate to another area... it is sealed by glitch data. Let\'s fix the slime problem first!' }]);
       return;
     }
-    await this.#say([
-      { who: 'GUIDE', text: 'Beyond this gate is GLITCHWOOD FOREST. The corruption is stronger there.' },
-      { who: 'SYSTEM', text: 'Glitchwood Forest opens in the next update. Your level, gear and skills will carry over!' },
-    ]);
+    if (!this.flags.gateSeen) {
+      await this.#say([
+        { who: 'GUIDE', text: 'Beyond this gate is GLITCHWOOD FOREST. The corruption is stronger there.' },
+        { who: 'GUIDE', text: 'Your level, gear and skills come with you. Ready? Let\'s go!' },
+      ]);
+      this.flags.gateSeen = true; this.save();
+    }
+    this.ctx.travel('z2');
   }
 
   // ---------- Events ----------

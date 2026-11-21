@@ -1,6 +1,6 @@
 // Pause menu: Gear (equip/scrap), Skills (tree), Map, Settings. Plus Bram's forge window.
-import { RARITY, itemIcon } from './items.js?v=11';
-import { SKILLS, BRANCHES } from './skills.js?v=11';
+import { RARITY, itemIcon } from './items.js?v=12';
+import { SKILLS, BRANCHES } from './skills.js?v=12';
 
 const $ = id => document.getElementById(id);
 const SLOT_NAMES = { weapon: 'Weapon', armor: 'Armor', charm: 'Charm' };
@@ -95,11 +95,13 @@ export class Menu {
     const m = z.map, cv = $('mapcv'), g = cv.getContext('2d'), W = cv.width, R = m.radius;
     const toC = (x, zz) => [W / 2 + x / R * W * 0.47, W / 2 + zz / R * W * 0.47];
     g.fillStyle = '#0b1020'; g.fillRect(0, 0, W, W);
-    g.fillStyle = '#3f7a35'; g.beginPath(); g.arc(W / 2, W / 2, W * 0.47, 0, Math.PI * 2); g.fill();
+    g.fillStyle = m.ground || '#3f7a35'; g.beginPath(); g.arc(W / 2, W / 2, W * 0.47, 0, Math.PI * 2); g.fill();
     // River.
-    g.strokeStyle = '#3f8fd6'; g.lineWidth = 9; g.beginPath();
-    for (let zz = -R; zz <= R; zz += 4) { const [x, y] = toC(m.riverX(zz), zz); zz === -R ? g.moveTo(x, y) : g.lineTo(x, y); }
-    g.stroke();
+    if (m.riverX) {
+      g.strokeStyle = '#3f8fd6'; g.lineWidth = 9; g.beginPath();
+      for (let zz = -R; zz <= R; zz += 4) { const [x, y] = toC(m.riverX(zz), zz); zz === -R ? g.moveTo(x, y) : g.lineTo(x, y); }
+      g.stroke();
+    }
     // Paths.
     g.strokeStyle = '#c9b27e'; g.lineWidth = 4;
     for (const line of m.paths) { g.beginPath(); line.forEach(([x, zz], i) => { const [a, b] = toC(x, zz); i ? g.lineTo(a, b) : g.moveTo(a, b); }); g.stroke(); }

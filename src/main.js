@@ -1,21 +1,25 @@
-// ISEKAI: Zone 1 (Starter Meadow).
+// ISEKAI game core: renderer, camera, player, HUD, menus. Zones load from zone1.js / zone2.js.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { Input, isTouch } from './input.js?v=11';
-import { buildCharacter, captureGrip } from './characters.js?v=11';
-import { Player } from './player.js?v=11';
-import { Guide } from './guide.js?v=11';
-import { Dialogue } from './dialogue.js?v=11';
-import { Effects } from './effects.js?v=11';
-import { Hud } from './hud.js?v=11';
-import { Profile } from './profile.js?v=11';
-import { Loot } from './loot.js?v=11';
-import { Menu } from './menu.js?v=11';
-import * as Zone1 from './zone1.js?v=11';
+import { Input, isTouch } from './input.js?v=12';
+import { buildCharacter, captureGrip } from './characters.js?v=12';
+import { Player } from './player.js?v=12';
+import { Guide } from './guide.js?v=12';
+import { Dialogue } from './dialogue.js?v=12';
+import { Effects } from './effects.js?v=12';
+import { Hud } from './hud.js?v=12';
+import { Profile } from './profile.js?v=12';
+import { Loot } from './loot.js?v=12';
+import { Menu } from './menu.js?v=12';
+import { Console } from './console.js?v=12';
+import { Pet } from './pet.js?v=12';
+import * as Zone1 from './zone1.js?v=12';
+import * as Zone2 from './zone2.js?v=12';
 
-// Zone registry: add Glitchwood etc. here as they are built.
-const ZONES = { z1: Zone1 };
+// Zone registry. Each zone is loaded on its own page load (gates save and reload).
+const ZONES = { z1: Zone1, z2: Zone2 };
+const ZONE_NAMES = { z1: 'Starter Meadow', z2: 'Glitchwood Forest' };
 
 const quality = isTouch
   ? { pixelRatio: Math.min(devicePixelRatio, 1.5), shadows: true, shadowSize: 1024, dense: false }
@@ -91,6 +95,7 @@ async function boot() {
   const idle = clips.find(c => c.name === 'Idle_Loop');
 
   const profile = Profile.load();
+  if (profile.d.zone !== 'z1' && ZONES[profile.d.zone]) loadText.textContent = `Entering ${ZONE_NAMES[profile.d.zone]}...`;
   const effects = new Effects(scene);
   const rig = new CameraRig(camera, null);
   const hud = new Hud(camera);
@@ -111,9 +116,20 @@ async function boot() {
   const dialogue = new Dialogue();
   const loot = new Loot(scene, { player, profile, hud, effects, get world() { return ctx.world; } }, propsG);
   const menu = new Menu({ profile, player, hud, onPause: v => { paused = v; }, zone: () => zone });
+  const cons = new Console({ profile, hud, player, effects, paused: () => paused });
+  ctx.console = cons;
+  const pet = new Pet(scene);
+  // Travel through a zone gate: save, then reload into the other zone.
+  const travel = id => {
+    profile.d.zone = id; profile.d.arrive = 'gate'; player.syncProfile?.(); profile.save();
+    document.getElementById('load-text').textContent = `Entering ${ZONE_NAMES[id]}...`;
+    document.getElementById('load-fill').style.width = '0%';
+    document.getElementById('loading').classList.remove('hidden');
+    setTimeout(() => location.reload(), 350);
+  };
 
   // Load a zone (Zone 1 for now; the profile remembers which zone you're in).
-  const core = { props: propsG, loader, scene, quality, clips, idle, player, hud, effects, profile, guide, dialogue, rig, loot, openForge: () => menu.openForge() };
+  const core = { pet, console: cons, travel, props: propsG, loader, scene, quality, clips, idle, player, hud, effects, profile, guide, dialogue, rig, loot, openForge: () => menu.openForge() };
   zone = await ZONES[profile.d.zone in ZONES ? profile.d.zone : 'z1'].loadZone(core);
   ctx.world = zone.world; ctx.enemies = zone.enemies; ctx.npcs = zone.npcs; rig.world = zone.world;
 
@@ -124,6 +140,7 @@ async function boot() {
   document.getElementById('menu-restart').addEventListener('click', () => { if (confirm('Erase all progress and restart?')) { Profile.clear(); location.reload(); } });
 
   zone.start();
+  if (profile.d.pet === 'pip') pet.follow(player);
   if (!isTouch) setTimeout(() => hud.system('> Click the screen to look around', 2.5), 9000);
   setInterval(() => { if (!paused) { profile.d.totals.playTime += 5; } }, 5000);
 
@@ -132,6 +149,8 @@ async function boot() {
   const frame = (rawDt, doRender = true) => {
     let dt = Math.min(rawDt, 1 / 20);
     if (paused) { if (doRender) renderer.render(scene, camera); return; }
+    cons.update(dt);
+    if (cons.open) dt *= 0.12; // the Console slows time while open
     t += dt;
     input.update();
     if (hitStop > 0) { hitStop -= dt; dt *= 0.08; }
@@ -156,8 +175,8 @@ async function boot() {
     for (let i = enemies.length - 1; i >= 0; i--) {
       const e = enemies[i];
       if (e.gone) { scene.remove(e.group); enemies.splice(i, 1); continue; }
-      const atk = dialogue.active ? null : e.update(dt, t, player, world);
-      if (atk && player.pos.distanceTo(e.pos) < (atk.aoe || 2.1)) player.damage(atk.damage, atk.from, atk.enemy);
+      const atk = dialogue.active ? null : e.update(dt * cons.enemyTimeScale, t, player, world);
+      if (atk && (atk.direct || player.pos.distanceTo(e.pos) < (atk.aoe || 2.1))) player.damage(atk.damage, atk.from, atk.enemy, atk);
     }
     // Bodies don't overlap: push Jasper and enemies apart.
     for (const e of enemies) {
@@ -171,6 +190,7 @@ async function boot() {
     }
     zone.update(dt, t);
     loot.update(dt, t);
+    pet.update(dt, player, world);
     guide.update(dt, t, player.pos, player.facing, camera);
     effects.update(dt);
     world.update(dt, t, player.pos);
@@ -224,7 +244,7 @@ async function boot() {
   };
   renderer.setAnimationLoop(() => { const d = clock.getDelta(); adapt(d); frame(d); });
   window.__step = (dt, n = 1) => { for (let i = 0; i < n; i++) frame(dt, false); }; // test hook
-  window.__game = { player, get enemies() { return zone.enemies; }, rig, scene, renderer, get story() { return zone.story; }, get npcs() { return zone.npcs; }, get world() { return zone.world; }, get boss() { return zone.boss; }, dialogue, hud, guide, input, ctx, profile, loot, menu, get zone() { return zone; } };
+  window.__game = { player, get enemies() { return zone.enemies; }, rig, scene, renderer, get story() { return zone.story; }, get npcs() { return zone.npcs; }, get world() { return zone.world; }, get boss() { return zone.boss; }, dialogue, hud, guide, input, ctx, profile, loot, menu, console: cons, pet, travel, get zone() { return zone; } };
 }
 
 boot().catch(err => {

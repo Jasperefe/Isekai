@@ -1,6 +1,6 @@
 // Player profile: everything that travels with Jasper from zone to zone
 // (level, gold, gear, skills, upgrades), plus each zone's own story progress.
-import { SKILLS } from './skills.js?v=11';
+import { SKILLS } from './skills.js?v=12';
 
 const KEY = 'isekai_save_v2';
 const OLD_KEY = 'isekai_save_v1';
@@ -11,6 +11,7 @@ const DEFAULTS = () => ({
   skills: {}, swordLevel: 0,
   bag: [], equip: { weapon: null, armor: null, charm: null },
   zone: 'z1', zones: {},
+  areaPatch: false, consoleUnlocked: false, console: {}, pet: null,
   totals: { kills: 0, playTime: 0, chests: 0 },
   nextItemId: 1,
 });

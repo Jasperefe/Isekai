@@ -1,7 +1,7 @@
 // Jasper: movement, sword combat, Debug Dash, block/parry, Blade Storm, Patch
 // and the animation state machine.
 import * as THREE from 'three';
-import { heightAt } from './world.js?v=11';
+import { heightAt } from './world.js?v=12';
 
 const CFG = {
   walk: 2.2, jog: 5.4, sprint: 7.8, accel: 14, turn: 12,
@@ -204,8 +204,9 @@ export class Player {
     else this.play('Sprint_Loop', 0.2, sp / CFG.sprint);
   }
 
-  damage(amount, from, enemy) {
+  damage(amount, from, enemy, opts = {}) {
     if (!this.alive || this.invuln > 0) return;
+    if (this.ctx.console?.god) { this.ctx.hud.float(this.pos.clone().add(new THREE.Vector3(0, 2.1, 0)), 'GOD MODE', 'xp'); return; }
     const fwd = new THREE.Vector3(Math.sin(this.facing), 0, Math.cos(this.facing));
     const toEnemy = from.clone().sub(this.pos).setY(0).normalize();
     const facingIt = fwd.dot(toEnemy) > -0.1;
@@ -241,6 +242,7 @@ export class Player {
     amount = Math.max(1, Math.round(amount * (1 - (this.st.def || 0))));
     const dmg = armor ? Math.ceil(amount * 0.5) : amount;
     this.hp = Math.max(0, this.hp - dmg);
+    if (opts.drain) this.stamina = Math.max(0, this.stamina - opts.drain);
     this.invuln = 0.6;
     this.ctx.hud.float(this.pos.clone().add(new THREE.Vector3(0, 2.1, 0)), '-' + dmg, 'hurt');
     this.ctx.hud.hurt();
@@ -365,8 +367,8 @@ export class Player {
       if (e.glitchedActive && !frozen && !m.pierce) this.ctx.hud.float(at.clone().add(new THREE.Vector3(0, 0.5, 0)), 'RESIST - use PATCH', 'hurt');
       this.ctx.effects.burst(at, frozen ? 16 : 8, e.glitched ? [0, 1, 2] : [3, 2], 4);
       landed = true;
-      if (!e.alive) {
-        const xp = e.glitched ? 35 : 20;
+      if (!e.alive && !e.isClone) {
+        const xp = e.xp ?? (e.glitched ? 35 : 20);
         this.gainXp(xp);
         this.ctx.hud.float(at.clone().add(new THREE.Vector3(0, 0.6, 0)), `+${xp} XP`, 'xp');
         this.ctx.onKill?.(e);
@@ -444,7 +446,14 @@ export class Player {
       else if (this.state === 'recover' && this.recoverNext) this.#startMove(this.recoverNext, input, camYaw);
       else if (this.state === 'act' && this.move.next && this.stateT > 0.08) this.queued = true;
     }
-    if (input.consume('jump') && free && this.onGround) { this.state = 'move'; this.velY = CFG.jumpVel; this.onGround = false; this.play('Jump_Start', 0.08, 1.4); }
+    if (input.consume('jump') && free) {
+      if (this.onGround) { this.state = 'move'; this.velY = CFG.jumpVel; this.onGround = false; this.usedDouble = false; this.play('Jump_Start', 0.08, 1.4); }
+      else if (this.state === 'move' && this.ctx.console?.doubleJump && !this.usedDouble) {
+        // /doublejump: a second jump in mid-air.
+        this.usedDouble = true; this.velY = CFG.jumpVel * 0.95; this.play('Jump_Start', 0.05, 1.6);
+        this.ctx.effects.burst(this.pos.clone().add(new THREE.Vector3(0, 0.2, 0)), 10, [0, 2], 2.5);
+      }
+    }
 
     // --- State logic ---
     const desired = new THREE.Vector3();
@@ -458,7 +467,7 @@ export class Player {
         const touch = 'ontouchstart' in window;
         // Phone stick: a small push walks, a normal push runs, pushing to the edge sprints.
         const speed = input.sprint && this.stamina > 5 ? CFG.sprint : touch ? (mag < 0.3 ? CFG.walk : CFG.jog) : (mag < 0.5 ? CFG.walk : CFG.jog);
-        desired.copy(mv).multiplyScalar(speed);
+        desired.copy(mv).multiplyScalar(speed * (this.ctx.console?.speedMul || 1));
         const target = Math.atan2(mv.x, mv.z);
         let d = target - this.facing; d = Math.atan2(Math.sin(d), Math.cos(d));
         this.facing += d * Math.min(1, CFG.turn * dt);
@@ -497,6 +506,15 @@ export class Player {
         this.ctx.effects.beam(from, e.pos.clone().add(new THREE.Vector3(0, 0.6, 0)));
         e.patch(this.st.freezeBonus);
         this.ctx.effects.burst(e.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 18, [0, 2], 4);
+        // Area Patch (taught by Old Mira): also fixes every glitched enemy near the target.
+        if (this.profile.d.areaPatch && !e.isClone) {
+          let n = 0;
+          for (const o of this.ctx.enemies) if (o !== e && o.glitchedActive && !o.isBoss && !o.isClone && o.pos.distanceTo(e.pos) < 6) {
+            this.ctx.effects.beam(e.pos.clone().add(new THREE.Vector3(0, 0.6, 0)), o.pos.clone().add(new THREE.Vector3(0, 0.6, 0)));
+            o.patch(this.st.freezeBonus); n++;
+          }
+          if (n) this.ctx.hud.float(e.pos.clone().add(new THREE.Vector3(0, 2.4, 0)), `AREA PATCH x${n + 1}`, 'crit');
+        }
         this.ctx.hud.system(e.patchMsg || (e.isBoss ? 'SCALE BUG FIXED!\nHe is stunned - x2 DAMAGE!' : 'BUG FIXED!\nx2 DAMAGE for 3s - attack!'), 2.4);
       }
       if (this.stateT > 0.55) this.#toMove();
@@ -508,7 +526,7 @@ export class Player {
     this.vel.x += (desired.x - this.vel.x) * k;
     this.vel.z += (desired.z - this.vel.z) * k;
     this.pos.x += this.vel.x * dt; this.pos.z += this.vel.z * dt;
-    world.resolve(this.pos, 0.45);
+    world.resolve(this.pos, 0.45, !!this.ctx.console?.noclip);
 
     // --- Vertical ---
     const gy = world.groundAt(this.pos.x, this.pos.z);

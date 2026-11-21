@@ -1,6 +1,7 @@
 // Zone 2 (Glitchwood Forest) enemy models, built in code so they are unique to ISEKAI.
 // Each builder returns { root, parts } so the game can animate the parts later.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const MAGENTA = 0xff2bd6, CYAN = 0x29e6ff;
 
@@ -75,9 +76,11 @@ const add = (parent, geo, material, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0)
 
 // ---------------------------------------------------------------- Null Wolf
 // A wolf built from dark blocks, with missing pieces floating off its body.
-export function buildNullWolf({ pose = 'idle' } = {}) {
+// fox: true builds Pip, a small orange pixel fox, from the same body plan.
+export function buildNullWolf({ pose = 'idle', fox = false } = {}) {
   const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
-  const fur = mat(0x252838), under = mat(0x3a3f58), claw = mat(0xd9d4c7), eye = glow(MAGENTA, 2.2), crack = glow(MAGENTA, 1.4);
+  const fur = mat(fox ? 0xe0782a : 0x252838), under = mat(fox ? 0xf4e6cf : 0x3a3f58), claw = mat(fox ? 0x2b2320 : 0xd9d4c7);
+  const eye = glow(fox ? CYAN : MAGENTA, 2.2), crack = glow(fox ? CYAN : MAGENTA, 1.4);
   const parts = { body };
   const blocks = [];
   const B = (...a) => { const m = add(body, ...a); blocks.push(m); return m; };
@@ -91,19 +94,20 @@ export function buildNullWolf({ pose = 'idle' } = {}) {
   blocks.push(add(head, tbox(0.21, 0.16, 0.34, { fx: 0.55, fy: 0.6, lift: -0.02 }), fur, 0, -0.05, 0.3));
   const jaw = add(head, tbox(0.17, 0.06, 0.3, { fx: 0.55 }), under, 0, -0.14, 0.26, pose === 'attack' ? 0.45 : 0.08); parts.jaw = jaw;
   for (const s of [-1, 1]) {
-    add(head, new THREE.ConeGeometry(0.075, 0.22, 4), fur, s * 0.11, 0.22, -0.06, -0.2, Math.PI / 4, s * -0.22);
+    const ear = add(head, new THREE.ConeGeometry(0.075, 0.22, 4), fur, s * 0.11, 0.22, -0.06, -0.2, Math.PI / 4, s * -0.22);
+    if (fox) ear.scale.set(1.6, 1.5, 1.2);
     add(head, new THREE.BoxGeometry(0.1, 0.042, 0.02), eye, s * 0.095, 0.045, 0.176, 0, s * 0.35, s * -0.2);
     for (let k = 0; k < 2; k++) add(head, new THREE.ConeGeometry(0.018, 0.06, 4), claw, s * 0.045 + s * k * 0.03, -0.12, 0.42 - k * 0.05, Math.PI);
   }
   // Mane: shard-like spikes running down the neck and back.
   const mane = [[0, 1.3, 0.55, 0.26, -0.9], [0, 1.22, 0.36, 0.3, -1.1], [0, 1.12, 0.18, 0.26, -1.3], [0, 1.08, 0.0, 0.22, -1.4], [0, 1.05, -0.2, 0.18, -1.5], [0, 0.99, -0.42, 0.14, -1.6]];
-  for (const [x, y, z, h, r] of mane) for (const s of [-1, 0, 1]) {
+  if (!fox) for (const [x, y, z, h, r] of mane) for (const s of [-1, 0, 1]) {
     if (s && h < 0.2) continue;
     add(body, new THREE.ConeGeometry(0.06, h * (s ? 0.75 : 1), 4), fur, x + s * 0.12, y - (s ? 0.05 : 0), z, r, 0, s * 0.4);
   }
   // Chest ruff: shard-like fur hanging under the neck.
   for (const [x, y, z, h, r] of [[0, 0.82, 0.6, 0.26, 2.7], [-0.1, 0.86, 0.55, 0.22, 2.6], [0.1, 0.86, 0.55, 0.22, 2.6], [-0.06, 0.74, 0.42, 0.2, 2.8], [0.06, 0.74, 0.42, 0.2, 2.8]])
-    add(body, new THREE.ConeGeometry(0.06, h, 4), fur, x, y, z, r, 0, x * 2);
+    add(body, new THREE.ConeGeometry(0.06, h, 4), fox ? under : fur, x, y, z, r, 0, x * 2);
   // Legs.
   const legs = [];
   const leg = (x, z, back) => {
@@ -121,10 +125,11 @@ export function buildNullWolf({ pose = 'idle' } = {}) {
   // Tail.
   const tail = new THREE.Group(); tail.position.set(0, 0.9, -0.82); body.add(tail); parts.tail = tail;
   let prev = tail;
-  [[0.14, 0.26, -0.9], [0.11, 0.24, 0.25], [0.08, 0.22, 0.3]].forEach(([w, l, r], i) => {
+  const tailSegs = fox ? [[0.2, 0.3, -0.7], [0.24, 0.3, 0.3], [0.18, 0.26, 0.35]] : [[0.14, 0.26, -0.9], [0.11, 0.24, 0.25], [0.08, 0.22, 0.3]];
+  tailSegs.forEach(([w, l, r], i) => {
     const seg = new THREE.Group(); seg.rotation.x = r; seg.position.z = i ? -l * 0.9 : 0; prev.add(seg);
-    blocks.push(add(seg, tbox(w, w, l, { fx: 1.1, bx: 0.7 }), fur, 0, 0, -l / 2));
-    add(seg, new THREE.ConeGeometry(w * 0.4, w * 1.4, 4), fur, 0, w * 0.55, -l * 0.5, -0.9);
+    blocks.push(add(seg, tbox(w, w, l, { fx: 1.1, bx: 0.7 }), fox && i === 2 ? under : fur, 0, 0, -l / 2));
+    if (!fox) add(seg, new THREE.ConeGeometry(w * 0.4, w * 1.4, 4), fur, 0, w * 0.55, -l * 0.5, -0.9);
     prev = seg;
   });
   // Glitch: magenta circuit cracks on the flank and "missing pixel" blocks drifting off the hips and back.
@@ -136,8 +141,10 @@ export function buildNullWolf({ pose = 'idle' } = {}) {
   const bits = new THREE.Group(); body.add(bits); parts.bits = bits;
   [[0.24, 1.0, -0.72, 0.09, 1], [0.34, 1.12, -0.6, 0.06, 0], [-0.3, 0.98, -0.5, 0.07, 1], [0.1, 1.2, -0.9, 0.05, 0], [-0.16, 1.15, -0.82, 0.08, 0], [0.38, 0.86, -0.92, 0.05, 1], [-0.36, 1.18, 0.12, 0.05, 1], [0.2, 1.3, -0.25, 0.06, 0]]
     .forEach(([x, y, z, s, g]) => { const m = add(bits, new THREE.BoxGeometry(s, s, s), g ? crack : fur, x, y, z, x * 3, z * 4, y); m.userData.base = m.position.clone(); });
+  if (fox) bits.children.slice(3).forEach(b => (b.visible = false));
   for (const c of body.children) if (!c.userData.leg) c.position.y += 0.16; // taller, lankier wolf
-  for (const b of blocks) edges(b, CYAN, 0.28);
+  for (const b of blocks) edges(b, CYAN, fox ? 0.18 : 0.28);
+  parts.mats = { fur, under };
 
   if (pose === 'idle') { head.rotation.x = 0.18; tail.rotation.x = -0.15; } // low, stalking head
   if (pose === 'attack') {
@@ -324,4 +331,62 @@ export function buildThornwraith({ pose = 'idle' } = {}) {
   if (pose === 'attack') { head.rotation.x = -0.2; body.rotation.x = -0.05; }
   root.userData.height = 5.6;
   return { root, parts };
+}
+
+// Merge every mesh under each animated node into as few meshes as possible, so a whole
+// monster costs ~10 draw calls instead of ~100. Plain coloured parts share one vertex-coloured
+// material, glowing parts share one unlit material; textured/transparent parts stay separate.
+// `keep` = nodes that animate.
+const VC_STD = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.8, metalness: 0.1 });
+const VC_GLOW = new THREE.MeshBasicMaterial({ vertexColors: true });
+function matClass(m) {
+  if (m.map || m.transparent || m.wireframe || m.side === THREE.DoubleSide) return null;
+  if (m.isMeshBasicMaterial) return ['glow', m.color];
+  if (m.isMeshStandardMaterial) {
+    if (m.emissiveIntensity > 0.9 && (m.emissive.r + m.emissive.g + m.emissive.b) > 0.3) return ['glow', m.emissive.clone().multiplyScalar(Math.min(1.25, m.emissiveIntensity * 0.75))];
+    return ['std', m.color];
+  }
+  return null;
+}
+export function bake(root, keep, { lines = true } = {}) {
+  const keepSet = new Set([root, ...keep.filter(Boolean)]);
+  root.updateMatrixWorld(true);
+  const buckets = new Map(), remove = [];
+  root.traverse(o => {
+    if (!(o.isMesh || o.isLineSegments) || o.userData.keep || keepSet.has(o)) return;
+    let K = o.parent, skip = false;
+    while (K && !keepSet.has(K)) { if (K.userData.keep) skip = true; K = K.parent; }
+    if (skip || !K) return;
+    remove.push(o);
+    if (!o.visible) return;
+    if (o.isLineSegments && !lines) return;
+    const m = new THREE.Matrix4().copy(K.matrixWorld).invert().multiply(o.matrixWorld);
+    const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+    g.applyMatrix4(m);
+    const cls = o.isLineSegments ? null : matClass(o.material);
+    for (const name of Object.keys(g.attributes)) {
+      if (name === 'position') continue;
+      const keepUv = name === 'uv' && !cls && o.material.map;
+      if (o.isLineSegments || !(name === 'normal' || keepUv)) g.deleteAttribute(name);
+    }
+    if (!o.isLineSegments && !g.attributes.normal) g.computeVertexNormals();
+    let mat = o.material, key;
+    if (cls) {
+      const [kind, color] = cls, n = g.attributes.position.count, c = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) { c[i * 3] = color.r; c[i * 3 + 1] = color.g; c[i * 3 + 2] = color.b; }
+      g.setAttribute('color', new THREE.BufferAttribute(c, 3));
+      if (kind === 'glow') g.deleteAttribute('normal');
+      mat = kind === 'glow' ? VC_GLOW : VC_STD; key = K.uuid + '|' + kind;
+    } else key = K.uuid + '|' + o.material.uuid + '|' + (o.isLineSegments ? 'L' : 'M');
+    if (!buckets.has(key)) buckets.set(key, { K, mat, line: o.isLineSegments, geos: [], shadow: false });
+    const bk = buckets.get(key); bk.geos.push(g); bk.shadow ||= o.castShadow && !(mat === VC_GLOW);
+  });
+  for (const o of remove) o.parent?.remove(o);
+  for (const b of buckets.values()) {
+    const merged = mergeGeometries(b.geos, false); if (!merged) { console.warn('bake: merge failed', b.mat.type); continue; }
+    const obj = b.line ? new THREE.LineSegments(merged, b.mat) : new THREE.Mesh(merged, b.mat);
+    if (!b.line) obj.castShadow = b.shadow;
+    b.K.add(obj);
+  }
+  return root;
 }
