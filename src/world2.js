@@ -50,14 +50,23 @@ export function heightAt2(x, z) {
 }
 
 const MAGENTA = 0xff2bd6;
+const LANTERN_ARM = 0.55; // where the lamp hangs on the KayKit post_lantern (local +z)
 
 export class World2 {
-  constructor(scene, natureGltf, villageKit, quality) {
+  // forestGltf / spookGltf: KayKit Forest Nature Pack + Halloween Bits (CC0). nullTex: purple leaf texture.
+  constructor(scene, forestGltf, spookGltf, nullTex, villageKit, quality) {
     this.scene = scene; this.quality = quality;
     this.colliders = []; this.platforms = [];
     this.barrier = null; this.bridgeRepaired = true;
     this.lib = {};
-    for (const c of natureGltf.scene.children) this.lib[c.name] = c;
+    for (const g of [forestGltf, spookGltf]) for (const c of [...g.scene.children]) { c.position.set(0, 0, 0); this.lib[c.name] = c; }
+    // Corrupted (purple-leaf) copies of the leafy trees for the Corrupted Grove.
+    nullTex.flipY = false; nullTex.colorSpace = THREE.SRGBColorSpace;
+    for (const n of ['Tree_1_B', 'Tree_1_C', 'Tree_3_B', 'Tree_2_B']) {
+      const c = this.lib[n].clone(true);
+      c.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); o.material.map = nullTex; } });
+      this.lib['N_' + n] = c;
+    }
     this.#sky(); this.#lights(quality); this.#terrain();
     this.#hut(villageKit);
     this.#hollow();
@@ -169,13 +178,9 @@ export class World2 {
     for (const [x, z] of [[Z2.hut.x + 3, Z2.hut.z - 4], [Z2.hut.x + 3.8, Z2.hut.z - 3.3]]) { prop('Prop_Crate', x, z, x); this.colliders.push({ x, z, r: 0.7 }); }
     this.#mergeStatic(statics);
     // Lantern with a warm light: the only warm colour in the forest.
-    const lantern = new THREE.Group();
-    const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.2, 0.12), new THREE.MeshStandardMaterial({ color: 0x3b2a1e })); post.position.y = 1.1; lantern.add(post);
-    const glass = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.38, 0.3), new THREE.MeshStandardMaterial({ color: 0xffc46b, emissive: 0xffa236, emissiveIntensity: 2 })); glass.position.y = 2.3; lantern.add(glass);
-    this.hutLight = new THREE.PointLight(0xffb060, 8, 10); this.hutLight.position.y = 2.3; lantern.add(this.hutLight);
-    const lx = Z2.hut.x - 1, lz = Z2.hut.z + 4.5;
-    lantern.position.set(lx, heightAt2(lx, lz), lz); this.scene.add(lantern);
-    this.colliders.push({ x: lx, z: lz, r: 0.25 });
+    // Warm light from the standing lantern by the door (placed in #decor).
+    const lx = Z2.hut.x + 2.6, lz = Z2.hut.z + 3.2;
+    this.hutLight = new THREE.PointLight(0xffb060, 8, 11); this.hutLight.position.set(lx, heightAt2(lx, lz) + 1.2, lz); this.scene.add(this.hutLight);
   }
 
   // ---- Root Hollow: sunken arena ringed by giant roots; barrier during the boss ----
@@ -223,16 +228,14 @@ export class World2 {
   // ---- Console secrets: a glitch wall (/noclip) and a tall stump (/doublejump) ----
   #secrets(kit) {
     // Nook of rocks with a wall of corrupted data across the opening.
-    const s = Z2.secret, rockMat = new THREE.MeshStandardMaterial({ color: 0x55606a, flatShading: true, roughness: 0.95 });
-    const rocks = [];
+    const s = Z2.secret, rocks = [];
     for (let i = 0; i < 9; i++) {
       const a = Math.PI / 2 + 0.55 + i / 8 * (Math.PI * 2 - 1.1); // opening faces +z (toward the path)
-      const x = s.x + Math.cos(a) * 3.4, z = s.z + Math.sin(a) * 3.4;
-      const geo = new THREE.DodecahedronGeometry(1.5, 0); geo.scale(1, 1.6, 1);
-      geo.rotateY(i); geo.translate(x, heightAt2(x, z) + 1.4, z); rocks.push(geo);
+      const x = s.x + Math.cos(a) * 3.5, z = s.z + Math.sin(a) * 3.5;
+      rocks.push(this.#T(x, z, 1.7, i * 1.3));
       this.colliders.push({ x, z, r: 1.45 });
     }
-    const rm = new THREE.Mesh(mergeGeometries(rocks), rockMat); rm.castShadow = true; rm.receiveShadow = true; this.scene.add(rm);
+    this.#instance(this.lib.Rock_1_H, rocks, true);
     const wallMat = new THREE.MeshBasicMaterial({ color: MAGENTA, transparent: true, opacity: 0.45, side: THREE.DoubleSide, depthWrite: false });
     const wall = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 3.4, 12, 10), wallMat);
     wall.position.set(s.x, heightAt2(s.x, s.z + 3.2) + 1.7, s.z + 3.2); this.scene.add(wall);
@@ -299,7 +302,7 @@ export class World2 {
     const meshes = [];
     template.traverse(o => { if (o.isMesh) meshes.push(o); });
     const m4 = new THREE.Matrix4(), local = new THREE.Matrix4(), inv = new THREE.Matrix4().copy(template.matrixWorld).invert();
-    const CELL = 60, cells = new Map();
+    const CELL = 90, cells = new Map();
     for (const t of transforms) { const key = Math.floor(t.p.x / CELL) + ',' + Math.floor(t.p.z / CELL); if (!cells.has(key)) cells.set(key, []); cells.get(key).push(t); }
     for (const src of meshes) {
       if (/Leaves/i.test(src.material.name) && src.material.vertexColors) { src.material.vertexColors = false; src.material.needsUpdate = true; }
@@ -318,7 +321,7 @@ export class World2 {
     const inv = new THREE.Matrix4().copy(template.matrixWorld).invert(), m = new THREE.Matrix4(), v = new THREE.Vector3();
     let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity, n = 0;
     template.traverse(o => {
-      if (!o.isMesh || /Leaves|Leaf|Grass|Flower/i.test(o.material.name)) return;
+      if (!o.isMesh) return;
       m.multiplyMatrices(inv, o.matrixWorld);
       const pos = o.geometry.attributes.position;
       for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i).applyMatrix4(m); if (v.y > maxY) continue; minX = Math.min(minX, v.x); maxX = Math.max(maxX, v.x); minZ = Math.min(minZ, v.z); maxZ = Math.max(maxZ, v.z); n++; }
@@ -334,65 +337,138 @@ export class World2 {
     return distToPath(x, z) < 3 + pad;
   }
 
+  #T(x, z, sc, yaw, y) {
+    return { p: new THREE.Vector3(x, y ?? heightAt2(x, z) - 0.05, z), q: new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), s: new THREE.Vector3(sc, sc, sc) };
+  }
+
   #props(quality) {
     const lib = this.lib, r = rng(2024);
-    // Darker, bluer leaves for a deep forest look (only Zone 2 is loaded, so materials can change).
-    for (const c of Object.values(lib)) c.traverse(o => {
-      if (!o.isMesh) return;
-      if (/Leaves|Leaf|Grass|Fern|Bush|Flower/i.test(o.material.name + o.name)) o.material.color.multiply(new THREE.Color(0.62, 0.8, 0.78));
-      else if (/Bark|Wood|Trunk/i.test(o.material.name)) o.material.color.multiply(new THREE.Color(0.7, 0.68, 0.72));
-    });
+    // place(name, count, opts): scatter instances; `collide` adds a trunk/rock collider.
     const place = (name, count, opts = {}) => {
-      if (!lib[name]) return;
-      const fp = opts.collide ? this.#footprint(lib[name], 1.4) : null;
+      if (!lib[name]) { console.warn('missing prop', name); return; }
+      const fp = opts.collide ? this.#footprint(lib[name], opts.collide === 'trunk' ? 0.9 : 1.4) : null;
       const list = []; let tries = 0;
       const [sMin, sMax] = opts.scale;
-      while (list.length < count && tries++ < count * 50) {
+      while (list.length < count && tries++ < count * 60) {
         let x, z;
         if (opts.area) { const a = r() * Math.PI * 2, d = Math.sqrt(r()) * opts.area.r; x = opts.area.x + Math.cos(a) * d; z = opts.area.z + Math.sin(a) * d; }
         else if (opts.ringR) { const a = r() * Math.PI * 2, d = opts.ringR + (r() - 0.5) * 8; x = Math.cos(a) * d; z = Math.sin(a) * d; }
         else { x = (r() - 0.5) * 2 * (WORLD2_RADIUS - 6); z = (r() - 0.5) * 2 * (WORLD2_RADIUS - 6); if (Math.hypot(x, z) > WORLD2_RADIUS - 5) continue; }
         if (!opts.ringR && this.#blocked(x, z, opts.pad ?? 0)) continue;
+        if (opts.notIn && opts.notIn.some(([p, rr]) => Math.hypot(x - p.x, z - p.z) < rr)) continue;
         if (opts.spacing && this.colliders.some(c => !c.box && Math.hypot(c.x - x, c.z - z) < opts.spacing + c.r)) continue;
-        const s = sMin + r() * (sMax - sMin), yaw = r() * Math.PI * 2;
-        list.push({ p: new THREE.Vector3(x, heightAt2(x, z) - 0.05, z), q: new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw), s: new THREE.Vector3(s, s, s) });
+        const sc = sMin + r() * (sMax - sMin), yaw = r() * Math.PI * 2;
+        list.push(this.#T(x, z, sc, yaw));
         if (fp && !opts.ringR) {
           const c = Math.cos(yaw), sn = Math.sin(yaw);
-          this.colliders.push({ x: x + (fp.cx * c + fp.cz * sn) * s, z: z + (-fp.cx * sn + fp.cz * c) * s, r: Math.max(0.3, fp.r * s * 0.9) });
+          this.colliders.push({ x: x + (fp.cx * c + fp.cz * sn) * sc, z: z + (-fp.cx * sn + fp.cz * c) * sc, r: Math.max(0.3, fp.r * sc * (opts.collide === 'trunk' ? 1 : 0.85)) });
         }
       }
       this.#instance(lib[name], list, opts.shadow !== false);
     };
-    const k = quality.dense ? 1 : 0.7;
-    // Dense wall of pines at the edge of the map (no colliders needed: rim hills block the player).
-    place('Pine_1', Math.round(26 * k), { scale: [1.5, 2.1], ringR: WORLD2_RADIUS - 2, shadow: false });
-    place('Pine_2', Math.round(20 * k), { scale: [1.5, 2.1], ringR: WORLD2_RADIUS - 6, shadow: false });
-    // Forest interior.
-    place('Pine_1', Math.round(26 * k), { scale: [1.2, 1.8], collide: true, spacing: 4.5 });
-    place('Pine_2', Math.round(20 * k), { scale: [1.2, 1.8], collide: true, spacing: 4.5 });
-    place('TwistedTree_1', 3, { scale: [1.1, 1.4], collide: true, spacing: 6 });
-    place('CommonTree_3', Math.round(5 * k), { scale: [1.1, 1.4], collide: true, spacing: 7 });
-    place('Pine_2', Math.round(12 * k), { scale: [1.0, 1.5], collide: true, spacing: 4 });
-    place('TwistedTree_1', 5, { scale: [1.2, 1.6], collide: true, spacing: 5, area: { x: Z2.grove.x, z: Z2.grove.z, r: Z2.groveR + 6 }, pad: -14 });
-    place('Rock_Medium_1', 10, { scale: [0.8, 1.5], collide: true, spacing: 3 });
-    place('Rock_Medium_2', 8, { scale: [0.8, 1.5], collide: true, spacing: 3 });
-    place('Bush_Common', 26, { scale: [0.6, 0.9], spacing: 1 });
-    place('Fern_1', 50, { scale: [0.5, 0.85], shadow: false, pad: -2 });
-    place('Mushroom_Common', 30, { scale: [0.5, 0.9], shadow: false, pad: -2 });
-    place('Grass_Wispy_Short', quality.dense ? 120 : 50, { scale: [0.35, 0.55], shadow: false, pad: -4 });
-    place('Pebble_Round_2', 24, { scale: [0.4, 0.8], shadow: false, pad: -3 });
-    // Glowing mushrooms: emissive caps around the hut and along paths.
+    const k = quality.dense ? 1 : 0.75;
+    const grove = { x: Z2.grove.x, z: Z2.grove.z, r: Z2.groveR + 7 };
+    const notGrove = [[Z2.grove, Z2.groveR + 6]];
+    // A tall wall of trees around the edge of the map (the rim hills block the player anyway).
+    place('Tree_4_C', Math.round(34 * k), { scale: [1.2, 1.6], ringR: WORLD2_RADIUS - 3, shadow: false });
+    place('Tree_2_C', Math.round(26 * k), { scale: [1.3, 1.7], ringR: WORLD2_RADIUS - 8, shadow: false });
+    place('Rock_3_R', 8, { scale: [1.6, 2.4], ringR: WORLD2_RADIUS - 10, shadow: false });
+    // Deep forest.
+    place('Tree_4_B', Math.round(24 * k), { scale: [1.1, 1.5], collide: 'trunk', spacing: 3.5, notIn: notGrove });
+    place('Tree_1_B', Math.round(16 * k), { scale: [1.1, 1.4], collide: 'trunk', spacing: 4, notIn: notGrove });
+    place('Tree_2_B', Math.round(16 * k), { scale: [1.1, 1.5], collide: 'trunk', spacing: 4, notIn: notGrove });
+    place('Tree_3_B', Math.round(10 * k), { scale: [1.0, 1.3], collide: 'trunk', spacing: 4.5, notIn: notGrove });
+    place('Tree_1_C', 6, { scale: [1.1, 1.3], collide: 'trunk', spacing: 6, notIn: notGrove });
+    place('Tree_Bare_2_C', 10, { scale: [1.0, 1.3], collide: 'trunk', spacing: 3, notIn: notGrove });
+    place('Tree_Bare_1_C', 8, { scale: [1.0, 1.3], collide: 'trunk', spacing: 3, notIn: notGrove });
+    place('tree_dead_large', 10, { scale: [1.0, 1.4], collide: 'trunk', spacing: 3 });
+    place('tree_dead_medium', 10, { scale: [1.0, 1.3], collide: 'trunk', spacing: 3 });
+    // Corrupted Grove: purple-leaf trees, bare and dead trees, bones.
+    place('N_Tree_1_B', 7, { scale: [1.1, 1.5], collide: 'trunk', spacing: 4, area: grove, pad: -14 });
+    place('N_Tree_3_B', 5, { scale: [1.0, 1.4], collide: 'trunk', spacing: 4, area: grove, pad: -14 });
+    place('N_Tree_2_B', 5, { scale: [1.1, 1.5], collide: 'trunk', spacing: 4, area: grove, pad: -14 });
+    place('Tree_Bare_2_B', 6, { scale: [1.0, 1.4], collide: 'trunk', spacing: 3, area: grove, pad: -14 });
+    place('tree_dead_small', 6, { scale: [1.0, 1.4], collide: 'trunk', spacing: 2.5, area: grove, pad: -14 });
+    place('bone_A', 10, { scale: [0.8, 1.2], area: { ...Z2.grove, r: Z2.groveR }, pad: -30, shadow: false });
+    place('bone_C', 8, { scale: [0.8, 1.2], area: { ...Z2.grove, r: Z2.groveR }, pad: -30, shadow: false });
+    place('skull', 5, { scale: [0.5, 0.7], area: { ...Z2.grove, r: Z2.groveR }, pad: -30, shadow: false });
+    place('ribcage', 3, { scale: [1.2, 1.6], area: { ...Z2.grove, r: Z2.groveR - 2 }, pad: -30, shadow: false });
+    // Rocks and cliffs.
+    place('Rock_1_J', 6, { scale: [1.0, 1.4], collide: 'solid', spacing: 5 });
+    place('Rock_2_F', 5, { scale: [1.0, 1.4], collide: 'solid', spacing: 5 });
+    place('Rock_1_O', 7, { scale: [0.9, 1.3], collide: 'solid', spacing: 4 });
+    place('Rock_1_Q', 5, { scale: [0.9, 1.2], collide: 'solid', spacing: 4 });
+    place('Rock_3_K', 8, { scale: [0.8, 1.2], collide: 'solid', spacing: 3 });
+    place('Rock_1_D', 12, { scale: [0.8, 1.2], collide: 'solid', spacing: 2 });
+    place('Rock_2_C', 10, { scale: [0.6, 1.0], spacing: 1.5, pad: -2 });
+    place('Rock_3_E', 10, { scale: [0.6, 1.0], spacing: 1.5, pad: -2 });
+    // Undergrowth.
+    for (const [n, c] of [['Bush_1_C', 20], ['Bush_2_C', 16], ['Bush_3_B', 16], ['Bush_4_C', 14], ['Bush_4_E', 8]]) place(n, Math.round(c * k), { scale: [0.8, 1.2], spacing: 1, pad: -2, shadow: false });
+    place('Grass_1_B', quality.dense ? 110 : 60, { scale: [1.0, 1.5], pad: -4, shadow: false });
+    place('Grass_2_B', quality.dense ? 90 : 50, { scale: [1.0, 1.5], pad: -4, shadow: false });
+    // Glowing mushrooms: emissive caps around the hut and the forest edge.
     const glowMat = new THREE.MeshStandardMaterial({ color: 0x17a894, emissive: 0x14d9bd, emissiveIntensity: 1.1 });
     const capG = new THREE.SphereGeometry(0.22, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), stemG = new THREE.CylinderGeometry(0.05, 0.07, 0.3, 6);
     const caps = [], stems = [];
     for (let i = 0; i < 40; i++) {
       const base = i < 16 ? Z2.hut : i < 30 ? Z2.edge : Z2.hollow;
       const a = r() * Math.PI * 2, d = i >= 30 ? Z2.hollowR + 2.5 + r() * 3 : 4 + r() * 11;
-      const x = base.x + Math.cos(a) * d, z = base.z + Math.sin(a) * d, y = heightAt2(x, z), s = 0.6 + r() * 0.9;
-      caps.push(capG.clone().scale(s, s, s).translate(x, y + 0.3 * s, z)); stems.push(stemG.clone().scale(s, s, s).translate(x, y + 0.15 * s, z));
+      const x = base.x + Math.cos(a) * d, z = base.z + Math.sin(a) * d, y = heightAt2(x, z), sc = 0.6 + r() * 0.9;
+      caps.push(capG.clone().scale(sc, sc, sc).translate(x, y + 0.3 * sc, z)); stems.push(stemG.clone().scale(sc, sc, sc).translate(x, y + 0.15 * sc, z));
     }
     this.scene.add(new THREE.Mesh(mergeGeometries(caps), glowMat));
     this.scene.add(new THREE.Mesh(mergeGeometries(stems), new THREE.MeshStandardMaterial({ color: 0xd8e6df })));
+    this.#decor();
+  }
+
+  // Hand-placed set pieces: lanterns along the path, candles at Mira's hut, the graveyard ruin in Root Hollow.
+  #decor() {
+    const lib = this.lib, put = {};
+    const add = (name, x, z, yaw = 0, sc = 1, collide = 0) => {
+      (put[name] ||= []).push(this.#T(x, z, sc, yaw, heightAt2(x, z) - 0.02));
+      if (collide) this.colliders.push({ x, z, r: collide });
+    };
+    // Lantern posts along the main path, each with a warm glowing orb.
+    const orbs = [];
+    // x of the main path at a given z (posts stand 3.4 m to its side).
+    const pathX = z => { const L = PATHS2[0]; for (let i = 0; i < L.length - 1; i++) { const [ax, az] = L[i], [bx, bz] = L[i + 1]; if (z <= az && z >= bz) return ax + (bx - ax) * (az - z) / (az - bz); } return 0; };
+    const posts = [[54, 1], [40, -1], [26, 1], [12, -1], [-4, 1], [-18, -1], [-28, 1]].map(([z, side]) => [pathX(z) + side * 3.4, z, side > 0 ? -Math.PI / 2 : Math.PI / 2]);
+    for (const [x, z, yaw] of [...posts, [-20, 18.6, 0], [16, 9.6, 0]]) {
+      add('post_lantern', x, z, yaw, 1, 0.3);
+      orbs.push(new THREE.Vector3(x + Math.sin(yaw) * LANTERN_ARM, heightAt2(x, z) + 2.7, z + Math.cos(yaw) * LANTERN_ARM));
+    }
+    // Mira's hut: candles, a shrine and a little graveyard fence.
+    const H = Z2.hut;
+    add('shrine_candles', H.x + 4.5, H.z + 2, -1.2, 1, 0.6);
+    add('candle_triple', H.x + 0.5, H.z + 5, 0); add('candle_triple', H.x + 5, H.z - 1, 1); add('candle', H.x - 2, H.z + 4.5, 0);
+    add('lantern_standing', H.x + 2.6, H.z + 3.2, 0, 1, 0.3);
+    for (const [dx, dz, yaw, n] of [[-6, 7, 0, 'fence'], [-2, 7.4, 0, 'fence_broken'], [-8, 5, Math.PI / 2, 'fence']]) add(n, H.x + dx, H.z + dz, yaw);
+    this.colliders.push({ box: true, x: H.x - 4, z: H.z + 7.2, hx: 4, hz: 0.25, ry: 0 }, { box: true, x: H.x - 8, z: H.z + 5, hx: 0.25, hz: 2, ry: 0 });
+    // Root Hollow: an old graveyard. Crypt at the back, arches and graves around the edge; the middle stays clear for the fight.
+    const O = Z2.hollow, R = Z2.hollowR;
+    add('crypt', O.x, O.z - R + 1, 0, 1.2);
+    this.colliders.push({ box: true, x: O.x, z: O.z - R + 1, hx: 3.4, hz: 4.6, ry: 0 });
+    for (const [a, n] of [[-2.2, 'arch'], [-0.9, 'arch'], [0.4, 'pillar'], [2.6, 'pillar'], [-2.9, 'pillar']]) {
+      const x = O.x + Math.cos(a - Math.PI / 2) * (R - 1.2), z = O.z + Math.sin(a - Math.PI / 2) * (R - 1.2);
+      add(n, x, z, -a, 1.1, n === 'pillar' ? 0.6 : 0);
+      if (n === 'arch') for (const s of [-1, 1]) this.colliders.push({ x: x + Math.cos(-a) * 1.9 * s, z: z - Math.sin(-a) * 1.9 * s, r: 0.5 });
+    }
+    const graves = ['grave_A', 'grave_B', 'gravestone', 'grave_A_destroyed', 'gravemarker_A', 'gravemarker_B'];
+    for (let i = 0; i < 14; i++) {
+      const a = -Math.PI / 2 + (i / 14 - 0.5) * 4.6 + (i % 2) * 0.1, d = R - 3.2 - (i % 3) * 0.9;
+      const x = O.x + Math.cos(a) * d, z = O.z + Math.sin(a) * d;
+      if (Math.abs(x - O.x) < 4.5 && z < O.z - R + 7) continue; // keep the crypt door clear
+      add(graves[i % graves.length], x, z, Math.atan2(O.x - x, O.z - z), 1, 0.7);
+    }
+    for (const [dx, dz] of [[-2.5, -R + 6.5], [2.5, -R + 6.5]]) { add('skull_candle', O.x + dx, O.z + dz, 0, 0.8); orbs.push(new THREE.Vector3(O.x + dx, heightAt2(O.x + dx, O.z + dz) + 1.1, O.z + dz)); }
+    add('coffin', O.x + 7, O.z - 4, 0.7, 1, 1.1);
+    add('fence_broken', O.x - 9, O.z + R - 2, 0.3); add('fence_pillar_broken', O.x - 6.6, O.z + R - 1.4, 0); add('fence_broken', O.x + 9, O.z + R - 2, -0.3);
+    for (const [name, list] of Object.entries(put)) if (lib[name]) this.#instance(lib[name], list, true);
+    // Warm glow orbs (cheap: no lights).
+    const og = new THREE.SphereGeometry(0.13, 8, 6), om = new THREE.MeshBasicMaterial({ color: 0xffc46b });
+    const im = new THREE.InstancedMesh(og, om, orbs.length);
+    orbs.forEach((p, i) => im.setMatrixAt(i, new THREE.Matrix4().makeTranslation(p.x, p.y, p.z)));
+    this.lanternOrbs = im; this.scene.add(im);
   }
 
   // Keep the camera out of the hut.

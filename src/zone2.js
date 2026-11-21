@@ -1,13 +1,13 @@
 // Zone 2: Glitchwood Forest. Same shape as zone1.js so the game core can load either.
 import * as THREE from 'three';
-import { World2, Z2, PATHS2, WORLD2_RADIUS } from './world2.js?v=12';
-import { VillageKit } from './village.js?v=12';
-import { spawnZone2 } from './enemies2.js?v=12';
-import { Thornwraith } from './boss2.js?v=12';
-import { NPC } from './npc.js?v=12';
-import { Story2 } from './story2.js?v=12';
-import { makeChest } from './loot.js?v=12';
-import { makeItem } from './items.js?v=12';
+import { World2, Z2, PATHS2, WORLD2_RADIUS } from './world2.js?v=13';
+import { VillageKit } from './village.js?v=13';
+import { spawnZone2 } from './enemies2.js?v=13';
+import { Thornwraith } from './boss2.js?v=13';
+import { NPC } from './npc.js?v=13';
+import { Story2 } from './story2.js?v=13';
+import { makeChest } from './loot.js?v=13';
+import { makeItem } from './items.js?v=13';
 
 export const ZONE_ID = 'z2';
 export const ZONE_NAME = 'Glitchwood Forest';
@@ -21,8 +21,11 @@ const CHESTS = [
 
 export async function loadZone(core) {
   const { loader, scene, quality, clips, idle, player, hud, effects, profile, guide, dialogue, rig, pet } = core;
-  const [natureG, villageG, miraG] = await Promise.all(['nature', 'village', 'mira'].map(f => loader.loadAsync(`assets/models/${f}.glb`)));
-  const world = new World2(scene, natureG, new VillageKit(villageG), quality);
+  const [forestG, spookG, villageG, miraG, nullTex] = await Promise.all([
+    ...['kk_forest', 'kk_halloween', 'village', 'mira'].map(f => loader.loadAsync(`assets/models/${f}.glb`)),
+    new THREE.TextureLoader(loader.manager).loadAsync('assets/models/kk_forest_null.png'),
+  ]);
+  const world = new World2(scene, forestG, spookG, nullTex, new VillageKit(villageG), quality);
   const enemies = spawnZone2(scene, effects, profile.d.level, quality);
   // Nothing beyond the fog needs drawing.
   rig.cam.far = 95; rig.cam.updateProjectionMatrix();

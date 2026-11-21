@@ -220,12 +220,19 @@ export function buildStaticSprite({ pose = 'idle' } = {}) {
     add(a, new THREE.CylinderGeometry(0.011, 0.015, 0.46, 5), metal, 0, 0.23, 0);
     add(a, new THREE.SphereGeometry(0.032, 8, 6), glow(s2 < 0 ? CYAN : MAGENTA, 2), 0, 0.47, 0);
   }
-  // Signal trail: scanline strips fading below it instead of legs.
+  // Signal trail: scanline strips below it instead of legs (one mesh, colours fade downward).
   const trail = new THREE.Group(); body.add(trail); parts.trail = trail;
+  const strips = [];
   for (let i = 0; i < 4; i++) {
-    const m = add(trail, new THREE.BoxGeometry(0.4 - i * 0.08, 0.025, 0.2 - i * 0.04), new THREE.MeshBasicMaterial({ color: i % 2 ? CYAN : 0xc9cfdd, transparent: true, opacity: 0.8 - i * 0.17 }), (i % 2 ? 0.03 : -0.03), -0.34 - i * 0.13, -0.04);
-    m.castShadow = false;
+    const g = new THREE.BoxGeometry(0.4 - i * 0.08, 0.025, 0.2 - i * 0.04).toNonIndexed();
+    g.translate(i % 2 ? 0.03 : -0.03, -0.34 - i * 0.13, -0.04);
+    const c = new THREE.Color(i % 2 ? CYAN : 0xc9cfdd).multiplyScalar(1 - i * 0.2), n = g.attributes.position.count, arr = new Float32Array(n * 3);
+    for (let k = 0; k < n; k++) { arr[k * 3] = c.r; arr[k * 3 + 1] = c.g; arr[k * 3 + 2] = c.b; }
+    g.setAttribute('color', new THREE.BufferAttribute(arr, 3)); g.deleteAttribute('uv'); g.deleteAttribute('normal');
+    strips.push(g);
   }
+  const tm = new THREE.Mesh(mergeGeometries(strips), new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.7 }));
+  tm.userData.keep = true; tm.castShadow = false; trail.add(tm);
   if (pose === 'attack') {
     body.rotation.x = 0.12;
     const boltM = new THREE.MeshBasicMaterial({ color: CYAN });

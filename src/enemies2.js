@@ -1,11 +1,13 @@
 // Zone 2 enemies: Null Wolves (packs that circle and pounce) and Static Sprites (floating TVs
 // that zap from range and teleport away). Same interface as Zone 1 slimes.
 import * as THREE from 'three';
-import { buildNullWolf, buildStaticSprite, bake } from './monsters2.js?v=12';
+import { buildNullWolf, buildStaticSprite, bake } from './monsters2.js?v=13';
 
 const CYAN = 0x29e6ff, MAGENTA = 0xff2bd6;
+let DETAIL = true; // false on phones: no outline lines, no real shadows
 const iceMat = new THREE.MeshStandardMaterial({ color: 0x9feeff, transparent: true, opacity: 0.4, emissive: CYAN, emissiveIntensity: 0.6, depthWrite: false });
 const starMat = new THREE.MeshBasicMaterial({ color: 0xffe28a });
+const BLOB_GEO = new THREE.CircleGeometry(1, 16), BLOB_MAT = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false });
 
 function makeTag(text, color) {
   const c = document.createElement('canvas'); c.width = 256; c.height = 64;
@@ -30,6 +32,12 @@ class Enemy2 {
   }
 
   initCommon(height) {
+    // Phones: a soft dark circle instead of a real shadow (1 draw call instead of ~9).
+    if (!DETAIL) {
+      this.m.root.traverse(o => { if (o.isMesh) o.castShadow = false; });
+      const blob = new THREE.Mesh(BLOB_GEO, BLOB_MAT); blob.rotation.x = -Math.PI / 2; blob.position.y = 0.04; blob.scale.setScalar(this.radius * 1.6);
+      this.group.add(blob);
+    }
     this.ice = new THREE.Mesh(new THREE.IcosahedronGeometry(this.radius * 1.5, 1), iceMat);
     this.ice.position.y = height * 0.45; this.ice.scale.y = 1.2; this.ice.visible = false; this.group.add(this.ice);
     if (this.glitched) {
@@ -109,13 +117,13 @@ class Enemy2 {
     }
     this.hitFlash -= dt;
     // Far away: hide to save draw calls (the fog hides them anyway).
-    this.group.visible = player.pos.distanceTo(this.pos) < 38;
+    this.group.visible = player.pos.distanceTo(this.pos) < 34;
     return false;
   }
 }
 
 // ---------------------------------------------------------------- Null Wolf
-let WOLF_TEMPLATE = null, DETAIL = true;
+let WOLF_TEMPLATE = null;
 export function setMonsterDetail(dense) { DETAIL = dense; }
 function wolfModel() {
   // Build once, then clone (cheap): legs/head/tail/body stay as separate animated nodes.

@@ -1,7 +1,7 @@
 // Zone 1 story: quests, cutscenes, objective markers, unlocks and save/load.
 import * as THREE from 'three';
-import { Z1 } from './world.js?v=12';
-import { Slime } from './enemies.js?v=12';
+import { Z1 } from './world.js?v=13';
+import { Slime } from './enemies.js?v=13';
 
 
 // Quest stages in order.
