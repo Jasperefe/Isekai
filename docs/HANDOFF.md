@@ -1,4 +1,4 @@
-# ISEKAI: Project Handoff (build 33)
+# ISEKAI: Project Handoff (build 34)
 
 This document describes everything built so far, so the project can continue in a new conversation (or with another developer) without losing anything. Paste or attach it at the start of a new chat and say "continue ISEKAI from this handoff".
 
@@ -12,7 +12,7 @@ This document describes everything built so far, so the project can continue in 
 | Repository | https://github.com/Jasperefe/Isekai |
 | Engine | three.js r170, vendored in `lib/` (no build step, plain ES modules + import map) |
 | Platforms | Playgama (Bridge SDK integrated since build 30; upload zip from `tools/build_playgama.sh`), CrazyGames later |
-| Current build | **33** (stamped with `python3 tools/bump.py 33`) |
+| Current build | **34** (stamped with `python3 tools/bump.py 34`) |
 | Main test device | iPhone, Safari, landscape |
 
 ### Working rules agreed with the owner
@@ -98,14 +98,14 @@ The ally follows beside you in Zones 3 and 4 (Victory, or Jasper in Victory's ru
 
 Other folders: `lib/` (three.js), `assets/models` (GLB, meshopt-compressed), `assets/audio` (music), `tools/` (`bump.py` cache-bust stamp, `build_playgama.sh`, asset build scripts that need a separate Node workspace with gltf-transform).
 
-## 5. Difficulty (release tuning, build 30)
+## 5. Difficulty (release tuning, raised again in build 34)
 
 | Zone | Level | Enemy HP / damage | Boss HP / damage | Extra |
 | --- | --- | --- | --- | --- |
-| 1 Starter Meadow | Medium | x1.2 / x1.2 | x1.3 / x1.25 | |
-| 2 Glitchwood | Medium-Hard | x1.35 / x1.35 | x1.5 / x1.4 | |
-| 3 Capital | Hard | x1.6 / x1.55 | x2.0 / x1.7 | Sir Duplicate attacks 30% sooner, 3 mirror phases |
-| 4 Unfinished Zone | Hell | x1.9 / x1.85 | x2.4 / x2.1 | NOVA: faster, denser error rain, faster beam, shorter reload windows, 3 summon waves |
+| 1 Starter Meadow | Medium | x1.5 / x1.45 | x1.7 / x1.6 | |
+| 2 Glitchwood | Medium-Hard | x1.75 / x1.7 | x2.0 / x1.85 | |
+| 3 Capital | Hard | x2.1 / x2.0 | x2.6 / x2.2 | Sir Duplicate attacks 30% sooner, 3 mirror phases |
+| 4 Unfinished Zone | Hell | x2.5 / x2.4 | x3.1 / x2.7 | NOVA: faster, denser error rain, faster beam, shorter reload windows, 3 summon waves |
 
 Enemy stats also scale with the hero's level. Tune all of it in `src/difficulty.js` (and NOVA's timings in `boss4.js`).
 
@@ -147,6 +147,7 @@ To build the upload: `bash tools/build_playgama.sh` makes `dist/ISEKAI_playgama.
 | 31 | Console redesigned as a calm list panel; Victory is greeted as "Player Two" |
 | 32 | Full QA pass (190 automated checks, both heroes, all zones, all menus, Playgama). Fixes: Victory's forge says Star Rapier, Victory's skill tree uses her ability names, the zone-cleared card hides the touch buttons |
 | 33 | After each boss: the quest pill says WHAT NEXT, the marker and guide arrow point to the next zone's exit (gate, crypt door, rift), and the zone-cleared card's button is SHOW ME THE WAY |
+| 34 | Difficulty raised again in all 4 zones (about +30% enemy and boss HP and damage) |
 
 ## 9. Testing and QA
 

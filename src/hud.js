@@ -1,7 +1,7 @@
 // DOM-based HUD: bars, floating numbers, system messages and death screen.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=33';
-import { swapNames } from './dialogue.js?v=33';
+import { sfx } from './audio.js?v=34';
+import { swapNames } from './dialogue.js?v=34';
 
 const $ = id => document.getElementById(id);
 

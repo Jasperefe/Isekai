@@ -1,10 +1,11 @@
 // Difficulty per zone (release tuning). Every enemy's HP and damage is multiplied once when a zone loads.
 // Zone 1: Medium · Zone 2: Medium-Hard · Zone 3: Hard · Zone 4: Hell.
 export const DIFFICULTY = {
-  z1: { name: 'MEDIUM', hp: 1.2, dmg: 1.2, bossHp: 1.3, bossDmg: 1.25 },
-  z2: { name: 'MEDIUM-HARD', hp: 1.35, dmg: 1.35, bossHp: 1.5, bossDmg: 1.4 },
-  z3: { name: 'HARD', hp: 1.6, dmg: 1.55, bossHp: 2.0, bossDmg: 1.7 },
-  z4: { name: 'HELL', hp: 1.9, dmg: 1.85, bossHp: 2.4, bossDmg: 2.1 },
+  // Raised again in build 34 (about +30% over build 30).
+  z1: { name: 'MEDIUM', hp: 1.5, dmg: 1.45, bossHp: 1.7, bossDmg: 1.6 },
+  z2: { name: 'MEDIUM-HARD', hp: 1.75, dmg: 1.7, bossHp: 2.0, bossDmg: 1.85 },
+  z3: { name: 'HARD', hp: 2.1, dmg: 2.0, bossHp: 2.6, bossDmg: 2.2 },
+  z4: { name: 'HELL', hp: 2.5, dmg: 2.4, bossHp: 3.1, bossDmg: 2.7 },
 };
 
 export function applyDifficulty(zoneId, e) {
