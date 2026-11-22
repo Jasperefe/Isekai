@@ -11,7 +11,7 @@
 //   3. Travelling between zones (gates, the world map, rifts).
 //   4. Respawning at a crystal after a death.
 //  Never at game start, never during a fight.
-import { sfx, setMuted } from './audio.js?v=31';
+import { sfx, setMuted } from './audio.js?v=32';
 
 const $ = id => document.getElementById(id);
 const B = () => window.bridge;

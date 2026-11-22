@@ -1,0 +1,25 @@
+import sys; sys.path.insert(0, __import__('os').path.dirname(__file__))
+from qa_lib import *
+HERO = sys.argv[1] if len(sys.argv) > 1 else 'jasper'
+P = 'v_' if HERO == 'victory' else ''
+with sync_playwright() as pw:
+    gm = Game(pw, save=None if HERO == 'jasper' else {'level': 12, 'hero': 'victory', 'ngPlus': 1, 'zone': 'z1', 'zones': {}})
+    gm.step(20)
+    check(P+'F1 intro then village stage', gm.stage() in ('village', 'bram'), gm.stage())
+    check(P+'C4 before sword: no HEAVY/BLOCK', not gm.vis('#btn-heavy') and not gm.vis('#btn-block'), '')
+    s, h = bot(gm, ['patchBram'], log=True)
+    check(P+'F2a reached Bram + dialogue loop', s == 'patchBram', s)
+    s, h = bot(gm, ['slimes'], log=True)
+    check(P+'F2b PATCH Bram -> sword', s == 'slimes' and gm.ev(f"{G}.player.unlocks.sword"), s)
+    gm.shot('z1_sword')
+    s, h = bot(gm, ['bridge'], log=True)
+    check(P+'F4 slimes cleared', s == 'bridge', s)
+    check(P+'F4b Blade Storm unlocked', gm.ev(f"{G}.player.unlocks.skill"))
+    s, h = bot(gm, ['pond', 'boss'], log=True)
+    check(P+'F5 bridge patched', s in ('pond', 'boss'), s)
+    s, h = bot(gm, ['done'], log=True, max_iter=1500)
+    check(P+'F6/F7 Slime King defeated, zone done', s == 'done', s)
+    gm.shot('z1_done')
+    check(P+'no page errors z1', not gm.errs, gm.errs[:2])
+    gm.close()
+save_results(P+'z1')

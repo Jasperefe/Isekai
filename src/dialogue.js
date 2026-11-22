@@ -1,6 +1,6 @@
 // Dialogue box: portrait, speaker name plate, typed text with voice blips, tap/click/F to continue.
-import { sfx } from './audio.js?v=31';
-import { VICTORY_LINES } from './victory.js?v=31';
+import { sfx } from './audio.js?v=32';
+import { VICTORY_LINES } from './victory.js?v=32';
 
 export const SPEAKER_COLORS = {
   GUIDE: '#29e6ff', JASPER: '#e9f2ff', BRAM: '#ffb35a', NIA: '#ff8ae8', TOMM: '#9cff5a', MIRA: '#9cf0ff',
@@ -76,6 +76,6 @@ export class Dialogue {
 }
 
 const SWAP = { Jasper: 'Victory', Victory: 'Jasper', JASPER: 'VICTORY', VICTORY: 'JASPER',
-  'BLADE STORM': 'RADIANCE', 'Blade Storm': 'Radiance', PATCH: 'STARFALL', Patch: 'Starfall', DODGE: 'BLINK', BLOCK: 'AEGIS', HEAVY: 'LUNGE', 'Player One': 'Player Two', 'PLAYER ONE': 'PLAYER TWO' };
+  'BLADE STORM': 'RADIANCE', 'Blade Storm': 'Radiance', PATCH: 'STARFALL', Patch: 'Starfall', DODGE: 'BLINK', BLOCK: 'AEGIS', HEAVY: 'LUNGE', 'Player One': 'Player Two', 'PLAYER ONE': 'PLAYER TWO', 'DEBUG BLADE': 'STAR RAPIER', 'Debug Blade': 'Star Rapier' };
 // New Game+ as Victory: names and her own ability names. (PATCHED / patched stay as they are.)
-export function swapNames(text) { return String(text).replace(/\b(Jasper|Victory|JASPER|VICTORY|BLADE STORM|Blade Storm|PATCH|Patch|DODGE|BLOCK|HEAVY|Player One|PLAYER ONE)\b/g, m => SWAP[m]); }
+export function swapNames(text) { return String(text).replace(/\b(Jasper|Victory|JASPER|VICTORY|BLADE STORM|Blade Storm|PATCH|Patch|DODGE|BLOCK|HEAVY|Player One|PLAYER ONE|DEBUG BLADE|Debug Blade)\b/g, m => SWAP[m]); }

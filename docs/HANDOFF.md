@@ -1,4 +1,4 @@
-# ISEKAI: Project Handoff (build 30)
+# ISEKAI: Project Handoff (build 32)
 
 This document describes everything built so far, so the project can continue in a new conversation (or with another developer) without losing anything. Paste or attach it at the start of a new chat and say "continue ISEKAI from this handoff".
 
@@ -11,8 +11,8 @@ This document describes everything built so far, so the project can continue in 
 | Live build | https://jasperefe.github.io/Isekai/ (GitHub Pages, branch `main`) |
 | Repository | https://github.com/Jasperefe/Isekai |
 | Engine | three.js r170, vendored in `lib/` (no build step, plain ES modules + import map) |
-| Platforms | Playgama (Bridge SDK integrated, build 30), CrazyGames later |
-| Current build | **30** (stamped with `python3 tools/bump.py 30`) |
+| Platforms | Playgama (Bridge SDK integrated since build 30; upload zip from `tools/build_playgama.sh`), CrazyGames later |
+| Current build | **32** (stamped with `python3 tools/bump.py 32`) |
 | Main test device | iPhone, Safari, landscape |
 
 ### Working rules agreed with the owner
@@ -23,6 +23,14 @@ This document describes everything built so far, so the project can continue in 
 4. Do not reuse assets the owner used in his other games unless edited beyond recognition. (Never open the repos pax-terra, siege-of-eternity or tiny-planet-defender.)
 5. Players must never get stuck: clear quest text, a guide arrow, map markers and hints.
 6. Report back with screenshots after each build.
+
+### Where we stopped (22 Nov 2026, build 32)
+
+- The game is feature-complete: 4 zones, 4 bosses, Jasper's 3 endings, Victory's New Game+ with her own story, abilities and 4 endings, release difficulty, Playgama ads.
+- A full QA pass was just completed (see section 9). All checks pass; 3 small issues found were fixed in build 32.
+- The Playgama upload zip is built (`bash tools/build_playgama.sh` makes `dist/ISEKAI_playgama.zip`, about 15 MB). **Next action for the owner:** upload it to the Playgama developer dashboard and test real ads on the phone.
+- Open items: the hand checks in `docs/QA_REPORT.md` (sound, real FPS, feel, real ads), then the CrazyGames build.
+- Owner preferences carried over: wait for "Go" before building, English only, show designs first, send screenshots after each build, keep the UI clean (he dislikes crowded panels and repeating pop-ups).
 
 ## 2. Story
 
@@ -74,7 +82,7 @@ The ally follows beside you in Zones 3 and 4 (Victory, or Jasper in Victory's ru
 | `dialogue.js` | Dialogue box, portraits, New Game+ swap (uses `victory.js`) |
 | `victory.js` | Victory's rewritten story lines |
 | `profile.js` | Save data (localStorage key `isekai_save_v2`), stats, items |
-| `menu.js`, `skills.js`, `items.js`, `loot.js`, `shop.js`, `console.js` | Gear, skill tree, drops (auto-scrap when the bag is full), Dot's shop, the Console |
+| `menu.js`, `skills.js`, `items.js`, `loot.js`, `shop.js`, `console.js` | Gear, skill tree, drops (auto-scrap when the bag is full), Dot's shop, the Console (list panel) |
 | `map.js` | Zone map capture, fog of war, map screen, world map and travel, minimap |
 | `audio.js` | Music tracks and synthesized sound effects, mute for ads |
 | `effects.js` | Particles, slashes, beams, shockwaves |
@@ -136,14 +144,21 @@ To build the upload: `bash tools/build_playgama.sh` makes `dist/ISEKAI_playgama.
 | 28 | Milestone 7: Zone 4, NOVA, three endings, New Game+ (Victory playable), throne-room camera fix, Sir Duplicate cape fix |
 | 29 | Camera always swings behind the hero; ally walks beside; bag-full pop-up replaced by auto-scrap |
 | 30 | HUD v2, Victory's own abilities and story, Two Players ending, release difficulty, TEST button removed, Playgama ads (revive, offer card, interstitials) and build script |
+| 31 | Console redesigned as a calm list panel; Victory is greeted as "Player Two" |
+| 32 | Full QA pass (190 automated checks, both heroes, all zones, all menus, Playgama). Fixes: Victory's forge says Star Rapier, Victory's skill tree uses her ability names, the zone-cleared card hides the touch buttons |
 
-## 9. Next steps (not started)
+## 9. Testing and QA
+
+- `docs/TEST_CHECKLIST.md`: the step-by-step manual checklist (sections A to N: title, HUD, touch, menu, Console, each zone, Victory, combat edge cases, save/load, Playgama, performance).
+- `docs/QA_REPORT.md`: results of the build 32 run (190 checks) and what still needs a real phone (sound, FPS, feel, real ads).
+
+## 10. Next steps (not started)
 
 - Upload `dist/ISEKAI_playgama.zip` to the Playgama developer dashboard and test the ads there.
 - CrazyGames build (their SDK is different; Playgama Bridge also supports CrazyGames).
 - Optional: cloud save through `bridge.storage`, leaderboards, achievements.
 - Optional: more Victory-specific voice lines in side conversations (Bram, Nia, Mira, Dot).
 
-## 10. Credits (in game)
+## 11. Credits (in game)
 
 Music: "Daydream of a Deity" by Fablefly Music (CC BY 4.0); "Awakening" and "Elven Companion" by kmontesdev (CC0); "Cathedral in the Forest" by congusbongus (CC0); "Medieval: King's Feast" by RandomMind (CC0). Characters, animations, village and props: Quaternius (CC0). KayKit Forest Nature, Halloween Bits and Dungeon packs: Kay Lousberg (CC0). Castle Kit and Fantasy Town Kit: Kenney (CC0). Engine: three.js (MIT). Monsters, Zone 4, sound effects and code: made for ISEKAI.

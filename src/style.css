@@ -497,3 +497,4 @@ body.paused #offer, body.talking #offer, body.title #offer { display: none !impo
 .cmd.locked { opacity: 0.6; border-style: dashed; } .cmd.locked i { color: #c9d3ef; background: rgba(255, 255, 255, 0.06); }
 .con-help { position: static; text-align: left; font-size: 10px; color: #9aa6c7; line-height: 1.35; }
 @media (max-height: 360px) { .cmd small { display: none; } }
+body.zonedone #touch { display: none !important; }

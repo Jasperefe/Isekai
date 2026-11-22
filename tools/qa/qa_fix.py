@@ -1,0 +1,17 @@
+import sys; sys.path.insert(0, __import__('os').path.dirname(__file__))
+from qa_lib import *
+with sync_playwright() as pw:
+    gm = Game(pw, save={'level': 12, 'hero': 'victory', 'ngPlus': 1, 'gold': 500, 'shards': 50, 'skillPoints': 1, 'zone': 'z1', 'zones': {'z1': {'stage': 9, 'stageId': 'done', 'flags': {}}}})
+    gm.step(20)
+    gm.ev(f"{G}.menu.openForge()"); gm.step(1)
+    check('FIX forge says Star Rapier for Victory', gm.ev("document.getElementById('forge-title').textContent").startswith('Star Rapier'), gm.ev("document.getElementById('forge-title').textContent"))
+    gm.click('#forge-close'); gm.ev(f"{G}.menu.show('skills')"); gm.step(1)
+    txt = gm.ev("document.getElementById('tree').textContent")
+    check('FIX skill tree uses Victory names', 'STARFALL' in txt and 'Radiance' in txt and 'Blade Storm' not in txt, txt[:120])
+    gm.shot('V_skills'); gm.click('#menu-close')
+    gm.ev(f"{G}.hud.zoneComplete({{level: 12, time: 60}})"); gm.step(1)
+    check('FIX zone card hides the touch controls', not gm.vis('#btn-attack'))
+    gm.click('#zone-continue'); gm.step(1)
+    check('FIX controls come back after Keep exploring', gm.vis('#btn-attack'))
+    check('no page errors fix', not gm.errs, gm.errs[:2]); gm.close()
+save_results('fix')

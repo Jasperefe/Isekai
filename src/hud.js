@@ -1,7 +1,7 @@
 // DOM-based HUD: bars, floating numbers, system messages and death screen.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=31';
-import { swapNames } from './dialogue.js?v=31';
+import { sfx } from './audio.js?v=32';
+import { swapNames } from './dialogue.js?v=32';
 
 const $ = id => document.getElementById(id);
 
@@ -140,8 +140,8 @@ export class Hud {
     const m = Math.floor((stats.time || 0) / 60), s = Math.floor((stats.time || 0) % 60);
     $('zone-stats').textContent = `Level ${stats.level} · Time ${m}m ${s}s`;
     if (stats.num) { $('zone-num').textContent = stats.num; $('zone-title').textContent = stats.title; $('zone-next').innerHTML = stats.next; }
-    $('zone-done').classList.remove('hidden'); sfx('zoneClear');
-    $('zone-continue').onclick = () => $('zone-done').classList.add('hidden');
+    $('zone-done').classList.remove('hidden'); document.body.classList.add('zonedone'); sfx('zoneClear');
+    $('zone-continue').onclick = () => { $('zone-done').classList.add('hidden'); document.body.classList.remove('zonedone'); };
   }
 
   float(worldPos, text, cls = '') {

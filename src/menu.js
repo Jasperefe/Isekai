@@ -1,7 +1,8 @@
-import { sfx } from './audio.js?v=31';
+import { sfx } from './audio.js?v=32';
 // Pause menu: Gear (equip/scrap), Skills (tree), Map, Settings. Plus Bram's forge window.
-import { RARITY, itemIcon } from './items.js?v=31';
-import { SKILLS, BRANCHES } from './skills.js?v=31';
+import { RARITY, itemIcon } from './items.js?v=32';
+import { SKILLS, BRANCHES } from './skills.js?v=32';
+import { swapNames } from './dialogue.js?v=32';
 
 const $ = id => document.getElementById(id);
 const SLOT_NAMES = { weapon: 'Weapon', armor: 'Armor', charm: 'Charm' };
@@ -17,7 +18,7 @@ export class Menu {
     addEventListener('keydown', e => { if (e.code === 'Escape' || e.code === 'KeyM' || e.code === 'Tab') { e.preventDefault(); this.open ? this.hide() : this.show(); } });
     $('forge-close').addEventListener('click', () => this.closeForge());
     $('forge-up').addEventListener('click', () => {
-      if (this.core.profile.upgradeSword()) { sfx('levelUp'); this.core.player.refreshStats(); this.core.profile.save(); this.core.hud.wallet(this.core.profile.d); this.core.hud.system(`DEBUG BLADE +${this.core.profile.d.swordLevel}!`, 2); }
+      if (this.core.profile.upgradeSword()) { sfx('levelUp'); this.core.player.refreshStats(); this.core.profile.save(); this.core.hud.wallet(this.core.profile.d); this.core.hud.system(`${this.core.player.isV ? 'STAR RAPIER' : 'DEBUG BLADE'} +${this.core.profile.d.swordLevel}!`, 2); }
       this.#renderForge();
     });
   }
@@ -84,8 +85,9 @@ export class Menu {
   #renderSkills() {
     const { profile, player } = this.core, d = profile.d;
     $('sp-count').textContent = d.skillPoints;
-    $('tree').innerHTML = BRANCHES.map(b => `<div class="branch" style="--c:${b.color}"><h5 style="color:${b.color}">${b.name}</h5>${
-      SKILLS.filter(s => s.branch === b.id).map(s => `<div class="node ${d.skills[s.id] ? 'have' : profile.canLearn(s.id) ? 'can' : ''}" data-id="${s.id}"><b>${s.name}</b>${s.text}</div>`).join('')}</div>`).join('');
+    const sw = t => (player.isV ? swapNames(t).replace('sword damage', 'rapier damage').replace('Storm Lite', 'Radiance Lite') : t);
+    $('tree').innerHTML = BRANCHES.map(b => `<div class="branch" style="--c:${b.color}"><h5 style="color:${b.color}">${sw(b.name)}</h5>${
+      SKILLS.filter(s => s.branch === b.id).map(s => `<div class="node ${d.skills[s.id] ? 'have' : profile.canLearn(s.id) ? 'can' : ''}" data-id="${s.id}"><b>${sw(s.name)}</b>${sw(s.text)}</div>`).join('')}</div>`).join('');
     for (const el of $('tree').querySelectorAll('.node')) el.addEventListener('click', () => {
       if (profile.learn(el.dataset.id)) { sfx('unlock'); player.refreshStats(); this.core.hud.wallet(d); this.#renderSkills(); this.#badge(); }
     });
@@ -99,7 +101,7 @@ export class Menu {
   closeForge() { $('forge').classList.add('hidden'); this.core.onPause(false); this.core.profile.save(); }
   #renderForge() {
     const p = this.core.profile, d = p.d, c = p.swordCost();
-    $('forge-title').textContent = `Debug Blade +${d.swordLevel}`;
+    $('forge-title').textContent = `${this.core.player.isV ? 'Star Rapier' : 'Debug Blade'} +${d.swordLevel}`;
     if (d.swordLevel >= 5) { $('forge-text').innerHTML = 'Fully upgraded! "That\'s the finest blade I\'ve ever made," says Bram.'; $('forge-up').disabled = true; return; }
     $('forge-text').innerHTML = `Next: <b>+${d.swordLevel + 1}</b> (+3 attack)<br>Cost: <b style="color:#f5c542">${c.gold} gold</b> and <b style="color:#ff7ae8">${c.shards} shards</b><br>You have ${d.gold} gold, ${d.shards} shards.`;
     $('forge-up').disabled = !p.canUpgradeSword();
