@@ -1,4 +1,4 @@
-# ISEKAI: Project Handoff (build 32)
+# ISEKAI: Project Handoff (build 33)
 
 This document describes everything built so far, so the project can continue in a new conversation (or with another developer) without losing anything. Paste or attach it at the start of a new chat and say "continue ISEKAI from this handoff".
 
@@ -12,7 +12,7 @@ This document describes everything built so far, so the project can continue in 
 | Repository | https://github.com/Jasperefe/Isekai |
 | Engine | three.js r170, vendored in `lib/` (no build step, plain ES modules + import map) |
 | Platforms | Playgama (Bridge SDK integrated since build 30; upload zip from `tools/build_playgama.sh`), CrazyGames later |
-| Current build | **32** (stamped with `python3 tools/bump.py 32`) |
+| Current build | **33** (stamped with `python3 tools/bump.py 33`) |
 | Main test device | iPhone, Safari, landscape |
 
 ### Working rules agreed with the owner
@@ -146,6 +146,7 @@ To build the upload: `bash tools/build_playgama.sh` makes `dist/ISEKAI_playgama.
 | 30 | HUD v2, Victory's own abilities and story, Two Players ending, release difficulty, TEST button removed, Playgama ads (revive, offer card, interstitials) and build script |
 | 31 | Console redesigned as a calm list panel; Victory is greeted as "Player Two" |
 | 32 | Full QA pass (190 automated checks, both heroes, all zones, all menus, Playgama). Fixes: Victory's forge says Star Rapier, Victory's skill tree uses her ability names, the zone-cleared card hides the touch buttons |
+| 33 | After each boss: the quest pill says WHAT NEXT, the marker and guide arrow point to the next zone's exit (gate, crypt door, rift), and the zone-cleared card's button is SHOW ME THE WAY |
 
 ## 9. Testing and QA
 

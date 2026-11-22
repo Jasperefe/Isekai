@@ -1,8 +1,8 @@
 // Zone 3 story: Capital of Aster. Captain Rho's loop, the copies in the city, Princess Victory,
 // Sir Duplicate and Victory's confession. Side quests: Merchant Dot's Price Glitch, ghost houses.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=32';
-import { Z3, HALL } from './world3.js?v=32';
+import { sfx, music } from './audio.js?v=33';
+import { Z3, HALL } from './world3.js?v=33';
 
 const STAGES = [
   { id: 'arrive', title: 'Rescue the Princess', text: 'Walk up the main street to the Market Plaza' },
@@ -12,7 +12,7 @@ const STAGES = [
   { id: 'tower', title: 'Rescue the Princess', text: 'Go NORTH through the castle gate and PATCH the cage of light' },
   { id: 'throne', title: 'Copy, Paste, Fight', text: 'Go NORTH into the castle: the keep door is at the back of the courtyard' },
   { id: 'boss', title: 'Copy, Paste, Fight', text: 'Defeat Sir Duplicate' },
-  { id: 'done', title: 'The Glitch Rift', text: 'Step into the glitch rift in the throne room (behind where Sir Duplicate stood)' },
+  { id: 'done', title: 'WHAT NEXT: The Unfinished Zone', text: 'Step into the glitch rift in the throne room (behind where Sir Duplicate stood)' },
 ];
 
 export class Story3 {

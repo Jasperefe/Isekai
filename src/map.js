@@ -1,7 +1,7 @@
 // Maps: a top-down picture of the real zone (rendered once from the 3D world), fog of war,
 // the full Map screen (zone + World of Aster) and the round minimap on the HUD.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=32';
+import { sfx } from './audio.js?v=33';
 
 const $ = id => document.getElementById(id);
 const FOG_N = 64;          // fog grid cells per side

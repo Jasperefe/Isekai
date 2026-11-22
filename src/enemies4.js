@@ -1,9 +1,9 @@
 // Zone 4 enemies: PLACEHOLDER (grey test mannequins that T-pose and lunge) and MISSING TEXTURE
 // (hopping magenta-checker cubes with teeth that leave pink error puddles).
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=32';
-import { Enemy2, makeTag } from './enemies2.js?v=32';
-import { missingTex } from './world4.js?v=32';
+import { sfx } from './audio.js?v=33';
+import { Enemy2, makeTag } from './enemies2.js?v=33';
+import { missingTex } from './world4.js?v=33';
 
 const MAGENTA = 0xff2bd6;
 function faceTag() {

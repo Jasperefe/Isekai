@@ -1,7 +1,7 @@
 // DOM-based HUD: bars, floating numbers, system messages and death screen.
 import * as THREE from 'three';
-import { sfx } from './audio.js?v=32';
-import { swapNames } from './dialogue.js?v=32';
+import { sfx } from './audio.js?v=33';
+import { swapNames } from './dialogue.js?v=33';
 
 const $ = id => document.getElementById(id);
 
@@ -141,7 +141,13 @@ export class Hud {
     $('zone-stats').textContent = `Level ${stats.level} · Time ${m}m ${s}s`;
     if (stats.num) { $('zone-num').textContent = stats.num; $('zone-title').textContent = stats.title; $('zone-next').innerHTML = stats.next; }
     $('zone-done').classList.remove('hidden'); document.body.classList.add('zonedone'); sfx('zoneClear');
-    $('zone-continue').onclick = () => { $('zone-done').classList.add('hidden'); document.body.classList.remove('zonedone'); };
+    $('zone-continue').textContent = 'SHOW ME THE WAY';
+    $('zone-continue').onclick = () => {
+      $('zone-done').classList.add('hidden'); document.body.classList.remove('zonedone');
+      // Repeat where to go next as an objective toast; the marker and the guide arrow point there.
+      const next = $('zone-next').textContent.replace(/^Next:\s*/, '');
+      this.toast('WHAT NEXT', next.split(',')[0], next.slice(next.indexOf(',') + 1).trim() + ' (follow the arrow)', 4); sfx('quest');
+    };
   }
 
   float(worldPos, text, cls = '') {

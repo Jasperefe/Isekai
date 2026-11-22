@@ -1,4 +1,4 @@
-import { sfx } from './audio.js?v=32';
+import { sfx } from './audio.js?v=33';
 // CONSOLE: the cheat menu (taught by Old Mira). Opens a list panel and slows time.
 // Commands are unlocked with Debug Points and each has a cooldown.
 const $ = id => document.getElementById(id);

@@ -1,8 +1,8 @@
 // Zone 2 story: Glitchwood Forest. Old Mira, Area Patch, the Console, the Corrupted Grove,
 // the Lost Pixel Fox side quest and the Thornwraith.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=32';
-import { Z2 } from './world2.js?v=32';
+import { sfx, music } from './audio.js?v=33';
+import { Z2 } from './world2.js?v=33';
 
 const STAGES = [
   { id: 'arrive', title: 'The Spreading Null', text: 'Follow the path into Glitchwood' },
@@ -131,7 +131,7 @@ export class Story2 {
       case 'grove': return this.kills >= GROVE_GOAL ? null : Z2.grove;
       case 'purge': return this.#nearestGuard();
       case 'hollow': return Z2.hollow;
-      default: return this.flags.pip === 'found' ? this.mira.pos : null;
+      default: return this.flags.pip === 'found' ? this.mira.pos : this.ctx.profile.d.zones.z3 ? null : new THREE.Vector3(Z2.hollow.x, 0, Z2.hollow.z - Z2.hollowR + 5.2); // what next: the crypt door
     }
   }
 
@@ -314,7 +314,8 @@ export class Story2 {
       this.markerGem.rotation.y += dt * 2; this.markerGem.position.y = 4 + Math.sin(t * 2) * 0.3;
       const d = Math.round(Math.hypot(target.x - player.pos.x, target.z - player.pos.z));
       const pipBack = this.id === 'done' && this.flags.pip === 'found';
-      hud.quest(pipBack ? 'Lost Pixel Fox' : st.title, pipBack ? 'Bring Pip back to Old Mira' : st.text, d);
+      const next = this.id === 'done' && !pipBack;
+      hud.quest(pipBack ? 'Lost Pixel Fox' : next ? 'WHAT NEXT: Capital of Aster' : st.title, pipBack ? 'Bring Pip back to Old Mira' : next ? 'Go through the glowing golden door inside Root Hollow' : st.text, d);
     } else hud.quest(st.title, this.id === 'grove' ? `Null enemies defeated: ${Math.min(this.kills, GROVE_GOAL)} / ${GROVE_GOAL}` : st.text, null);
     if (this.id === 'purge' && target) hud.quest(st.title, `Defeat every Null enemy: ${this.guardsLeft} left`, Math.round(Math.hypot(target.x - player.pos.x, target.z - player.pos.z)));
     // Save crystals.

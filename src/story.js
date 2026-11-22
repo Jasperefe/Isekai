@@ -1,8 +1,8 @@
 // Zone 1 story: quests, cutscenes, objective markers, unlocks and save/load.
 import * as THREE from 'three';
-import { sfx, music } from './audio.js?v=32';
-import { Z1 } from './world.js?v=32';
-import { Slime } from './enemies.js?v=32';
+import { sfx, music } from './audio.js?v=33';
+import { Z1 } from './world.js?v=33';
+import { Slime } from './enemies.js?v=33';
 
 
 // Quest stages in order.
@@ -152,6 +152,7 @@ export class Story {
       case 'bridge': case 'patchBridge': return world.bridgePos;
       case 'pond': return Z1.arena;
       case 'boss': return null;
+      case 'done': return this.ctx.profile.d.zones.z2 ? null : Z1.gate; // what next: the gate north
       default: return null;
     }
   }
@@ -341,7 +342,8 @@ export class Story {
       this.markerObj.position.set(target.x, world.groundAt(target.x, target.z), target.z);
       this.markerGem.rotation.y += dt * 2; this.markerGem.position.y = 4 + Math.sin(t * 2) * 0.3;
       const d = Math.round(Math.hypot(target.x - player.pos.x, target.z - player.pos.z));
-      hud.quest(STAGES[this.stage].title, STAGES[this.stage].text, d);
+      const next = this.id === 'done';
+      hud.quest(next ? 'WHAT NEXT: Glitchwood Forest' : STAGES[this.stage].title, next ? 'Go NORTH through the village to the open gate' : STAGES[this.stage].text, d);
     } else hud.quest(STAGES[this.stage].title, this.id === 'slimes' ? `Slimes defeated: ${Math.min(this.kills, SLIME_GOAL)} / ${SLIME_GOAL}` : STAGES[this.stage].text, null);
     // Save crystals: touch to save and heal.
     world.crystals.forEach((c, i) => {

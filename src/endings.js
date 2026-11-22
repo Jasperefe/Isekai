@@ -2,8 +2,8 @@
 // 1. FINISH THE GAME: Jasper goes home, Aster closes.
 // 2. STAY: Jasper becomes Aster's developer and never goes home.
 // 3. PATCH NOVA (secret): only if every chest in all 4 zones was found. Aster is saved AND Jasper goes home.
-import { sfx, music } from './audio.js?v=32';
-import { CHEST_TOTALS, allChestsFound } from './story4.js?v=32';
+import { sfx, music } from './audio.js?v=33';
+import { CHEST_TOTALS, allChestsFound } from './story4.js?v=33';
 
 const FAST = new URLSearchParams(location.search).has('fast');
 const wait = ms => new Promise(r => setTimeout(r, FAST ? 0 : ms));
