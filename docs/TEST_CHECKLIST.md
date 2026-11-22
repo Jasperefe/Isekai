@@ -1,4 +1,4 @@
-# ISEKAI: Manual Test Checklist (build 31)
+# ISEKAI: Manual Test Checklist (build 32)
 
 How to use: play on a phone in landscape (and once on PC). Tick each line. If something fails, note the ID, what you did and what happened, plus a screenshot.
 Tip: Menu > Settings > Restart story gives a clean save. New Game+ buttons appear in Settings after any ending.

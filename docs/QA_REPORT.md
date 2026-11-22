@@ -42,4 +42,4 @@ The checklist in `docs/TEST_CHECKLIST.md` was worked through with automated brow
 
 ## How to re-run
 
-The QA scripts live outside the repo (in the build workspace). The approach: load `index.html?fast` with a save in `localStorage['isekai_save_v2']`, step frames with `window.__step(1/30, n)`, read state from `window.__game`, and drive the story by teleporting the hero to `zone.map.objective()`, pressing PATCH, using interactables and damaging enemies. Fake the Playgama Bridge by serving a small mock at the `playgama-bridge.js` URL.
+The scripts are in `tools/qa/` (see its README): `qa_ui.py`, `qa_side.py`, `qa_z1.py` ... `qa_z4.py` (story bots, add `victory` for her run), `qa_i8.py`, `qa_fix.py` and `pg.py` (Playgama, against the built zip). They load `index.html?fast` with a save in `localStorage['isekai_save_v2']`, step frames with `window.__step(1/30, n)`, read state from `window.__game`, drive the story by moving the hero to `zone.map.objective()`, and fake the Playgama Bridge by serving a small mock at the `playgama-bridge.js` URL.
